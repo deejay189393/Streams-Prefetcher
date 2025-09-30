@@ -481,29 +481,54 @@ def format_time_string(seconds: float) -> str:
     if seconds == -1:
         return "Unlimited"
 
+    if seconds == 0:
+        return "0 seconds"
+
     if seconds < 1:
         milliseconds = int(seconds * 1000)
         return f"{milliseconds} millisecond{'s' if milliseconds != 1 else ''}"
-    elif seconds < 60:
-        return f"{int(seconds)} second{'s' if int(seconds) != 1 else ''}"
-    elif seconds < 3600:
-        minutes = int(seconds // 60)
-        return f"{minutes} minute{'s' if minutes != 1 else ''}"
-    elif seconds < 86400:
-        hours = int(seconds // 3600)
-        return f"{hours} hour{'s' if hours != 1 else ''}"
-    elif seconds < 604800:
+
+    # For time periods less than a week, show compound units (days, hours, minutes, seconds)
+    if seconds < 604800:  # Less than a week
         days = int(seconds // 86400)
-        return f"{days} day{'s' if days != 1 else ''}"
-    elif seconds < 2592000:
+        hours = int((seconds % 86400) // 3600)
+        minutes = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+
+        parts = []
+        if days > 0:
+            parts.append(f"{days} day{'s' if days != 1 else ''}")
+        if hours > 0:
+            parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+        if minutes > 0:
+            parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+        if secs > 0 or not parts:  # Always show seconds if nothing else
+            parts.append(f"{secs} second{'s' if secs != 1 else ''}")
+
+        return " ".join(parts)
+
+    # For longer periods, show primary unit with remainder in next smaller unit
+    elif seconds < 2592000:  # Less than a month
         weeks = int(seconds // 604800)
-        return f"{weeks} week{'s' if weeks != 1 else ''}"
-    elif seconds < 31536000:
+        days = int((seconds % 604800) // 86400)
+        parts = [f"{weeks} week{'s' if weeks != 1 else ''}"]
+        if days > 0:
+            parts.append(f"{days} day{'s' if days != 1 else ''}")
+        return " ".join(parts)
+    elif seconds < 31536000:  # Less than a year
         months = int(seconds // 2592000)
-        return f"{months} month{'s' if months != 1 else ''}"
+        weeks = int((seconds % 2592000) // 604800)
+        parts = [f"{months} month{'s' if months != 1 else ''}"]
+        if weeks > 0:
+            parts.append(f"{weeks} week{'s' if weeks != 1 else ''}")
+        return " ".join(parts)
     else:
         years = int(seconds // 31536000)
-        return f"{years} year{'s' if years != 1 else ''}"
+        months = int((seconds % 31536000) // 2592000)
+        parts = [f"{years} year{'s' if years != 1 else ''}"]
+        if months > 0:
+            parts.append(f"{months} month{'s' if months != 1 else ''}")
+        return " ".join(parts)
 
 class StreamsPrefetcher:
     def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False):
@@ -570,18 +595,21 @@ class StreamsPrefetcher:
         if start_time is None or end_time is None:
             return "Unknown"
         duration_seconds = end_time - start_time
-        hours = int(duration_seconds // 3600)
+        days = int(duration_seconds // 86400)
+        hours = int((duration_seconds % 86400) // 3600)
         minutes = int((duration_seconds % 3600) // 60)
         seconds = int(duration_seconds % 60)
-        
+
         parts = []
+        if days > 0:
+            parts.append(f"{days} day{'s' if days != 1 else ''}")
         if hours > 0:
             parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
         if minutes > 0:
             parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
         if seconds > 0 or not parts:  # Always show seconds if nothing else, or if non-zero
             parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
-        
+
         return " ".join(parts)
     
     def calculate_rate(self, count: int, duration_seconds: float) -> str:

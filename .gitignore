@@ -1,2 +1,4 @@
 data/
 runner/
+__pycache__/
+*.pyc
