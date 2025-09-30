@@ -434,20 +434,26 @@ def parse_time_string(time_str: str) -> float:
     if not time_str or time_str.strip() == '':
         raise argparse.ArgumentTypeError("Time string cannot be empty")
 
-    time_str = time_str.strip().lower()
+    time_str = time_str.strip()
 
     # Handle unlimited case
-    if time_str == '-1' or time_str == '-1s':
+    if time_str.lower() == '-1' or time_str.lower() == '-1s':
         return -1
 
     # Extract number and unit
     import re
-    match = re.match(r'^(-?\d+(?:\.\d+)?)\s*(ms|[smhdwy]?)$', time_str)
+    match = re.match(r'^(-?\d+(?:\.\d+)?)\s*(ms|MS|[smhdwyM]?)$', time_str, re.IGNORECASE)
     if not match:
-        raise argparse.ArgumentTypeError(f"Invalid time format: '{time_str}'. Use format like: 500ms, 30s, 5m, 2h, 1d, 1w, 1m, 1y or -1s for unlimited")
+        raise argparse.ArgumentTypeError(f"Invalid time format: '{time_str}'. Use format like: 500ms, 30s, 5m (minutes), 2h, 1d, 1w, 1M (months), 1y or -1s for unlimited")
 
     value = float(match.group(1))
-    unit = match.group(2) or 's'  # Default to seconds if no unit
+
+    # Normalize unit to lowercase, except preserve 'M' for months
+    unit_raw = match.group(2) or 's'
+    if unit_raw == 'M':
+        unit = 'M'  # Keep uppercase M for months
+    else:
+        unit = unit_raw.lower()  # Everything else lowercase
 
     # Handle unlimited
     if value == -1:
@@ -467,11 +473,6 @@ def parse_time_string(time_str: str) -> float:
         'M': 2592000,  # 30 days
         'y': 31536000  # 365 days
     }
-
-    # Handle month ambiguity (m = minutes, M = months)
-    if unit == 'm' and value >= 60:
-        # If value is large, assume months not minutes
-        unit = 'M'
 
     return value * multipliers.get(unit, 1)
 
@@ -1059,7 +1060,7 @@ class StreamsPrefetcher:
             
             # Check execution time limit after each catalog
             if self._check_time_limit():
-                print(f"\n\n⏱️  Maximum execution time ({self.max_execution_time}s) reached. Stopping gracefully...")
+                print(f"\n\n⏱️  Maximum execution time ({format_time_string(self.max_execution_time)}) reached. Stopping gracefully...")
                 break
 
         self.processing_end = time.time()
@@ -1240,12 +1241,12 @@ Examples:
     parser.add_argument('--movies-per-catalog', type=int, default=50, help='Per-catalog limit for movie-only catalogs. -1 for unlimited. (Default: 50)')
     parser.add_argument('--series-per-catalog', type=int, default=5, help='Per-catalog limit for series-only catalogs. -1 for unlimited. (Default: 5)')
     parser.add_argument('--items-per-mixed-catalog', type=int, default=30, help='Per-catalog limit for mixed-type catalogs. -1 for unlimited. (Default: 30)')
-    parser.add_argument('-d', '--delay', type=parse_time_string, default='0s', help='Delay between requests. Format: 500ms, 30s, 5m, 2h, 1d. (default: 0s)')
+    parser.add_argument('-d', '--delay', type=parse_time_string, default='0s', help='Delay between requests. Format: 500ms, 30s, 5m (minutes), 2h, 1d, 1w, 1M (months), 1y. (default: 0s)')
     parser.add_argument('--proxy', type=str, help='HTTP proxy URL (e.g., http://proxy.example.com:8080)')
     parser.add_argument('--randomize-catalog-processing', action='store_true', help='Randomize the order in which catalogs are processed.')
     parser.add_argument('--randomize-item-prefetching', action='store_true', help='Randomize the order of items within a catalog.')
-    parser.add_argument('--cache-validity', type=parse_time_string, default='3d', help='Validity of cached items. Format: 30s, 5m, 2h, 3d, 1w. (default: 3d)')
-    parser.add_argument('-t', '--max-execution-time', type=parse_time_string, default='-1s', help='Maximum execution time. Format: 30s, 5m, 2h, 1d or -1s for unlimited. (default: -1s)')
+    parser.add_argument('--cache-validity', type=parse_time_string, default='3d', help='Validity of cached items. Format: 30s, 5m (minutes), 2h, 3d, 1w, 1M (months), 1y. (default: 3d)')
+    parser.add_argument('-t', '--max-execution-time', type=parse_time_string, default='-1s', help='Maximum execution time. Format: 30s, 5m (minutes), 2h, 1d, 1w, 1M (months), 1y or -1s for unlimited. (default: -1s)')
     parser.add_argument('--enable-logging', action='store_true', help='Enable logging. Creates timestamped log files in data/logs directory with full execution details.')
     
     args = parser.parse_args()
