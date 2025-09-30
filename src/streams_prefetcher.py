@@ -482,7 +482,7 @@ def parse_time_string(time_str: str) -> float:
     import re
     match = re.match(r'^(-?\d+(?:\.\d+)?)\s*(ms|MS|[smhdwyM]?)$', time_str, re.IGNORECASE)
     if not match:
-        raise argparse.ArgumentTypeError(f"Invalid time format: '{time_str}'. Use format like: 500ms, 30s, 5m (minutes), 2h, 1d, 1w, 1M (months), 1y or -1s for unlimited")
+        raise argparse.ArgumentTypeError(f"Invalid time format: '{time_str}'. Use format like: 500ms, 30s, 5m (minutes), 2h, 1d, 1w, 1M (months), 1y or -1 (with any unit) for unlimited")
 
     value = float(match.group(1))
 
@@ -1314,7 +1314,7 @@ Examples:
     parser.add_argument('--randomize-catalog-processing', action='store_true', help='Randomize the order in which catalogs are processed.')
     parser.add_argument('--randomize-item-prefetching', action='store_true', help='Randomize the order of items within a catalog.')
     parser.add_argument('--cache-validity', type=parse_time_string, default='3d', help='Validity of cached items. Format: 30s, 5m (minutes), 2h, 3d, 1w, 1M (months), 1y. (default: 3d)')
-    parser.add_argument('-t', '--max-execution-time', type=parse_time_string, default='-1s', help='Maximum execution time. Format: 30s, 5m (minutes), 2h, 1d, 1w, 1M (months), 1y or -1s for unlimited. (default: -1s)')
+    parser.add_argument('-t', '--max-execution-time', type=parse_time_string, default='-1s', help='Maximum execution time. Format: 30s, 5m (minutes), 2h, 1d, 1w, 1M (months), 1y or -1 (with any unit) for unlimited. (default: -1s)')
     parser.add_argument('--enable-logging', action='store_true', help='Enable logging. Creates timestamped log files in data/logs directory with full execution details.')
     
     args = parser.parse_args()

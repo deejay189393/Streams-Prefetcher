@@ -69,7 +69,7 @@ python streams_prefetcher.py --addon-urls both:https://your-addon.com
 | `--movies-per-catalog` | int | 50 | Per-catalog limit for movie-only catalogs. -1 for unlimited |
 | `--series-per-catalog` | int | 5 | Per-catalog limit for series-only catalogs. -1 for unlimited |
 | `--items-per-mixed-catalog` | int | 30 | Per-catalog limit for mixed-type catalogs. -1 for unlimited |
-| `--max-execution-time` / `-t` | time | -1s | Execution time limit. Script stops gracefully after this duration. -1s for unlimited |
+| `--max-execution-time` / `-t` | time | -1s | Execution time limit. Script stops gracefully after this duration. -1 (with any unit) for unlimited |
 
 ### Optional Arguments
 
@@ -95,6 +95,8 @@ Time-based parameters (`--delay`, `--cache-validity`, `--max-execution-time`) ac
 - `M` = months (e.g., `6M`) - Note: capital M for months
 - `y` = years (e.g., `1y`)
 
+**For unlimited execution time**, use `-1` with any unit suffix (e.g., `-1s`, `-1m`, `-1h`).
+
 **Examples:**
 ```bash
 --delay 500ms        # 500 milliseconds
@@ -104,6 +106,8 @@ Time-based parameters (`--delay`, `--cache-validity`, `--max-execution-time`) ac
 --cache-validity 2w  # 2 weeks
 -t 30m               # 30 minute execution limit
 -t -1s               # Unlimited execution time
+-t -1m               # Unlimited execution time (any unit works)
+-t -1                # Unlimited execution time (unit optional)
 ```
 
 ## Usage Examples
