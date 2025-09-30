@@ -309,6 +309,7 @@ class ProgressTracker:
         series_prefetched = kwargs.get('prefetched_series_count', 0)
         movies_limit = kwargs.get('movies_global_limit', -1)
         series_limit = kwargs.get('series_global_limit', -1)
+        max_execution_time = kwargs.get('max_execution_time', -1)
         
         lines = []
         
@@ -338,35 +339,72 @@ class ProgressTracker:
         
         # Calculate ETA
         eta_str = "Calculating..."
-        if movies_limit == -1 or series_limit == -1:
-            eta_str = "N/A (unlimited)"
-        elif elapsed > 10:  # Only show ETA after 10 seconds
+
+        # Check if we have a time limit
+        time_based_eta = None
+        if max_execution_time != -1:
+            time_based_eta = max_execution_time - elapsed
+
+        # Check if we have item limits
+        item_based_eta = None
+        if movies_limit != -1 and series_limit != -1 and elapsed > 10:
+            total_items = movies_prefetched + series_prefetched
+            total_target = movies_limit + series_limit
+
+            if total_items > 0 and total_target > 0:
+                rate = total_items / elapsed
+                remaining_items = total_target - total_items
+
+                if remaining_items > 0 and rate > 0:
+                    item_based_eta = remaining_items / rate
+        elif (movies_limit != -1 or series_limit != -1) and elapsed > 10:
+            # At least one limit is set
             total_items = movies_prefetched + series_prefetched
             total_target = 0
-            
+
             if movies_limit != -1:
                 total_target += movies_limit
             if series_limit != -1:
                 total_target += series_limit
-            
+
             if total_items > 0 and total_target > 0:
                 rate = total_items / elapsed
                 remaining_items = total_target - total_items
-                
+
                 if remaining_items > 0 and rate > 0:
-                    eta_seconds = remaining_items / rate
-                    eta_hours = int(eta_seconds // 3600)
-                    eta_minutes = int((eta_seconds % 3600) // 60)
-                    eta_secs = int(eta_seconds % 60)
-                    
-                    if eta_hours > 0:
-                        eta_str = f"{eta_hours}h {eta_minutes}m"
-                    elif eta_minutes > 0:
-                        eta_str = f"{eta_minutes}m {eta_secs}s"
-                    else:
-                        eta_str = f"{eta_secs}s"
+                    item_based_eta = remaining_items / rate
+
+        # Determine which ETA to use
+        if time_based_eta is not None and item_based_eta is not None:
+            # Use whichever comes first
+            eta_seconds = min(time_based_eta, item_based_eta)
+        elif time_based_eta is not None:
+            # Only time limit
+            eta_seconds = time_based_eta
+        elif item_based_eta is not None:
+            # Only item limit
+            eta_seconds = item_based_eta
+        else:
+            # No limits or can't calculate yet
+            if max_execution_time == -1 and (movies_limit == -1 or series_limit == -1):
+                eta_str = "N/A (unlimited)"
+            eta_seconds = None
+
+        # Format ETA
+        if eta_seconds is not None:
+            if eta_seconds <= 0:
+                eta_str = "Complete"
+            else:
+                eta_hours = int(eta_seconds // 3600)
+                eta_minutes = int((eta_seconds % 3600) // 60)
+                eta_secs = int(eta_seconds % 60)
+
+                if eta_hours > 0:
+                    eta_str = f"{eta_hours}h {eta_minutes}m"
+                elif eta_minutes > 0:
+                    eta_str = f"{eta_minutes}m {eta_secs}s"
                 else:
-                    eta_str = "Complete"
+                    eta_str = f"{eta_secs}s"
         
         lines.append("")
         lines.append(f"Started: {start_str} | Elapsed: {elapsed_str} | Est. Remaining: {eta_str}")
@@ -973,20 +1011,21 @@ class StreamsPrefetcher:
 
                 page += 1
                 self.progress_tracker.redraw_dashboard(
-                    catalog_statuses=[c['status'] for c in self.progress_tracker.overall_catalogs], 
-                    completed_catalogs=i, 
-                    total_catalogs=total_to_process, 
-                    catalog_name=cat_name, 
+                    catalog_statuses=[c['status'] for c in self.progress_tracker.overall_catalogs],
+                    completed_catalogs=i,
+                    total_catalogs=total_to_process,
+                    catalog_name=cat_name,
                     catalog_mode=cat_mode,
-                    mode='fetching', 
-                    fetched_items=page, 
+                    mode='fetching',
+                    fetched_items=page,
                     prefetched_movies_count=self.prefetched_movies_count,
                     movies_global_limit=self.movies_global_limit,
                     prefetched_series_count=self.prefetched_series_count,
                     series_global_limit=self.series_global_limit,
                     prefetched_in_this_catalog=prefetched_in_this_catalog,
                     per_catalog_limit=per_catalog_limit,
-                    start_time=self.processing_start
+                    start_time=self.processing_start,
+                    max_execution_time=self.max_execution_time
                 )
                 
                 cat_url = f"{cat_addon_url}/catalog/{cat_info.get('type', 'movie')}/{cat_id}/skip={(page-1) * 100}.json"
@@ -1004,23 +1043,24 @@ class StreamsPrefetcher:
                     if item_type == 'series' and self.series_global_limit != -1 and self.prefetched_series_count >= self.series_global_limit: continue
 
                     dashboard_args = {
-                        'catalog_statuses': [c['status'] for c in self.progress_tracker.overall_catalogs], 
-                        'completed_catalogs': i, 
-                        'total_catalogs': total_to_process, 
-                        'catalog_name': cat_name, 
+                        'catalog_statuses': [c['status'] for c in self.progress_tracker.overall_catalogs],
+                        'completed_catalogs': i,
+                        'total_catalogs': total_to_process,
+                        'catalog_name': cat_name,
                         'catalog_mode': cat_mode,
-                        'mode': 'prefetching', 
-                        'item_statuses': item_statuses_on_page, 
-                        'total_items': len(metas), 
-                        'prefetched_movies_count': self.prefetched_movies_count, 
-                        'movies_global_limit': self.movies_global_limit, 
-                        'prefetched_series_count': self.prefetched_series_count, 
-                        'series_global_limit': self.series_global_limit, 
-                        'prefetched_in_this_catalog': prefetched_in_this_catalog, 
+                        'mode': 'prefetching',
+                        'item_statuses': item_statuses_on_page,
+                        'total_items': len(metas),
+                        'prefetched_movies_count': self.prefetched_movies_count,
+                        'movies_global_limit': self.movies_global_limit,
+                        'prefetched_series_count': self.prefetched_series_count,
+                        'series_global_limit': self.series_global_limit,
+                        'prefetched_in_this_catalog': prefetched_in_this_catalog,
                         'per_catalog_limit': per_catalog_limit,
                         'prefetched_movies_count_at_start': initial_movies_count,
                         'prefetched_series_count_at_start': initial_series_count,
-                        'start_time': self.processing_start
+                        'start_time': self.processing_start,
+                        'max_execution_time': self.max_execution_time
                     }
 
                     if item_type == 'movie':
