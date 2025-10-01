@@ -21,8 +21,7 @@ services:
       - "traefik.http.routers.streams-prefetcher.rule=Host(`${STREAMS_PREFETCHER_HOSTNAME?}`)"
       - "traefik.http.routers.streams-prefetcher.entrypoints=websecure"
       - "traefik.http.routers.streams-prefetcher.tls.certresolver=letsencrypt"
-      # Uncomment the line below to add Authelia authentication
-      # - "traefik.http.routers.streams-prefetcher.middlewares=authelia@docker"
+      - "traefik.http.routers.streams-prefetcher.middlewares=authelia@docker"
 
     volumes:
       - ${DOCKER_DATA_DIR}/streams-prefetcher:/app/data
