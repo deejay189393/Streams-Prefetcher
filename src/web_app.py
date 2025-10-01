@@ -20,10 +20,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config_manager import ConfigManager
 from job_scheduler import JobScheduler, JobStatus
+from logger import setup_logging, get_logger
 
+# Initialize logging
+setup_logging()
+logger = get_logger('web_app')
 
 app = Flask(__name__, static_folder='../web', static_url_path='')
 CORS(app)
+
+# Suppress Flask's default logging, use our logger instead
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.WARNING)
 
 # Initialize managers
 config_manager = ConfigManager()
@@ -489,11 +498,15 @@ def run_job():
         success, message = job_scheduler.run_job(manual=True)
 
         if success:
+            logger.info(f"Prefetch job started manually - {len(selected_catalogs)} catalogs selected")
+            logger.debug(f"Selected catalogs: {[cat.get('name', 'Unknown') for cat in selected_catalogs]}")
             return jsonify({'success': True, 'message': message})
         else:
+            logger.warning(f"Failed to start prefetch job: {message}")
             return jsonify({'success': False, 'error': message}), 400
 
     except Exception as e:
+        logger.error(f"Error starting prefetch job: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -612,4 +625,13 @@ if __name__ == '__main__':
 
     # Run the application
     port = int(os.environ.get('PORT', 5000))
+    logger.info("=" * 60)
+    logger.info("STREAMS PREFETCHER - WEB APPLICATION STARTING")
+    logger.info("=" * 60)
+    logger.info(f"Server port: {port}")
+    logger.info(f"Log level: {os.getenv('LOG_LEVEL', 'INFO')}")
+    logger.info(f"Data directory: {os.path.abspath('data')}")
+    logger.info("Web interface will be available at configured hostname")
+    logger.info("=" * 60)
+
     app.run(host='0.0.0.0', port=port, debug=False, threaded=True)

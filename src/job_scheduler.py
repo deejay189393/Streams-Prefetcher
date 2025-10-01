@@ -16,6 +16,9 @@ import pytz
 
 from config_manager import ConfigManager
 from streams_prefetcher_wrapper import StreamsPrefetcherWrapper
+from logger import get_logger
+
+logger = get_logger('job_scheduler')
 
 
 class JobStatus:
@@ -224,6 +227,12 @@ class JobScheduler:
         self.job_error = None
         self.job_summary = None
 
+        logger.info("=" * 60)
+        logger.info("PREFETCH JOB STARTING")
+        logger.info("=" * 60)
+        logger.info(f"Job type: {'Manual' if manual else 'Scheduled'}")
+        logger.info(f"Start time: {datetime.fromtimestamp(self.job_start_time).strftime('%Y-%m-%d %H:%M:%S')}")
+
         # Notify status change
         self._notify_callbacks('status_change', {
             'status': self.job_status,
@@ -269,13 +278,28 @@ class JobScheduler:
             # Update status
             self.job_status = JobStatus.COMPLETED if success else JobStatus.FAILED
             self.job_end_time = time.time()
+            duration = self.job_end_time - self.job_start_time
+
+            logger.info("=" * 60)
+            logger.info(f"PREFETCH JOB {'COMPLETED' if success else 'FAILED'}")
+            logger.info("=" * 60)
+            logger.info(f"Duration: {int(duration // 60)}m {int(duration % 60)}s")
+
+            if self.job_summary:
+                stats = self.job_summary.get('statistics', {})
+                logger.info(f"Movies prefetched: {stats.get('movies_prefetched', 0)}")
+                logger.info(f"Series prefetched: {stats.get('series_prefetched', 0)}")
+                logger.info(f"Items from cache: {stats.get('items_from_cache', 0)}")
+                logger.info(f"Success rate: {(stats.get('cache_requests_successful', 0) / max(stats.get('cache_requests_made', 1), 1) * 100):.1f}%")
+
+            logger.info("=" * 60)
 
             # Notify completion
             self._notify_callbacks('job_complete', {
                 'status': self.job_status,
                 'start_time': self.job_start_time,
                 'end_time': self.job_end_time,
-                'duration': self.job_end_time - self.job_start_time,
+                'duration': duration,
                 'success': success,
                 'summary': self.job_summary
             })
