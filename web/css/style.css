@@ -5,22 +5,25 @@
 
 /* Variables - DARK Dark Theme (Eye-Friendly) */
 :root {
-    --primary-color: #a855f7;
-    --secondary-color: #9333ea;
-    --success-color: #22c55e;
+    --primary-color: #0ea5e9;
+    --primary-glow: #0ea5e9;
+    --secondary-color: #06b6d4;
+    --success-color: #10b981;
     --danger-color: #ef4444;
     --warning-color: #f59e0b;
     --info-color: #3b82f6;
     --dark-bg: #000000;
     --card-bg: #0a0a0a;
-    --card-hover-bg: #121212;
-    --border-color: #1f1f1f;
-    --text-color: #e5e5e5;
-    --text-muted: #737373;
+    --card-hover-bg: #0f1419;
+    --border-color: #1a2332;
+    --text-color: #e5e7eb;
+    --text-muted: #6b7280;
     --card-shadow: 0 4px 12px rgba(0,0,0,0.8);
     --transition: all 0.3s ease;
-    --input-bg: #050505;
-    --input-border: #1a1a1a;
+    --input-bg: #0f1419;
+    --input-border: #1e293b;
+    --primary-color-rgb: 14, 165, 233;
+    --cyber-accent: rgba(14, 165, 233, 0.15);
 }
 
 /* Reset and Base Styles */
