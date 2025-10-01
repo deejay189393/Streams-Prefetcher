@@ -240,6 +240,9 @@ async function saveSchedulesSilent() {
         if (data.success) {
             // Silent save - no notification
             showSaveNotification();
+
+            // Mark schedule as configured for smart collapse behavior
+            localStorage.setItem('schedule-configured', 'true');
         } else {
             console.error('Failed to auto-save schedules:', data.error);
         }
@@ -369,18 +372,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function restoreCollapsedStates() {
     // Restore collapsed state for all collapsible sections
-    const sections = ['configuration', 'catalog-selection', 'schedule'];
+    const sections = ['addons', 'configuration', 'catalog-selection', 'schedule'];
+
+    // Check if any prefetch job has ever been run
+    const hasRunJob = localStorage.getItem('has-run-prefetch-job') === 'true';
 
     sections.forEach(sectionId => {
-        const isCollapsed = localStorage.getItem(`${sectionId}-collapsed`);
-        if (isCollapsed === 'true') {
-            const content = document.getElementById(`${sectionId}-content`);
-            const icon = document.getElementById(`${sectionId}-icon`);
-            if (content && icon) {
+        const content = document.getElementById(`${sectionId}-content`);
+        const icon = document.getElementById(`${sectionId}-icon`);
+
+        if (!content || !icon) return;
+
+        // Check if user has explicitly set a collapsed state
+        const userCollapsedState = localStorage.getItem(`${sectionId}-collapsed`);
+
+        // Check if section has been configured before
+        const hasBeenConfigured = localStorage.getItem(`${sectionId}-configured`) === 'true';
+
+        // Smart expand/collapse logic:
+        // - If user has explicitly collapsed/expanded, respect that
+        // - Otherwise, if unconfigured AND no job has run, expand
+        // - If configured, collapse
+        if (userCollapsedState !== null) {
+            // User has explicitly set state, respect it
+            if (userCollapsedState === 'true') {
                 content.classList.add('collapsed');
                 icon.classList.add('collapsed');
             }
+        } else if (hasBeenConfigured || hasRunJob) {
+            // Section has been configured or a job has run, collapse it
+            content.classList.add('collapsed');
+            icon.classList.add('collapsed');
         }
+        // Otherwise leave expanded (default state)
     });
 }
 
@@ -940,6 +964,10 @@ async function saveConfigurationSilent() {
             configModified = false;
             updateStartNowButtonState();
             showSaveNotification();
+
+            // Mark sections as configured for smart collapse behavior
+            localStorage.setItem('addons-configured', 'true');
+            localStorage.setItem('configuration-configured', 'true');
         } else {
             console.error('Failed to auto-save configuration:', data.error);
         }
@@ -1016,6 +1044,10 @@ async function saveConfiguration() {
             configModified = false;
             updateStartNowButtonState();
             showNotification('Configuration saved successfully', 'success');
+
+            // Mark sections as configured for smart collapse behavior
+            localStorage.setItem('addons-configured', 'true');
+            localStorage.setItem('configuration-configured', 'true');
         } else {
             showNotification(data.error || 'Failed to save configuration', 'error');
         }
@@ -1326,6 +1358,9 @@ async function saveCatalogSelectionSilent() {
         if (data.success) {
             updateStartNowButtonState();
             showSaveNotification();
+
+            // Mark catalog-selection as configured for smart collapse behavior
+            localStorage.setItem('catalog-selection-configured', 'true');
         } else {
             console.error('Failed to auto-save catalog selection:', data.error);
         }
@@ -1570,12 +1605,16 @@ async function runJob() {
 
         if (data.success) {
             showNotification('Job started successfully', 'success');
+
+            // Mark that a prefetch job has been run for smart collapse behavior
+            localStorage.setItem('has-run-prefetch-job', 'true');
+
             // Immediately refresh job status to update UI multiple times
             loadJobStatus();
             setTimeout(() => loadJobStatus(), 200);
             setTimeout(() => loadJobStatus(), 500);
             setTimeout(() => loadJobStatus(), 1000);
-        } else {
+        } else{
             showNotification(data.error || 'Failed to start job', 'error');
         }
     } catch (error) {

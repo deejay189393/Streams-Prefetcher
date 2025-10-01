@@ -13,15 +13,14 @@
             <p class="subtitle">Warm up your self-hosted addon caches for faster content loading</p>
         </header>
 
-        <!-- Configuration Section - Collapsible -->
-        <section id="configuration" class="card">
-            <div class="section-header-collapsible" onclick="toggleSection('configuration')">
-                <span class="collapse-icon" id="configuration-icon">▼</span>
-                <h2>⚙️ Configuration</h2>
+        <!-- Addons Section - Collapsible -->
+        <section id="addons" class="card">
+            <div class="section-header-collapsible" onclick="toggleSection('addons')">
+                <span class="collapse-icon" id="addons-icon">▼</span>
+                <h2>🧩 Addons</h2>
             </div>
 
-            <div class="collapsible-content" id="configuration-content">
-                <!-- Addon URLs Subsection -->
+            <div class="collapsible-content" id="addons-content">
                 <div class="config-subsection">
                     <h3 class="subsection-title">🔗 Addon URLs</h3>
                     <div class="subsection-content">
@@ -54,6 +53,25 @@
                     </div>
                 </div>
 
+                <div class="form-row" style="margin-top: 30px;">
+                    <button type="button" class="btn btn-primary" onclick="saveConfiguration()" id="save-addons-btn">
+                        Save Configuration
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetConfiguration()" id="reset-addons-btn">
+                        Reset to Defaults
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Configuration Section - Collapsible -->
+        <section id="configuration" class="card">
+            <div class="section-header-collapsible" onclick="toggleSection('configuration')">
+                <span class="collapse-icon" id="configuration-icon">▼</span>
+                <h2>⚙️ Configuration</h2>
+            </div>
+
+            <div class="collapsible-content" id="configuration-content">
                 <!-- Limits Subsection -->
                 <div class="config-subsection">
                     <h3 class="subsection-title">🎯 Limits</h3>
