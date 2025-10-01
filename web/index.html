@@ -57,9 +57,6 @@
                     <button type="button" class="btn btn-primary" onclick="saveConfiguration()" id="save-addons-btn">
                         Save Configuration
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetConfiguration()" id="reset-addons-btn">
-                        Reset to Defaults
-                    </button>
                 </div>
             </div>
         </section>
@@ -263,9 +260,6 @@
                 <div class="form-row" style="margin-top: 30px;">
                     <button type="button" class="btn btn-primary" onclick="saveConfiguration()" id="save-config-btn">
                         Save Configuration
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetConfiguration()" id="reset-config-btn">
-                        Reset to Defaults
                     </button>
                 </div>
             </div>
@@ -679,6 +673,19 @@
                     </button>
                 </div>
             </div>
+        </section>
+
+        <!-- Reset to Defaults Section -->
+        <section class="reset-section">
+            <button type="button" class="btn-reset" id="reset-all-btn"
+                    onmousedown="startResetCountdown()"
+                    onmouseup="cancelResetCountdown()"
+                    onmouseleave="cancelResetCountdown()"
+                    ontouchstart="startResetCountdown()"
+                    ontouchend="cancelResetCountdown()"
+                    ontouchcancel="cancelResetCountdown()">
+                Reset to Defaults
+            </button>
         </section>
 
         <footer>

@@ -1061,14 +1061,80 @@ async function saveConfiguration() {
     }
 }
 
-async function resetConfiguration() {
-    if (!confirm('⚠️ WARNING: This will reset ALL configuration settings to defaults and clear all saved data including:\n\n• All addon URLs\n• All configuration parameters\n• All catalog selections and ordering\n• Schedule settings\n\nThis action cannot be undone. Are you sure you want to continue?')) {
+// ============================================================================
+// Reset to Defaults with Hold-Down Countdown
+// ============================================================================
+
+let resetCountdownInterval = null;
+let resetStartTime = null;
+const RESET_HOLD_DURATION = 8000; // 8 seconds in milliseconds
+
+function startResetCountdown() {
+    const btn = document.getElementById('reset-all-btn');
+
+    // Prevent multiple countdowns
+    if (resetCountdownInterval) {
         return;
     }
 
-    const btn = document.getElementById('reset-config-btn');
-    btn.disabled = true;
+    resetStartTime = Date.now();
+    btn.classList.add('resetting', 'pulsating');
+
+    // Update button text and animation every 100ms
+    resetCountdownInterval = setInterval(() => {
+        const elapsed = Date.now() - resetStartTime;
+        const remaining = RESET_HOLD_DURATION - elapsed;
+        const secondsRemaining = Math.ceil(remaining / 1000);
+
+        if (remaining <= 0) {
+            // Countdown complete - perform reset
+            clearInterval(resetCountdownInterval);
+            resetCountdownInterval = null;
+            performReset();
+        } else {
+            // Update button text
+            btn.textContent = `Keep pressing for ${secondsRemaining} second${secondsRemaining !== 1 ? 's' : ''}...`;
+
+            // Update animation based on progress
+            const progress = elapsed / RESET_HOLD_DURATION;
+            updateResetAnimation(btn, progress);
+        }
+    }, 100);
+}
+
+function cancelResetCountdown() {
+    if (resetCountdownInterval) {
+        clearInterval(resetCountdownInterval);
+        resetCountdownInterval = null;
+        resetStartTime = null;
+
+        const btn = document.getElementById('reset-all-btn');
+        btn.textContent = 'Reset to Defaults';
+        btn.classList.remove('resetting', 'pulsating');
+        btn.style.removeProperty('--pulse-duration');
+    }
+}
+
+function updateResetAnimation(btn, progress) {
+    // Smoothly transition animation speed from 2s (slow) to 0.25s (very fast)
+    // Using an exponential curve for more dramatic acceleration
+    const minDuration = 0.25; // seconds (very fast)
+    const maxDuration = 2.0;  // seconds (slow)
+
+    // Exponential easing: starts slow, accelerates dramatically near the end
+    const easedProgress = Math.pow(progress, 2);
+    const duration = maxDuration - (easedProgress * (maxDuration - minDuration));
+
+    // Set CSS variable for smooth animation speed transition
+    btn.style.setProperty('--pulse-duration', `${duration}s`);
+}
+
+async function performReset() {
+    const btn = document.getElementById('reset-all-btn');
     btn.textContent = 'Resetting...';
+    btn.classList.remove('pulsating');
+    btn.style.removeProperty('--pulse-duration');
+    btn.disabled = true;
 
     try {
         const response = await fetch('/api/config/reset', {
@@ -1078,7 +1144,10 @@ async function resetConfiguration() {
         const data = await response.json();
 
         if (data.success) {
-            showNotification('Configuration reset to defaults successfully', 'success');
+            showNotification('All settings reset to defaults successfully', 'success');
+
+            // Clear all localStorage
+            localStorage.clear();
 
             // Reload the page to show default values
             setTimeout(() => {
@@ -1088,12 +1157,14 @@ async function resetConfiguration() {
             showNotification(data.error || 'Failed to reset configuration', 'error');
             btn.disabled = false;
             btn.textContent = 'Reset to Defaults';
+            btn.classList.remove('resetting');
         }
     } catch (error) {
         console.error('Error resetting configuration:', error);
         showNotification('Error resetting configuration', 'error');
         btn.disabled = false;
         btn.textContent = 'Reset to Defaults';
+        btn.classList.remove('resetting');
     }
 }
 

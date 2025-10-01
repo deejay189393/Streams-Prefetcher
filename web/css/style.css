@@ -1862,3 +1862,59 @@ input:checked + .toggle-slider:before {
         padding: 8px 12px;
     }
 }
+
+/* ============================================================================
+   Reset to Defaults Section
+   ============================================================================ */
+
+.reset-section {
+    padding: 40px 30px;
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-reset {
+    padding: 16px 48px;
+    font-size: 16px;
+    font-weight: 600;
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.btn-reset:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
+.btn-reset:active {
+    transform: translateY(0);
+}
+
+.btn-reset.resetting {
+    pointer-events: all;
+    cursor: pointer;
+}
+
+/* Smooth progressive pulsating animation using CSS variables */
+@keyframes pulse-reset {
+    0%, 100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    50% {
+        transform: scale(1.08);
+        filter: brightness(1.15);
+    }
+}
+
+.btn-reset.pulsating {
+    animation: pulse-reset var(--pulse-duration, 2s) ease-in-out infinite;
+}
