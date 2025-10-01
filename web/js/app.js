@@ -20,6 +20,7 @@ let scheduleSaveTimeout = null;
 let configSaveTimeout = null;
 let currentSchedules = [];
 let editingScheduleIndex = null;
+let isPageLoading = true; // Prevent notifications during initial load
 
 // ============================================================================
 // Collapsible Section Helpers
@@ -359,6 +360,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initial state
     updateStartNowButtonState();
+
+    // Page has finished loading, enable save notifications
+    setTimeout(() => {
+        isPageLoading = false;
+    }, 1000);
 });
 
 function restoreCollapsedStates() {
@@ -425,6 +431,11 @@ function showNotification(message, type = 'info') {
 }
 
 function showSaveNotification() {
+    // Don't show notifications during page load
+    if (isPageLoading) {
+        return;
+    }
+
     // Debounce to prevent multiple notifications on rapid saves
     const now = Date.now();
     if (now - lastSaveTime < SAVE_NOTIFICATION_DEBOUNCE) {
@@ -466,25 +477,26 @@ function showSaveNotification() {
 
     content.appendChild(body);
 
-    // Actions (only if there are multiple notifications)
+    // Actions (always show Dismiss button)
+    const actions = document.createElement('div');
+    actions.className = 'save-notification-actions';
+
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'save-notification-btn';
+    dismissBtn.textContent = 'Dismiss';
+    dismissBtn.onclick = () => dismissSaveNotification(notification);
+    actions.appendChild(dismissBtn);
+
+    // Only show Dismiss All if there are other notifications
     if (activeNotifications.length > 0) {
-        const actions = document.createElement('div');
-        actions.className = 'save-notification-actions';
-
-        const dismissBtn = document.createElement('button');
-        dismissBtn.className = 'save-notification-btn';
-        dismissBtn.textContent = 'Dismiss';
-        dismissBtn.onclick = () => dismissSaveNotification(notification);
-        actions.appendChild(dismissBtn);
-
         const dismissAllBtn = document.createElement('button');
         dismissAllBtn.className = 'save-notification-btn';
         dismissAllBtn.textContent = 'Dismiss All';
         dismissAllBtn.onclick = dismissAllSaveNotifications;
         actions.appendChild(dismissAllBtn);
-
-        body.appendChild(actions);
     }
+
+    body.appendChild(actions);
 
     notification.appendChild(content);
 
@@ -499,10 +511,10 @@ function showSaveNotification() {
     activeNotifications.push(notification);
     updateSaveNotificationPositions();
 
-    // Auto-dismiss after 3 seconds
+    // Auto-dismiss after 1 second
     const timeout = setTimeout(() => {
         dismissSaveNotification(notification);
-    }, 3000);
+    }, 1000);
 
     notification._dismissTimeout = timeout;
 }
