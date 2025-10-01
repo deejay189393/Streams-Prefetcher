@@ -285,19 +285,17 @@
 
         <!-- Scheduling Section -->
         <section id="schedule" class="card">
-            <div class="section-header-collapsible" onclick="toggleSection('schedule')">
-                <span class="collapse-icon" id="schedule-icon">▼</span>
-                <h2>📅 Scheduling</h2>
-            </div>
-
-            <div class="collapsible-content" id="schedule-content">
-            <div class="schedule-header">
-                <p class="help-text" style="margin: 0;">Configure when prefetch jobs should run automatically</p>
-                <label class="toggle-switch">
+            <div class="section-header-collapsible">
+                <span class="collapse-icon" id="schedule-icon" onclick="toggleSection('schedule')">▼</span>
+                <h2 onclick="toggleSection('schedule')" style="cursor: pointer; flex: 1;">📅 Scheduling</h2>
+                <label class="toggle-switch" onclick="event.stopPropagation()">
                     <input type="checkbox" id="scheduling-enabled" onchange="toggleScheduling()">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
+
+            <div class="collapsible-content" id="schedule-content">
+            <p class="help-text" style="margin-top: 0;">Configure when prefetch jobs should run automatically</p>
 
             <div id="scheduling-settings" class="scheduling-disabled" style="margin-top: 20px;">
                 <!-- Add Schedule Button -->

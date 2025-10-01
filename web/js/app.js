@@ -238,7 +238,7 @@ async function saveSchedulesSilent() {
 
         if (data.success) {
             // Silent save - no notification
-            console.log('Schedules auto-saved');
+            showSaveNotification();
         } else {
             console.error('Failed to auto-save schedules:', data.error);
         }
@@ -408,6 +408,10 @@ function setupConfigChangeListeners() {
 // Notifications
 // ============================================================================
 
+let activeNotifications = [];
+let lastSaveTime = 0;
+const SAVE_NOTIFICATION_DEBOUNCE = 1000; // Don't show notification more than once per second
+
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
@@ -418,6 +422,122 @@ function showNotification(message, type = 'info') {
         notification.style.animation = 'slideIn 0.3s ease reverse';
         setTimeout(() => notification.remove(), 300);
     }, 3000);
+}
+
+function showSaveNotification() {
+    // Debounce to prevent multiple notifications on rapid saves
+    const now = Date.now();
+    if (now - lastSaveTime < SAVE_NOTIFICATION_DEBOUNCE) {
+        return;
+    }
+    lastSaveTime = now;
+
+    const notification = document.createElement('div');
+    notification.className = 'save-notification';
+
+    // Top accent line
+    const accent = document.createElement('div');
+    accent.className = 'save-notification-accent';
+    notification.appendChild(accent);
+
+    // Content container
+    const content = document.createElement('div');
+    content.className = 'save-notification-content';
+
+    // Icon
+    const icon = document.createElement('div');
+    icon.className = 'save-notification-icon';
+    icon.textContent = '✓';
+    content.appendChild(icon);
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'save-notification-body';
+
+    const title = document.createElement('div');
+    title.className = 'save-notification-title';
+    title.textContent = 'Saved';
+    body.appendChild(title);
+
+    const message = document.createElement('div');
+    message.className = 'save-notification-message';
+    message.textContent = 'Changes saved successfully';
+    body.appendChild(message);
+
+    content.appendChild(body);
+
+    // Actions (only if there are multiple notifications)
+    if (activeNotifications.length > 0) {
+        const actions = document.createElement('div');
+        actions.className = 'save-notification-actions';
+
+        const dismissBtn = document.createElement('button');
+        dismissBtn.className = 'save-notification-btn';
+        dismissBtn.textContent = 'Dismiss';
+        dismissBtn.onclick = () => dismissSaveNotification(notification);
+        actions.appendChild(dismissBtn);
+
+        const dismissAllBtn = document.createElement('button');
+        dismissAllBtn.className = 'save-notification-btn';
+        dismissAllBtn.textContent = 'Dismiss All';
+        dismissAllBtn.onclick = dismissAllSaveNotifications;
+        actions.appendChild(dismissAllBtn);
+
+        body.appendChild(actions);
+    }
+
+    notification.appendChild(content);
+
+    // Progress bar
+    const progress = document.createElement('div');
+    progress.className = 'save-notification-progress';
+    notification.appendChild(progress);
+
+    document.body.appendChild(notification);
+
+    // Track notification
+    activeNotifications.push(notification);
+    updateSaveNotificationPositions();
+
+    // Auto-dismiss after 3 seconds
+    const timeout = setTimeout(() => {
+        dismissSaveNotification(notification);
+    }, 3000);
+
+    notification._dismissTimeout = timeout;
+}
+
+function dismissSaveNotification(notification) {
+    if (notification._dismissTimeout) {
+        clearTimeout(notification._dismissTimeout);
+    }
+
+    notification.style.animation = 'slideOutSave 0.3s cubic-bezier(0.4, 0, 1, 1)';
+    setTimeout(() => {
+        notification.remove();
+        activeNotifications = activeNotifications.filter(n => n !== notification);
+        updateSaveNotificationPositions();
+    }, 300);
+}
+
+function dismissAllSaveNotifications() {
+    activeNotifications.forEach(notification => {
+        if (notification._dismissTimeout) {
+            clearTimeout(notification._dismissTimeout);
+        }
+        notification.style.animation = 'slideOutSave 0.3s cubic-bezier(0.4, 0, 1, 1)';
+        setTimeout(() => notification.remove(), 300);
+    });
+    activeNotifications = [];
+}
+
+function updateSaveNotificationPositions() {
+    let bottomOffset = 24;
+    // Position from bottom up
+    [...activeNotifications].reverse().forEach(notification => {
+        notification.style.bottom = `${bottomOffset}px`;
+        bottomOffset += notification.offsetHeight + 12;
+    });
 }
 
 // ============================================================================
@@ -807,7 +927,7 @@ async function saveConfigurationSilent() {
             configSaved = true;
             configModified = false;
             updateStartNowButtonState();
-            console.log('Configuration auto-saved');
+            showSaveNotification();
         } else {
             console.error('Failed to auto-save configuration:', data.error);
         }
@@ -1193,7 +1313,7 @@ async function saveCatalogSelectionSilent() {
 
         if (data.success) {
             updateStartNowButtonState();
-            // Silent save - no notification
+            showSaveNotification();
         } else {
             console.error('Failed to auto-save catalog selection:', data.error);
         }

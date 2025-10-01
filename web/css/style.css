@@ -571,12 +571,12 @@ footer {
 /* Notifications */
 .notification {
     position: fixed;
-    top: 20px;
     right: 20px;
-    padding: 15px 20px;
-    border-radius: 5px;
+    padding: 12px 16px;
+    border-radius: 8px;
     color: white;
-    font-weight: 600;
+    font-weight: 500;
+    font-size: 14px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     z-index: 1000;
     animation: slideIn 0.3s ease;
@@ -603,6 +603,145 @@ footer {
 
 .notification-info {
     background: var(--info-color);
+}
+
+/* Save Notification - Polished Design */
+.save-notification {
+    position: fixed;
+    right: 24px;
+    background: rgba(20, 25, 35, 0.98);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 10px;
+    padding: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.1);
+    z-index: 1001;
+    min-width: 280px;
+    max-width: 320px;
+    animation: slideInSave 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+@keyframes slideInSave {
+    from {
+        transform: translateX(120%) translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0) translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutSave {
+    from {
+        transform: translateX(0) translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(120%) translateY(10px);
+        opacity: 0;
+    }
+}
+
+.save-notification-accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+.save-notification-content {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.save-notification-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.save-notification-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.save-notification-title {
+    color: #e5e7eb;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 2px 0;
+    line-height: 1.3;
+}
+
+.save-notification-message {
+    color: #9ca3af;
+    font-size: 12px;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.save-notification-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.save-notification-btn {
+    flex: 1;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+}
+
+.save-notification-btn:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.5);
+    color: #bfdbfe;
+    transform: translateY(-1px);
+}
+
+.save-notification-btn:active {
+    transform: translateY(0);
+}
+
+.save-notification-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    animation: progressBar 3s linear;
+    transform-origin: left;
+}
+
+@keyframes progressBar {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
 }
 
 /* Responsive Design */
