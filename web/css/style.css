@@ -1112,8 +1112,8 @@ footer {
 /* Collapsible Section Styles */
 .section-header-collapsible {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 12px;
     cursor: pointer;
     user-select: none;
     margin-bottom: 20px;
@@ -1130,6 +1130,7 @@ footer {
     font-size: 20px;
     transition: transform 0.3s ease;
     color: var(--primary-color);
+    order: -1;
 }
 
 .collapse-icon.collapsed {

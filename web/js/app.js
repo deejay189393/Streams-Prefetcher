@@ -342,16 +342,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function restoreCollapsedStates() {
-    // Check if configuration section should be collapsed
-    const configCollapsed = localStorage.getItem('configuration-collapsed');
-    if (configCollapsed === 'true') {
-        const content = document.getElementById('configuration-content');
-        const icon = document.getElementById('configuration-icon');
-        if (content && icon) {
-            content.classList.add('collapsed');
-            icon.classList.add('collapsed');
+    // Restore collapsed state for all collapsible sections
+    const sections = ['configuration', 'catalog-selection', 'schedule'];
+
+    sections.forEach(sectionId => {
+        const isCollapsed = localStorage.getItem(`${sectionId}-collapsed`);
+        if (isCollapsed === 'true') {
+            const content = document.getElementById(`${sectionId}-content`);
+            const icon = document.getElementById(`${sectionId}-icon`);
+            if (content && icon) {
+                content.classList.add('collapsed');
+                icon.classList.add('collapsed');
+            }
         }
-    }
+    });
 }
 
 function initializeUnlimitedCheckboxes() {
