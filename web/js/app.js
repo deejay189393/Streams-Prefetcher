@@ -1429,6 +1429,11 @@ function updateJobStatusUI(status) {
         const completedDisplay = document.getElementById('status-completed');
         if (completedDisplay) {
             completedDisplay.style.display = 'block';
+
+            // Populate completion stats if summary data is available
+            if (status.summary) {
+                populateCompletionStats(status.summary, status.start_time, status.end_time);
+            }
         }
     }
 
@@ -1772,4 +1777,232 @@ function toggleTooltip(icon) {
 function closeAllTooltips() {
     const tooltips = document.querySelectorAll('.info-tooltip');
     tooltips.forEach(tooltip => tooltip.remove());
+}
+
+// ============================================================================
+// Completion Stats Population
+// ============================================================================
+
+let catalogChart = null; // Store chart instance for cleanup
+
+function populateCompletionStats(summary, startTime, endTime) {
+    const timing = summary.timing || {};
+    const stats = summary.statistics || {};
+    const catalogs = summary.processed_catalogs || [];
+
+    // Format helper functions
+    const formatTime = (timestamp) => {
+        if (!timestamp) return '-';
+        return new Date(timestamp * 1000).toLocaleString();
+    };
+
+    const formatDuration = (seconds) => {
+        if (!seconds || seconds < 0) return '-';
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        
+        if (hours > 0) {
+            return `${hours}h ${minutes}m ${secs}s`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${secs}s`;
+        } else {
+            return `${secs}s`;
+        }
+    };
+
+    // Populate Timing Overview
+    document.getElementById('completion-start-time').textContent = formatTime(timing.start_time);
+    document.getElementById('completion-end-time').textContent = formatTime(timing.end_time);
+    document.getElementById('completion-total-duration').textContent = formatDuration(timing.total_duration);
+    document.getElementById('completion-processing-time').textContent = formatDuration(timing.processing_duration);
+
+    // Populate Statistics
+    const catalogsProcessed = stats.filtered_catalogs || catalogs.length || 0;
+    const moviesCount = stats.movies_prefetched || 0;
+    const seriesCount = stats.series_prefetched || 0;
+    const pagesCount = stats.total_pages_fetched || 0;
+    const cachedCount = stats.items_from_cache || 0;
+    const successfulCount = stats.cache_requests_successful || 0;
+    const totalRequests = stats.cache_requests_made || 0;
+    const successRate = totalRequests > 0 ? ((successfulCount / totalRequests) * 100).toFixed(1) : 0;
+
+    document.getElementById('completion-catalogs').textContent = catalogsProcessed;
+    document.getElementById('completion-movies').textContent = moviesCount;
+    document.getElementById('completion-series').textContent = seriesCount;
+    document.getElementById('completion-pages').textContent = pagesCount;
+    document.getElementById('completion-cached').textContent = cachedCount;
+    document.getElementById('completion-success-rate').textContent = `${successRate}%`;
+
+    // Populate Processing Rates
+    const processingDuration = timing.processing_duration || 0;
+    if (processingDuration > 0) {
+        const durationMinutes = processingDuration / 60;
+        const movieRate = (moviesCount / durationMinutes).toFixed(1);
+        const seriesRate = (seriesCount / durationMinutes).toFixed(1);
+        const totalItems = moviesCount + seriesCount;
+        const overallRate = (totalItems / durationMinutes).toFixed(1);
+
+        document.getElementById('completion-movie-rate').textContent = movieRate;
+        document.getElementById('completion-series-rate').textContent = seriesRate;
+        document.getElementById('completion-overall-rate').textContent = overallRate;
+    } else {
+        document.getElementById('completion-movie-rate').textContent = '-';
+        document.getElementById('completion-series-rate').textContent = '-';
+        document.getElementById('completion-overall-rate').textContent = '-';
+    }
+
+    // Create Catalog Processing Chart
+    createCatalogChart(catalogs);
+
+    // Populate Catalog Details Table
+    populateCatalogTable(catalogs);
+}
+
+function createCatalogChart(catalogs) {
+    const canvas = document.getElementById('catalog-chart');
+    if (!canvas) return;
+
+    // Destroy existing chart if it exists
+    if (catalogChart) {
+        catalogChart.destroy();
+    }
+
+    // Prepare data
+    const labels = catalogs.map(cat => {
+        const name = cat.name || 'Unknown';
+        return name.length > 20 ? name.substring(0, 17) + '...' : name;
+    });
+    
+    const durations = catalogs.map(cat => (cat.duration || 0).toFixed(2));
+    const success = catalogs.map(cat => cat.success_count || 0);
+    const failed = catalogs.map(cat => cat.failed_count || 0);
+
+    const ctx = canvas.getContext('2d');
+    catalogChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Success',
+                    data: success,
+                    backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Failed',
+                    data: failed,
+                    backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: '#e5e7eb',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                title: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const index = context.dataIndex;
+                            const duration = durations[index];
+                            return `Duration: ${duration}s`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    stacked: false,
+                    grid: {
+                        color: 'rgba(30, 41, 59, 0.5)'
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        font: {
+                            size: 10
+                        }
+                    }
+                },
+                y: {
+                    stacked: false,
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(30, 41, 59, 0.5)'
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        font: {
+                            size: 11
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Items Processed',
+                        color: '#9ca3af'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function populateCatalogTable(catalogs) {
+    const tbody = document.getElementById('catalog-details-tbody');
+    if (!tbody) return;
+
+    // Clear existing rows
+    tbody.innerHTML = '';
+
+    if (catalogs.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                    No catalog data available
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    // Sort catalogs by duration (longest first)
+    const sortedCatalogs = [...catalogs].sort((a, b) => (b.duration || 0) - (a.duration || 0));
+
+    // Create table rows
+    sortedCatalogs.forEach(catalog => {
+        const name = catalog.name || 'Unknown';
+        const type = (catalog.type || 'mixed').charAt(0).toUpperCase() + (catalog.type || 'mixed').slice(1);
+        const duration = catalog.duration ? `${catalog.duration.toFixed(1)}s` : '-';
+        const success = catalog.success_count || 0;
+        const failed = catalog.failed_count || 0;
+        const cached = catalog.cached_count || 0;
+        const total = success + failed + cached;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="catalog-name" title="${name}">${name}</td>
+            <td>${type}</td>
+            <td>${duration}</td>
+            <td class="success-count">${success}</td>
+            <td class="failed-count">${failed}</td>
+            <td class="cached-count">${cached}</td>
+            <td>${total}</td>
+        `;
+        tbody.appendChild(row);
+    });
 }
