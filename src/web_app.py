@@ -47,6 +47,109 @@ job_scheduler.register_callback(broadcast_event)
 
 
 # ============================================================================
+# VALIDATION FUNCTIONS
+# ============================================================================
+
+def validate_addon_urls(addon_urls):
+    """Validate addon URLs list"""
+    errors = []
+
+    if not addon_urls or len(addon_urls) == 0:
+        errors.append('At least one addon URL is required')
+        return errors
+
+    # Check for at least one catalog addon
+    has_catalog = any(item['type'] in ['catalog', 'both'] for item in addon_urls)
+    if not has_catalog:
+        errors.append('At least one catalog addon (type "catalog" or "both") is required')
+
+    # Check for at least one stream addon
+    has_stream = any(item['type'] in ['stream', 'both'] for item in addon_urls)
+    if not has_stream:
+        errors.append('At least one stream addon (type "stream" or "both") is required')
+
+    # Validate each URL
+    for idx, item in enumerate(addon_urls):
+        if not item.get('url'):
+            errors.append(f'Addon URL #{idx + 1} cannot be empty')
+        elif not item['url'].strip():
+            errors.append(f'Addon URL #{idx + 1} cannot be empty')
+
+        addon_type = item.get('type', '')
+        if addon_type not in ['catalog', 'stream', 'both']:
+            errors.append(f'Invalid addon type for URL #{idx + 1}: {addon_type}')
+
+    return errors
+
+def validate_limits(config):
+    """Validate limit configuration values"""
+    errors = []
+
+    limit_fields = [
+        ('movies_global_limit', 'Movies Global Limit'),
+        ('series_global_limit', 'Series Global Limit'),
+        ('movies_per_catalog', 'Movies per Catalog'),
+        ('series_per_catalog', 'Series per Catalog'),
+        ('items_per_mixed_catalog', 'Items per Mixed Catalog')
+    ]
+
+    for field, name in limit_fields:
+        value = config.get(field)
+        if value is None:
+            errors.append(f'{name} is required')
+        elif not isinstance(value, int):
+            errors.append(f'{name} must be an integer')
+        elif value < -1:
+            errors.append(f'{name} must be -1 or greater (got: {value})')
+
+    return errors
+
+def validate_time_fields(config):
+    """Validate time-based configuration values"""
+    errors = []
+
+    # Delay must be >= 0
+    delay = config.get('delay')
+    if delay is None:
+        errors.append('Delay is required')
+    elif not isinstance(delay, (int, float)):
+        errors.append('Delay must be a number')
+    elif delay < 0:
+        errors.append('Delay must be 0 or greater')
+
+    # Cache validity must be positive or -1
+    cache_validity = config.get('cache_validity')
+    if cache_validity is None:
+        errors.append('Cache validity is required')
+    elif not isinstance(cache_validity, (int, float)):
+        errors.append('Cache validity must be a number')
+    elif cache_validity < -1 or cache_validity == 0:
+        errors.append('Cache validity must be positive or -1 for unlimited')
+
+    # Max execution time must be positive or -1
+    max_exec = config.get('max_execution_time')
+    if max_exec is None:
+        errors.append('Max execution time is required')
+    elif not isinstance(max_exec, (int, float)):
+        errors.append('Max execution time must be a number')
+    elif max_exec < -1 or max_exec == 0:
+        errors.append('Max execution time must be positive or -1 for unlimited')
+
+    return errors
+
+def validate_configuration(config):
+    """Validate entire configuration"""
+    all_errors = []
+
+    addon_urls = config.get('addon_urls', [])
+    all_errors.extend(validate_addon_urls(addon_urls))
+    all_errors.extend(validate_limits(config))
+    all_errors.extend(validate_time_fields(config))
+
+    return all_errors
+
+
+# ============================================================================
 # STATIC FILES
 # ============================================================================
 
@@ -91,19 +194,13 @@ def update_config():
         if not data:
             return jsonify({'success': False, 'error': 'No data provided'}), 400
 
-        # Validate addon URLs if provided
-        if 'addon_urls' in data:
-            for item in data['addon_urls']:
-                if 'url' not in item or 'type' not in item:
-                    return jsonify({
-                        'success': False,
-                        'error': 'Each addon URL must have url and type'
-                    }), 400
-                if item['type'] not in ['catalog', 'stream', 'both']:
-                    return jsonify({
-                        'success': False,
-                        'error': f"Invalid addon type: {item['type']}"
-                    }), 400
+        # Validate configuration
+        validation_errors = validate_configuration(data)
+        if validation_errors:
+            return jsonify({
+                'success': False,
+                'error': 'Validation failed: ' + '; '.join(validation_errors)
+            }), 400
 
         # Update configuration
         success = config_manager.update(data)
@@ -112,6 +209,29 @@ def update_config():
             return jsonify({'success': True, 'config': config_manager.get_all()})
         else:
             return jsonify({'success': False, 'error': 'Failed to save configuration'}), 500
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/config/reset', methods=['POST'])
+def reset_config():
+    """Reset configuration to defaults"""
+    try:
+        # Check if job is running
+        if job_scheduler.job_status == JobStatus.RUNNING:
+            return jsonify({
+                'success': False,
+                'error': 'Cannot reset configuration while job is running'
+            }), 400
+
+        # Reset configuration to defaults
+        success = config_manager.reset()
+
+        if success:
+            return jsonify({'success': True, 'config': config_manager.get_all()})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to reset configuration'}), 500
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -169,6 +289,10 @@ def load_catalogs():
                         cat_type = catalog.get('type', '').lower()
                         if cat_type in ['tv', 'channel']:
                             continue
+
+                        # Rename 'all' to 'mixed'
+                        if cat_type == 'all':
+                            cat_type = 'mixed'
 
                         catalogs.append({
                             'id': f"{item['url']}|{catalog.get('id', '')}",
@@ -234,19 +358,12 @@ def get_schedule():
     """Get schedule information"""
     try:
         schedule_config = config_manager.get('schedule', {})
-        next_run = job_scheduler.get_next_run_time()
 
         return jsonify({
             'success': True,
             'schedule': {
                 'enabled': schedule_config.get('enabled', False),
-                'cron_expression': schedule_config.get('cron_expression', ''),
-                'timezone': schedule_config.get('timezone', 'UTC'),
-                'next_run_time': next_run.isoformat() if next_run else None,
-                'time_until_next_run': (
-                    (next_run - datetime.now(next_run.tzinfo)).total_seconds()
-                    if next_run else None
-                )
+                'schedules': schedule_config.get('schedules', [])
             }
         })
 
@@ -262,28 +379,53 @@ def update_schedule():
         if not data:
             return jsonify({'success': False, 'error': 'No data provided'}), 400
 
-        cron_expression = data.get('cron_expression')
-        timezone = data.get('timezone', 'UTC')
+        enabled = data.get('enabled', False)
+        schedules = data.get('schedules', [])
 
-        if not cron_expression:
-            return jsonify({'success': False, 'error': 'No cron expression provided'}), 400
+        # Validate schedules format
+        if enabled and schedules:
+            for idx, schedule in enumerate(schedules):
+                if 'time' not in schedule:
+                    return jsonify({
+                        'success': False,
+                        'error': f'Schedule #{idx + 1} missing time field'
+                    }), 400
 
-        # Validate cron expression
-        if not croniter.is_valid(cron_expression):
-            return jsonify({
-                'success': False,
-                'error': 'Invalid cron expression'
-            }), 400
+                if 'days' not in schedule or not isinstance(schedule['days'], list):
+                    return jsonify({
+                        'success': False,
+                        'error': f'Schedule #{idx + 1} missing or invalid days field'
+                    }), 400
+
+                # Validate time format (HH:MM)
+                time_str = schedule['time']
+                try:
+                    time_parts = time_str.split(':')
+                    if len(time_parts) != 2:
+                        raise ValueError()
+                    hour = int(time_parts[0])
+                    minute = int(time_parts[1])
+                    if hour < 0 or hour > 23 or minute < 0 or minute > 59:
+                        raise ValueError()
+                except:
+                    return jsonify({
+                        'success': False,
+                        'error': f'Schedule #{idx + 1} has invalid time format. Expected HH:MM'
+                    }), 400
+
+                # Validate days (0-6)
+                for day in schedule['days']:
+                    if not isinstance(day, int) or day < 0 or day > 6:
+                        return jsonify({
+                            'success': False,
+                            'error': f'Schedule #{idx + 1} has invalid day value. Must be 0-6'
+                        }), 400
 
         # Update schedule
-        success = job_scheduler.update_schedule(cron_expression, timezone)
+        success = job_scheduler.update_schedules(enabled, schedules)
 
         if success:
-            next_run = job_scheduler.get_next_run_time()
-            return jsonify({
-                'success': True,
-                'next_run_time': next_run.isoformat() if next_run else None
-            })
+            return jsonify({'success': True})
         else:
             return jsonify({'success': False, 'error': 'Failed to update schedule'}), 500
 
@@ -319,6 +461,31 @@ def get_job_status():
 def run_job():
     """Run a prefetch job manually"""
     try:
+        # Validate configuration before running
+        config = config_manager.get_all()
+        validation_errors = validate_configuration(config)
+        if validation_errors:
+            return jsonify({
+                'success': False,
+                'error': 'Configuration validation failed: ' + '; '.join(validation_errors)
+            }), 400
+
+        # Check if catalogs are available
+        saved_catalogs = config_manager.get('saved_catalogs', [])
+        if not saved_catalogs or len(saved_catalogs) == 0:
+            return jsonify({
+                'success': False,
+                'error': 'No catalogs loaded. Please load catalogs first'
+            }), 400
+
+        # Check if at least one catalog is selected
+        selected_catalogs = [cat for cat in saved_catalogs if cat.get('enabled', False)]
+        if len(selected_catalogs) == 0:
+            return jsonify({
+                'success': False,
+                'error': 'At least one catalog must be selected'
+            }), 400
+
         success, message = job_scheduler.run_job(manual=True)
 
         if success:

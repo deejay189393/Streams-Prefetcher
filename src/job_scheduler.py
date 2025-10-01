@@ -75,10 +75,15 @@ class JobScheduler:
         """Load scheduled job from configuration"""
         schedule_config = self.config_manager.get('schedule', {})
         if schedule_config.get('enabled', False):
-            self.update_schedule(
-                schedule_config['cron_expression'],
-                schedule_config.get('timezone', 'UTC')
-            )
+            schedules = schedule_config.get('schedules', [])
+            if schedules:
+                self.update_schedules(True, schedules)
+            elif 'cron_expression' in schedule_config:
+                # Legacy support for old cron-based config
+                self.update_schedule(
+                    schedule_config['cron_expression'],
+                    schedule_config.get('timezone', 'UTC')
+                )
 
     def update_schedule(self, cron_expression: str, timezone_str: str = 'UTC'):
         """Update the scheduled job"""
@@ -116,25 +121,89 @@ class JobScheduler:
             print(f"Error updating schedule: {e}")
             return False
 
+    def update_schedules(self, enabled: bool, schedules: list):
+        """Update multiple scheduled jobs from UI format"""
+        try:
+            # Remove all existing scheduled jobs
+            for job in self.scheduler.get_jobs():
+                if job.id.startswith('prefetch_job'):
+                    self.scheduler.remove_job(job.id)
+
+            if enabled and schedules:
+                # Add new jobs for each schedule
+                for idx, schedule in enumerate(schedules):
+                    time_str = schedule['time']
+                    days = schedule['days']
+
+                    # Parse time
+                    hour, minute = map(int, time_str.split(':'))
+
+                    # Convert day numbers to cron day_of_week format
+                    # UI uses: 0=Sun, 1=Mon, ..., 6=Sat
+                    # Cron uses: 0=Mon, 1=Tue, ..., 6=Sun
+                    # So we need to convert
+                    cron_days = []
+                    for day in days:
+                        if day == 0:  # Sunday
+                            cron_days.append(6)
+                        else:  # Mon-Sat
+                            cron_days.append(day - 1)
+
+                    cron_days.sort()
+                    days_str = ','.join(map(str, cron_days))
+
+                    # Create cron trigger
+                    trigger = CronTrigger(
+                        day_of_week=days_str,
+                        hour=hour,
+                        minute=minute,
+                        timezone=pytz.UTC
+                    )
+
+                    # Add job
+                    self.scheduler.add_job(
+                        self.run_job,
+                        trigger=trigger,
+                        id=f'prefetch_job_{idx}',
+                        name=f'Scheduled Prefetch Job #{idx + 1}',
+                        replace_existing=True
+                    )
+
+            # Update config
+            self.config_manager.update({
+                'schedule': {
+                    'enabled': enabled,
+                    'schedules': schedules
+                }
+            })
+
+            return True
+        except Exception as e:
+            print(f"Error updating schedules: {e}")
+            return False
+
     def disable_schedule(self):
         """Disable scheduled job"""
-        if self.scheduler.get_job('prefetch_job'):
-            self.scheduler.remove_job('prefetch_job')
+        # Remove all scheduled jobs
+        for job in self.scheduler.get_jobs():
+            if job.id.startswith('prefetch_job'):
+                self.scheduler.remove_job(job.id)
 
         self.config_manager.update({
             'schedule': {
                 'enabled': False,
-                'cron_expression': '',
-                'timezone': 'UTC'
+                'schedules': []
             }
         })
 
     def get_next_run_time(self) -> Optional[datetime]:
-        """Get next scheduled run time"""
-        job = self.scheduler.get_job('prefetch_job')
-        if job:
-            return job.next_run_time
-        return None
+        """Get next scheduled run time (earliest among all scheduled jobs)"""
+        next_times = []
+        for job in self.scheduler.get_jobs():
+            if job.id.startswith('prefetch_job') and job.next_run_time:
+                next_times.append(job.next_run_time)
+
+        return min(next_times) if next_times else None
 
     def run_job(self, manual: bool = False):
         """Run a prefetch job"""
@@ -260,6 +329,9 @@ class JobScheduler:
         """Get current job status"""
         next_run = self.get_next_run_time()
 
+        # Check if any scheduled jobs exist
+        scheduled_jobs = [job for job in self.scheduler.get_jobs() if job.id.startswith('prefetch_job')]
+
         return {
             'status': self.job_status,
             'start_time': self.job_start_time,
@@ -267,7 +339,7 @@ class JobScheduler:
             'error': self.job_error,
             'next_run_time': next_run.isoformat() if next_run else None,
             'progress': self.get_progress(),
-            'is_scheduled': self.scheduler.get_job('prefetch_job') is not None
+            'is_scheduled': len(scheduled_jobs) > 0
         }
 
     def cancel_job(self):
