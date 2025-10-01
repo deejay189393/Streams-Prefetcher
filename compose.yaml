@@ -1,0 +1,49 @@
+services:
+  streams-prefetcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stremio-streams-prefetcher
+    restart: unless-stopped
+
+    expose:
+      - 5000
+
+    env_file:
+      - .env
+
+    environment:
+      - PORT=5000
+      - TZ=${TZ:-UTC}
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.streams-prefetcher.rule=Host(`${STREAMS_PREFETCHER_HOSTNAME?}`)"
+      - "traefik.http.routers.streams-prefetcher.entrypoints=websecure"
+      - "traefik.http.routers.streams-prefetcher.tls.certresolver=letsencrypt"
+      # Uncomment the line below to add Authelia authentication
+      # - "traefik.http.routers.streams-prefetcher.middlewares=authelia@docker"
+
+    volumes:
+      - ${DOCKER_DATA_DIR}/streams-prefetcher:/app/data
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    profiles:
+      - streams-prefetcher
+      - stremio
+      - all
