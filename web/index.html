@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stremio Streams Prefetcher</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 Stremio Streams Prefetcher</h1>
+            <p class="subtitle">Warm up your self-hosted addon caches for faster content loading</p>
+        </header>
+
+        <!-- Configuration Section -->
+        <section id="configuration" class="card">
+            <h2>⚙️ Configuration</h2>
+
+            <!-- Addon URLs Configuration -->
+            <div class="form-group">
+                <label>Catalog Addon URLs</label>
+                <p class="help-text">Configure addon URLs for catalog and stream sources</p>
+
+                <div class="addon-url-sections">
+                    <!-- Both Section -->
+                    <div class="addon-section" data-type="both">
+                        <h4>Both (Catalog + Stream)</h4>
+                        <div class="addon-list" id="addon-list-both"></div>
+                        <button type="button" class="btn btn-sm" onclick="addAddonUrl('both')">+ Add URL</button>
+                    </div>
+
+                    <!-- Catalog Section -->
+                    <div class="addon-section" data-type="catalog">
+                        <h4>Catalog Only</h4>
+                        <div class="addon-list" id="addon-list-catalog"></div>
+                        <button type="button" class="btn btn-sm" onclick="addAddonUrl('catalog')">+ Add URL</button>
+                    </div>
+
+                    <!-- Stream Section -->
+                    <div class="addon-section" data-type="stream">
+                        <h4>Stream Only</h4>
+                        <div class="addon-list" id="addon-list-stream"></div>
+                        <button type="button" class="btn btn-sm" onclick="addAddonUrl('stream')">+ Add URL</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Limit Configuration -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="movies-global-limit">Movies Global Limit</label>
+                    <input type="number" id="movies-global-limit" value="200" min="-1">
+                    <p class="help-text">-1 for unlimited</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="series-global-limit">Series Global Limit</label>
+                    <input type="number" id="series-global-limit" value="15" min="-1">
+                    <p class="help-text">-1 for unlimited</p>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="movies-per-catalog">Movies per Catalog</label>
+                    <input type="number" id="movies-per-catalog" value="50" min="-1">
+                    <p class="help-text">-1 for unlimited</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="series-per-catalog">Series per Catalog</label>
+                    <input type="number" id="series-per-catalog" value="5" min="-1">
+                    <p class="help-text">-1 for unlimited</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="items-per-mixed-catalog">Items per Mixed Catalog</label>
+                <input type="number" id="items-per-mixed-catalog" value="30" min="-1" style="max-width: 200px;">
+                <p class="help-text">-1 for unlimited</p>
+            </div>
+
+            <!-- Time-based Parameters -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="delay">Delay Between Requests</label>
+                    <div class="time-input">
+                        <input type="number" id="delay-value" value="0" min="0" step="0.1">
+                        <select id="delay-unit">
+                            <option value="0.001">Milliseconds</option>
+                            <option value="1" selected>Seconds</option>
+                            <option value="60">Minutes</option>
+                            <option value="3600">Hours</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="cache-validity">Cache Validity</label>
+                    <div class="time-input">
+                        <input type="number" id="cache-validity-value" value="3" min="0">
+                        <select id="cache-validity-unit">
+                            <option value="1">Seconds</option>
+                            <option value="60">Minutes</option>
+                            <option value="3600">Hours</option>
+                            <option value="86400" selected>Days</option>
+                            <option value="604800">Weeks</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="max-execution-time">Max Execution Time</label>
+                <div class="time-input">
+                    <input type="number" id="max-execution-time-value" value="-1" step="0.1">
+                    <select id="max-execution-time-unit">
+                        <option value="1" selected>Seconds</option>
+                        <option value="60">Minutes</option>
+                        <option value="3600">Hours</option>
+                        <option value="86400">Days</option>
+                    </select>
+                </div>
+                <p class="help-text">-1 for unlimited</p>
+            </div>
+
+            <!-- Proxy Configuration -->
+            <div class="form-group">
+                <label for="proxy">HTTP Proxy (Optional)</label>
+                <input type="text" id="proxy" placeholder="http://proxy.example.com:8080">
+            </div>
+
+            <!-- Boolean Flags -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Randomize Catalog Processing</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="randomize-catalog" value="true"> Enabled</label>
+                        <label><input type="radio" name="randomize-catalog" value="false" checked> Disabled</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Randomize Item Prefetching</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="randomize-item" value="true"> Enabled</label>
+                        <label><input type="radio" name="randomize-item" value="false" checked> Disabled</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Enable Logging</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="enable-logging" value="true"> Enabled</label>
+                    <label><input type="radio" name="enable-logging" value="false" checked> Disabled</label>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="saveConfiguration()" id="save-config-btn">
+                Save Configuration
+            </button>
+        </section>
+
+        <!-- Catalog Selection Section -->
+        <section id="catalog-selection" class="card">
+            <h2>📚 Catalog Selection</h2>
+            <p class="help-text">Load catalogs from your configured addons, then select and order which ones to prefetch</p>
+
+            <button type="button" class="btn btn-secondary" onclick="loadCatalogs()" id="load-catalogs-btn">
+                Load Catalogs
+            </button>
+
+            <div id="catalog-list-container" style="display: none; margin-top: 20px;">
+                <div id="catalog-list" class="catalog-list"></div>
+                <button type="button" class="btn btn-primary" onclick="saveCatalogSelection()" style="margin-top: 15px;">
+                    Save Catalog Selection
+                </button>
+            </div>
+        </section>
+
+        <!-- Schedule Section -->
+        <section id="schedule" class="card">
+            <h2>⏰ Job Schedule</h2>
+            <p class="help-text">Configure recurring prefetch jobs using cron-like scheduling</p>
+
+            <div class="form-group">
+                <label for="cron-expression">Cron Expression</label>
+                <input type="text" id="cron-expression" placeholder="0 2 * * *">
+                <p class="help-text">Format: minute hour day month weekday (e.g., "0 2 * * *" = daily at 2 AM)</p>
+            </div>
+
+            <div class="form-row">
+                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Enable Schedule</button>
+                <button type="button" class="btn btn-secondary" onclick="disableSchedule()">Disable Schedule</button>
+            </div>
+
+            <div id="schedule-info" class="info-box" style="display: none; margin-top: 15px;">
+                <!-- Schedule info will be populated here -->
+            </div>
+        </section>
+
+        <!-- Job Status Section -->
+        <section id="job-status" class="card">
+            <h2>🚀 Job Status</h2>
+
+            <div id="status-idle" class="status-box status-idle">
+                <h3>Ready</h3>
+                <p>No job is currently running</p>
+                <button type="button" class="btn btn-success" onclick="runJob()">Run Prefetch Now</button>
+            </div>
+
+            <div id="status-scheduled" class="status-box status-scheduled" style="display: none;">
+                <h3>Scheduled</h3>
+                <div id="next-run-info"></div>
+            </div>
+
+            <div id="status-running" class="status-box status-running" style="display: none;">
+                <h3>Running</h3>
+                <div id="progress-info">
+                    <!-- Progress information will be populated here -->
+                </div>
+                <div id="live-output" class="live-output">
+                    <!-- Live output will be streamed here -->
+                </div>
+                <button type="button" class="btn btn-danger" onclick="cancelJob()">Cancel Job</button>
+            </div>
+
+            <div id="status-completed" class="status-box status-completed" style="display: none;">
+                <h3>Completed</h3>
+                <p>Last job completed successfully</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>Stremio Streams Prefetcher v2.0 | For self-hosted addons only</p>
+        </footer>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
