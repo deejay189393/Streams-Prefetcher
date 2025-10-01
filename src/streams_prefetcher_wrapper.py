@@ -79,8 +79,8 @@ class StreamsPrefetcherWrapper:
             'enable_logging': config.get('enable_logging', False)
         }
 
-    def run(self) -> bool:
-        """Run the prefetcher"""
+    def run(self) -> Dict[str, Any]:
+        """Run the prefetcher and return results"""
         try:
             # Parse configuration
             args = self._parse_config_to_args()
@@ -98,26 +98,30 @@ class StreamsPrefetcherWrapper:
             # Print summary
             self.prefetcher.print_summary(interrupted=False)
 
-            return True
+            return {'success': True, 'results': results}
 
         except KeyboardInterrupt:
             if self.output_callback:
                 self.output_callback("\n\nScript interrupted by user. Cleaning up and generating summary...")
 
+            results = None
             if self.prefetcher:
                 self.prefetcher.progress_tracker.cleanup_dashboard()
                 self.prefetcher.print_summary(interrupted=True)
+                results = self.prefetcher.results if hasattr(self.prefetcher, 'results') else None
 
-            return False
+            return {'success': False, 'interrupted': True, 'results': results}
 
         except Exception as e:
             if self.output_callback:
                 self.output_callback(f"\n\nAn unexpected error occurred: {e}")
 
+            results = None
             if self.prefetcher:
                 self.prefetcher.progress_tracker.cleanup_dashboard()
+                results = self.prefetcher.results if hasattr(self.prefetcher, 'results') else None
 
-            return False
+            return {'success': False, 'error': str(e), 'results': results}
 
         finally:
             if self.prefetcher and self.prefetcher.db_conn:

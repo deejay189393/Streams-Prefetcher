@@ -43,6 +43,7 @@ class JobScheduler:
         self.job_start_time = None
         self.job_end_time = None
         self.job_error = None
+        self.job_summary = None  # Store completion summary
 
         # Live output buffer
         self.output_lines = []
@@ -221,6 +222,7 @@ class JobScheduler:
         self.job_start_time = time.time()
         self.job_end_time = None
         self.job_error = None
+        self.job_summary = None
 
         # Notify status change
         self._notify_callbacks('status_change', {
@@ -250,7 +252,7 @@ class JobScheduler:
                 output_callback=self._append_output
             )
 
-            success = wrapper.run()
+            result = wrapper.run()
 
             # Restore stdout
             sys.stdout = old_stdout
@@ -259,6 +261,10 @@ class JobScheduler:
             captured = output_capture.getvalue()
             if captured:
                 self._append_output(captured)
+
+            # Extract success and summary
+            success = result.get('success', False) if isinstance(result, dict) else result
+            self.job_summary = result.get('results') if isinstance(result, dict) else None
 
             # Update status
             self.job_status = JobStatus.COMPLETED if success else JobStatus.FAILED
@@ -270,7 +276,8 @@ class JobScheduler:
                 'start_time': self.job_start_time,
                 'end_time': self.job_end_time,
                 'duration': self.job_end_time - self.job_start_time,
-                'success': success
+                'success': success,
+                'summary': self.job_summary
             })
 
         except Exception as e:
@@ -332,7 +339,7 @@ class JobScheduler:
         # Check if any scheduled jobs exist
         scheduled_jobs = [job for job in self.scheduler.get_jobs() if job.id.startswith('prefetch_job')]
 
-        return {
+        status_data = {
             'status': self.job_status,
             'start_time': self.job_start_time,
             'end_time': self.job_end_time,
@@ -341,6 +348,12 @@ class JobScheduler:
             'progress': self.get_progress(),
             'is_scheduled': len(scheduled_jobs) > 0
         }
+
+        # Include summary data for completed jobs
+        if self.job_status == JobStatus.COMPLETED and self.job_summary:
+            status_data['summary'] = self.job_summary
+
+        return status_data
 
     def cancel_job(self):
         """Cancel running job"""

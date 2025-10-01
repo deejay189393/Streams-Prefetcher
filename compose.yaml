@@ -3,13 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: stremio-streams-prefetcher
+    container_name: streams-prefetcher
     restart: unless-stopped
     expose:
       - 5000
-    environment:
-      - PORT=5000
-      - TZ=${TZ:-UTC}
+    env_file:
+      - .env
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.streams-prefetcher.rule=Host(`${STREAMS_PREFETCHER_HOSTNAME?}`)"

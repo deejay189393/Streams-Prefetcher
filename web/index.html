@@ -540,24 +540,144 @@
 
             <!-- Completed State -->
             <div id="status-completed" class="status-display status-completed" style="display: none;">
-                <div class="status-icon-wrapper">
-                    <div class="status-icon completed-icon">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                        </svg>
+                <div class="completion-header">
+                    <div class="status-icon-wrapper">
+                        <div class="status-icon completed-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Prefetch Complete!</h3>
+                        <p class="completion-subtitle">All operations completed successfully</p>
                     </div>
                 </div>
-                <div class="status-message">
-                    <h3>Prefetch Complete!</h3>
-                    <p>All selected streams have been prefetched successfully.</p>
+
+                <!-- Timing Overview -->
+                <div class="completion-section">
+                    <h4 class="completion-section-title">⏱️ Timing Overview</h4>
+                    <div class="timing-grid">
+                        <div class="timing-card">
+                            <div class="timing-label">Started</div>
+                            <div class="timing-value" id="completion-start-time">-</div>
+                        </div>
+                        <div class="timing-card">
+                            <div class="timing-label">Finished</div>
+                            <div class="timing-value" id="completion-end-time">-</div>
+                        </div>
+                        <div class="timing-card">
+                            <div class="timing-label">Total Duration</div>
+                            <div class="timing-value highlight" id="completion-total-duration">-</div>
+                        </div>
+                        <div class="timing-card">
+                            <div class="timing-label">Processing Time</div>
+                            <div class="timing-value" id="completion-processing-time">-</div>
+                        </div>
+                    </div>
                 </div>
-                <button type="button" class="btn-modern btn-start" onclick="runJob()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8 5v14l11-7z"/>
-                    </svg>
-                    Start Again
-                </button>
+
+                <!-- Statistics Grid -->
+                <div class="completion-section">
+                    <h4 class="completion-section-title">📊 Statistics</h4>
+                    <div class="stats-summary-grid">
+                        <div class="summary-stat">
+                            <div class="summary-stat-icon">📁</div>
+                            <div class="summary-stat-value" id="completion-catalogs">0</div>
+                            <div class="summary-stat-label">Catalogs Processed</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-stat-icon">🎬</div>
+                            <div class="summary-stat-value" id="completion-movies">0</div>
+                            <div class="summary-stat-label">Movies Prefetched</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-stat-icon">📺</div>
+                            <div class="summary-stat-value" id="completion-series">0</div>
+                            <div class="summary-stat-label">Series Prefetched</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-stat-icon">📄</div>
+                            <div class="summary-stat-value" id="completion-pages">0</div>
+                            <div class="summary-stat-label">Pages Fetched</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-stat-icon">⚡</div>
+                            <div class="summary-stat-value" id="completion-cached">0</div>
+                            <div class="summary-stat-label">From Cache</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-stat-icon">✓</div>
+                            <div class="summary-stat-value highlight" id="completion-success-rate">0%</div>
+                            <div class="summary-stat-label">Success Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processing Rates -->
+                <div class="completion-section">
+                    <h4 class="completion-section-title">⚡ Processing Rates</h4>
+                    <div class="rate-cards">
+                        <div class="rate-card">
+                            <div class="rate-value" id="completion-movie-rate">-</div>
+                            <div class="rate-label">Movies/min</div>
+                        </div>
+                        <div class="rate-card">
+                            <div class="rate-value" id="completion-series-rate">-</div>
+                            <div class="rate-label">Series/min</div>
+                        </div>
+                        <div class="rate-card">
+                            <div class="rate-value" id="completion-overall-rate">-</div>
+                            <div class="rate-label">Items/min</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Catalog Breakdown Chart -->
+                <div class="completion-section">
+                    <h4 class="completion-section-title">📊 Catalog Processing Timeline</h4>
+                    <div class="chart-container">
+                        <canvas id="catalog-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Catalog Details Table -->
+                <div class="completion-section">
+                    <h4 class="completion-section-title">📋 Catalog Details</h4>
+                    <div class="catalog-table-wrapper">
+                        <table class="catalog-details-table">
+                            <thead>
+                                <tr>
+                                    <th>Catalog</th>
+                                    <th>Type</th>
+                                    <th>Duration</th>
+                                    <th>Success</th>
+                                    <th>Failed</th>
+                                    <th>Cached</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="catalog-details-tbody">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                                        No data available
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="completion-actions">
+                    <button type="button" class="btn-modern btn-start" onclick="runJob()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        Start New Prefetch
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -566,6 +686,7 @@
         </footer>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>
