@@ -45,7 +45,7 @@ function toggleSection(sectionId) {
 
 function toggleScheduling() {
     const checkbox = document.getElementById('scheduling-enabled');
-    const content = document.getElementById('scheduling-content');
+    const content = document.getElementById('scheduling-settings');
     const addBtn = document.getElementById('add-schedule-btn');
 
     if (checkbox.checked) {

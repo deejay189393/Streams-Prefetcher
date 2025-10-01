@@ -250,7 +250,12 @@
         </section>
         <!-- Catalog Selection Section -->
         <section id="catalog-selection" class="card">
-            <h2>🎬 Catalog Selection</h2>
+            <div class="section-header-collapsible" onclick="toggleSection('catalog-selection')">
+                <h2>🎬 Catalog Selection</h2>
+                <span class="collapse-icon" id="catalog-selection-icon">▼</span>
+            </div>
+
+            <div class="collapsible-content" id="catalog-selection-content">
             <p class="help-text">Load catalogs from your configured addons, then select and order which ones to prefetch</p>
 
             <button type="button" class="btn btn-secondary" onclick="loadCatalogs()" id="load-catalogs-btn" style="min-width: 150px;">
@@ -271,20 +276,26 @@
                     <em>Catalog selections are auto-saved after 2 seconds</em>
                 </p>
             </div>
+            </div>
         </section>
 
         <!-- Scheduling Section -->
         <section id="schedule" class="card">
-            <div class="schedule-header">
+            <div class="section-header-collapsible" onclick="toggleSection('schedule')">
                 <h2>📅 Scheduling</h2>
+                <span class="collapse-icon" id="schedule-icon">▼</span>
+            </div>
+
+            <div class="collapsible-content" id="schedule-content">
+            <div class="schedule-header">
+                <p class="help-text" style="margin: 0;">Configure when prefetch jobs should run automatically</p>
                 <label class="toggle-switch">
                     <input type="checkbox" id="scheduling-enabled" onchange="toggleScheduling()">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
-            <p class="help-text">Configure when prefetch jobs should run automatically</p>
 
-            <div id="scheduling-content" class="scheduling-disabled">
+            <div id="scheduling-settings" class="scheduling-disabled" style="margin-top: 20px;">
                 <!-- Add Schedule Button -->
                 <button type="button" class="btn btn-primary" onclick="showAddScheduleModal()" id="add-schedule-btn" disabled>
                     + Add Schedule
@@ -299,6 +310,7 @@
                 <button type="button" class="btn btn-danger" onclick="confirmDeleteAllSchedules()" id="delete-all-btn" style="display: none; margin-top: 15px;">
                     Delete All Schedules
                 </button>
+            </div>
             </div>
         </section>
 
