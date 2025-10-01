@@ -1,4 +1,4 @@
-# Stremio Streams Prefetcher - Dockerfile
+# Streams Prefetcher - Dockerfile
 # Multi-stage build for optimized image size
 
 # Base stage with Python dependencies

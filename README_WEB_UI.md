@@ -1,6 +1,6 @@
-# Stremio Streams Prefetcher - Web UI Version
+# Streams Prefetcher - Web UI Version
 
-A modern web-based interface for the Stremio Streams Prefetcher, making it accessible to all users through an intuitive browser interface with real-time monitoring and scheduling capabilities.
+A modern web-based interface for the Streams Prefetcher, designed to work with **Stremio addons**. Makes addon cache prefetching accessible to all users through an intuitive browser interface with real-time monitoring and scheduling capabilities.
 
 > **⚠️ IMPORTANT:** This tool is designed for **self-hosted addons only**. Running this against public addons will unnecessarily increase server load without any benefit, as public addons typically don't cache per-user.
 

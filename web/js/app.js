@@ -1,5 +1,5 @@
 /**
- * Stremio Streams Prefetcher - Frontend Application
+ * Streams Prefetcher - Frontend Application
  * Handles all UI interactions, real-time updates, and API communication
  */
 

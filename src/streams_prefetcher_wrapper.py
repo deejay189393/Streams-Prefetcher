@@ -6,7 +6,7 @@ Provides a programmatic interface to run streams_prefetcher.py with callbacks
 import sys
 import io
 from typing import Callable, Optional, Dict, Any, List, Tuple
-from streams_prefetcher import StreamsPrefetcher, parse_addon_urls
+from streams_prefetcher_filtered import FilteredStreamsPrefetcher
 from config_manager import ConfigManager
 
 
@@ -28,16 +28,39 @@ class StreamsPrefetcherWrapper:
         """Parse configuration into arguments for StreamsPrefetcher"""
         config = self.config_manager.get_all()
 
-        # Parse addon URLs
+        # Get saved catalogs (filtered by enabled state)
+        saved_catalogs = config.get('saved_catalogs', [])
+        enabled_catalogs = [cat for cat in saved_catalogs if cat.get('enabled', False)]
+
+        # Build addon URLs with catalog filters
+        # Group enabled catalogs by addon URL
+        addon_catalog_map = {}
+        for cat in enabled_catalogs:
+            addon_url = cat['addon_url']
+            if addon_url not in addon_catalog_map:
+                addon_catalog_map[addon_url] = []
+            addon_catalog_map[addon_url].append(cat)
+
+        # Parse addon URLs with their catalog filters
         addon_urls = []
         for item in config.get('addon_urls', []):
-            addon_urls.append((item['url'], item['type']))
+            if item['url'] in addon_catalog_map:
+                addon_urls.append((item['url'], item['type']))
 
         if not addon_urls:
-            raise ValueError("No addon URLs configured")
+            raise ValueError("No addon URLs with enabled catalogs configured")
+
+        # Build catalog filter (catalog IDs to include)
+        catalog_filter = []
+        for cat in enabled_catalogs:
+            # Extract catalog ID from the full ID (format: "addon_url|catalog_id")
+            if '|' in cat['id']:
+                catalog_id = cat['id'].split('|', 1)[1]
+                catalog_filter.append(catalog_id)
 
         return {
             'addon_urls': addon_urls,
+            'catalog_filter': catalog_filter if catalog_filter else None,
             'movies_global_limit': config.get('movies_global_limit', 200),
             'series_global_limit': config.get('series_global_limit', 15),
             'movies_per_catalog': config.get('movies_per_catalog', 50),
@@ -58,8 +81,8 @@ class StreamsPrefetcherWrapper:
             # Parse configuration
             args = self._parse_config_to_args()
 
-            # Create prefetcher instance
-            self.prefetcher = StreamsPrefetcher(**args)
+            # Create prefetcher instance with filtering support
+            self.prefetcher = FilteredStreamsPrefetcher(**args)
 
             # Optionally wrap progress tracker methods to provide callbacks
             if self.progress_callback:
@@ -106,6 +129,9 @@ class StreamsPrefetcherWrapper:
 
             # Extract progress data and call callback
             if self.progress_callback:
+                mode = kwargs.get('mode', 'idle')
+
+                # Build comprehensive progress data
                 progress_data = {
                     'catalog_name': kwargs.get('catalog_name', ''),
                     'catalog_mode': kwargs.get('catalog_mode', ''),
@@ -115,9 +141,24 @@ class StreamsPrefetcherWrapper:
                     'movies_limit': kwargs.get('movies_global_limit', -1),
                     'series_prefetched': kwargs.get('prefetched_series_count', 0),
                     'series_limit': kwargs.get('series_global_limit', -1),
-                    'mode': kwargs.get('mode', 'idle'),
+                    'mode': mode,
                     'current_title': kwargs.get('current_title', ''),
+                    'current_catalog_items': kwargs.get('prefetched_in_this_catalog', 0),
+                    'current_catalog_limit': kwargs.get('per_catalog_limit', -1),
                 }
+
+                # Add page fetching information
+                if mode == 'fetching':
+                    progress_data['current_page'] = kwargs.get('fetched_items', 0)
+                    progress_data['fetching_page'] = True
+                elif mode == 'prefetching':
+                    # Calculate items discovered from item_statuses or total_items
+                    item_statuses = kwargs.get('item_statuses', [])
+                    total_items = kwargs.get('total_items', len(item_statuses))
+                    progress_data['items_on_current_page'] = total_items
+                    progress_data['processed_items_on_page'] = len(item_statuses)
+                    progress_data['fetching_page'] = False
+
                 self.progress_callback(progress_data)
 
         # Replace the method

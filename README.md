@@ -1,6 +1,6 @@
 # Streams Prefetcher
 
-A Python script that warms up **self-hosted** Stremio addon caches by prefetching streams for movies and series, resulting in faster content loading when browsing in Stremio.
+A Python script designed to work with **Stremio addons**. It warms up **self-hosted** Stremio addon caches by prefetching streams for movies and series, resulting in faster content loading when browsing in Stremio.
 
 > **⚠️ IMPORTANT:** This tool is designed for **self-hosted addons only**. Running this against public addons will unnecessarily increase server load without any benefit, as public addons typically don't cache per-user. Only use this with addons you host yourself.
 

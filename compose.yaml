@@ -5,31 +5,25 @@ services:
       dockerfile: Dockerfile
     container_name: stremio-streams-prefetcher
     restart: unless-stopped
-
     expose:
       - 5000
-
     environment:
       - PORT=5000
       - TZ=${TZ:-UTC}
-
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.streams-prefetcher.rule=Host(`${STREAMS_PREFETCHER_HOSTNAME?}`)"
       - "traefik.http.routers.streams-prefetcher.entrypoints=websecure"
       - "traefik.http.routers.streams-prefetcher.tls.certresolver=letsencrypt"
       - "traefik.http.routers.streams-prefetcher.middlewares=authelia@docker"
-
     volumes:
       - ${DOCKER_DATA_DIR}/streams-prefetcher:/app/data
-
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/api/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
     deploy:
       resources:
         limits:
@@ -38,7 +32,6 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
-
     profiles:
       - streams-prefetcher
       - stremio

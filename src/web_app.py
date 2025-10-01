@@ -1,5 +1,5 @@
 """
-Stremio Streams Prefetcher - Web Application
+Streams Prefetcher - Web Application
 Flask backend providing REST API and SSE for real-time updates
 """
 
@@ -264,7 +264,7 @@ def load_catalogs():
                         f"{item['url']}/manifest.json",
                         timeout=10,
                         headers={
-                            'User-Agent': 'Stremio Streams Prefetcher Web/1.0',
+                            'User-Agent': 'Streams Prefetcher Web/1.0',
                             'Accept': 'application/json'
                         }
                     )

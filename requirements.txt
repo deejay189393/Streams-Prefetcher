@@ -1,4 +1,4 @@
-# Stremio Streams Prefetcher - Python Dependencies
+# Streams Prefetcher - Python Dependencies
 
 # Core dependencies
 requests>=2.31.0
