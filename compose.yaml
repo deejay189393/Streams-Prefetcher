@@ -9,9 +9,6 @@ services:
     expose:
       - 5000
 
-    env_file:
-      - .env
-
     environment:
       - PORT=5000
       - TZ=${TZ:-UTC}
@@ -46,3 +43,4 @@ services:
       - streams-prefetcher
       - stremio
       - all
+      - deejay
