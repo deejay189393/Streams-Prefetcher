@@ -308,6 +308,26 @@ function toggleUnlimitedTime(fieldId) {
     }
 }
 
+function toggleNoDelay() {
+    const valueInput = document.getElementById('delay-value');
+    const unitSelect = document.getElementById('delay-unit');
+    const checkbox = document.getElementById('delay-no-delay');
+
+    if (checkbox.checked) {
+        // No Delay is checked - disable inputs and set to 0
+        valueInput.disabled = true;
+        unitSelect.disabled = true;
+        valueInput.style.opacity = '0.5';
+        unitSelect.style.opacity = '0.5';
+    } else {
+        // No Delay is unchecked - enable inputs
+        valueInput.disabled = false;
+        unitSelect.disabled = false;
+        valueInput.style.opacity = '1';
+        unitSelect.style.opacity = '1';
+    }
+}
+
 // ============================================================================
 // Initialization
 // ============================================================================
@@ -443,8 +463,16 @@ function populateConfigurationForm(config) {
 
     // Populate time-based parameters
     const delayValue = config.delay !== undefined ? config.delay : 2;
-    document.getElementById('delay-value').value = delayValue;
-    document.getElementById('delay-unit').value = '1';
+    if (delayValue === 0) {
+        document.getElementById('delay-no-delay').checked = true;
+        document.getElementById('delay-value').value = 2;
+        document.getElementById('delay-unit').value = '1';
+    } else {
+        document.getElementById('delay-no-delay').checked = false;
+        document.getElementById('delay-value').value = delayValue;
+        document.getElementById('delay-unit').value = '1';
+    }
+    toggleNoDelay();
 
     const cacheValidityValue = config.cache_validity !== undefined ? config.cache_validity : 259200;
     const cacheDays = cacheValidityValue / 86400;
@@ -757,7 +785,7 @@ async function saveConfigurationSilent() {
             movies_per_catalog: getLimitValue('movies-per-catalog'),
             series_per_catalog: getLimitValue('series-per-catalog'),
             items_per_mixed_catalog: getLimitValue('items-per-mixed-catalog'),
-            delay: parseFloat(document.getElementById('delay-value').value) * parseFloat(document.getElementById('delay-unit').value),
+            delay: document.getElementById('delay-no-delay').checked ? 0 : parseFloat(document.getElementById('delay-value').value) * parseFloat(document.getElementById('delay-unit').value),
             cache_validity: parseFloat(document.getElementById('cache-validity-value').value) * parseFloat(document.getElementById('cache-validity-unit').value),
             max_execution_time: document.getElementById('max-execution-time-unlimited').checked ? -1 : parseFloat(document.getElementById('max-execution-time-value').value) * parseFloat(document.getElementById('max-execution-time-unit').value),
             proxy: document.getElementById('proxy').value.trim(),
@@ -824,7 +852,7 @@ async function saveConfiguration() {
             movies_per_catalog: getLimitValue('movies-per-catalog'),
             series_per_catalog: getLimitValue('series-per-catalog'),
             items_per_mixed_catalog: getLimitValue('items-per-mixed-catalog'),
-            delay: parseFloat(document.getElementById('delay-value').value) * parseFloat(document.getElementById('delay-unit').value),
+            delay: document.getElementById('delay-no-delay').checked ? 0 : parseFloat(document.getElementById('delay-value').value) * parseFloat(document.getElementById('delay-unit').value),
             cache_validity: parseFloat(document.getElementById('cache-validity-value').value) * parseFloat(document.getElementById('cache-validity-unit').value),
             max_execution_time: document.getElementById('max-execution-time-unlimited').checked ? -1 : parseFloat(document.getElementById('max-execution-time-value').value) * parseFloat(document.getElementById('max-execution-time-unit').value),
             proxy: document.getElementById('proxy').value.trim(),
