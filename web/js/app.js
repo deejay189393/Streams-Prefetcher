@@ -365,9 +365,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateStartNowButtonState();
 
     // Page has finished loading, enable save notifications
+    // Wait longer than auto-save debounce (2s) to prevent initial load notifications
     setTimeout(() => {
         isPageLoading = false;
-    }, 1000);
+    }, 4000);
 });
 
 function restoreCollapsedStates() {
