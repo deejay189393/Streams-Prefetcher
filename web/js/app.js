@@ -167,7 +167,13 @@ function initializeAddonUrlDragDrop() {
             const { url, oldType } = JSON.parse(data);
             const newType = section.dataset.type;
 
-            // Update type
+            // Remove the dragging element from old location
+            const draggingElement = document.querySelector('.addon-item.dragging');
+            if (draggingElement) {
+                draggingElement.remove();
+            }
+
+            // Update type and add to new location
             const container = section.querySelector('.addon-list');
             const itemDiv = createAddonUrlItem(url, newType, container.children.length);
             container.appendChild(itemDiv);

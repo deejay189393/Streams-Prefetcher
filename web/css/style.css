@@ -3,24 +3,24 @@
    Modern, clean, and lightweight design
    ============================================================================ */
 
-/* Variables - Dark Theme */
+/* Variables - DARK Dark Theme (Eye-Friendly) */
 :root {
-    --primary-color: #9D4EDD;
-    --secondary-color: #7B2CBF;
-    --success-color: #2ea043;
-    --danger-color: #f85149;
-    --warning-color: #d29922;
-    --info-color: #58a6ff;
-    --dark-bg: #0a0a0a;
-    --card-bg: #161616;
-    --card-hover-bg: #1f1f1f;
-    --border-color: #30363d;
-    --text-color: #e6edf3;
-    --text-muted: #8b949e;
-    --card-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    --primary-color: #a855f7;
+    --secondary-color: #9333ea;
+    --success-color: #22c55e;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3b82f6;
+    --dark-bg: #000000;
+    --card-bg: #0a0a0a;
+    --card-hover-bg: #121212;
+    --border-color: #1f1f1f;
+    --text-color: #e5e5e5;
+    --text-muted: #737373;
+    --card-shadow: 0 4px 12px rgba(0,0,0,0.8);
     --transition: all 0.3s ease;
-    --input-bg: #0d1117;
-    --input-border: #30363d;
+    --input-bg: #050505;
+    --input-border: #1a1a1a;
 }
 
 /* Reset and Base Styles */
