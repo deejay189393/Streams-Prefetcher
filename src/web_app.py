@@ -198,6 +198,16 @@ def load_catalogs():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/catalogs/selection', methods=['GET'])
+def get_catalog_selection():
+    """Get saved catalog selection"""
+    try:
+        saved_catalogs = config_manager.get('saved_catalogs', [])
+        return jsonify({'success': True, 'catalogs': saved_catalogs})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/catalogs/selection', methods=['POST'])
 def save_catalog_selection():
     """Save catalog selection and order"""
@@ -206,15 +216,8 @@ def save_catalog_selection():
         if not data or 'catalogs' not in data:
             return jsonify({'success': False, 'error': 'No catalog data provided'}), 400
 
-        # Update config with catalog selection
-        catalog_selection = {}
-        for catalog in data['catalogs']:
-            catalog_selection[catalog['id']] = {
-                'enabled': catalog.get('enabled', True),
-                'order': catalog.get('order', 0)
-            }
-
-        config_manager.set('catalog_selection', catalog_selection)
+        # Save full catalog data (not just selection)
+        config_manager.set('saved_catalogs', data['catalogs'])
 
         return jsonify({'success': True})
 

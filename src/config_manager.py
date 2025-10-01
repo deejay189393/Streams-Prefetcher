@@ -13,22 +13,22 @@ class ConfigManager:
 
     DEFAULT_CONFIG = {
         'addon_urls': [],  # List of {'url': 'https://...', 'type': 'catalog'|'stream'|'both'}
-        'movies_global_limit': 200,
-        'series_global_limit': 15,
+        'movies_global_limit': -1,
+        'series_global_limit': -1,
         'movies_per_catalog': 50,
-        'series_per_catalog': 5,
-        'items_per_mixed_catalog': 30,
-        'delay': 0,  # In seconds
+        'series_per_catalog': 3,
+        'items_per_mixed_catalog': 20,
+        'delay': 2,  # In seconds
         'proxy': '',
         'randomize_catalog_processing': False,
         'randomize_item_prefetching': False,
         'cache_validity': 259200,  # 3 days in seconds
-        'max_execution_time': -1,  # -1 for unlimited
+        'max_execution_time': 5400,  # 90 minutes in seconds
         'enable_logging': False,
         'catalog_selection': {},  # {catalog_id: {enabled: bool, order: int}}
         'schedule': {
             'enabled': False,
-            'cron_expression': '0 2 * * *',  # Daily at 2 AM
+            'cron_expression': '0 2,5,8 * * *',  # Daily at 2 AM, 5 AM, 8 AM
             'timezone': 'UTC'
         }
     }

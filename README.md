@@ -64,18 +64,18 @@ python streams_prefetcher.py --addon-urls both:https://your-addon.com
 
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
-| `--movies-global-limit` | int | 100 | Global limit for total movies to prefetch. -1 for unlimited |
-| `--series-global-limit` | int | 25 | Global limit for total series to prefetch. -1 for unlimited |
+| `--movies-global-limit` | int | -1 | Global limit for total movies to prefetch. -1 for unlimited |
+| `--series-global-limit` | int | -1 | Global limit for total series to prefetch. -1 for unlimited |
 | `--movies-per-catalog` | int | 50 | Per-catalog limit for movie-only catalogs. -1 for unlimited |
-| `--series-per-catalog` | int | 5 | Per-catalog limit for series-only catalogs. -1 for unlimited |
-| `--items-per-mixed-catalog` | int | 30 | Per-catalog limit for mixed-type catalogs. -1 for unlimited |
-| `--max-execution-time` / `-t` | time | -1s | Execution time limit. Script stops gracefully after this duration. -1 (with any unit) for unlimited |
+| `--series-per-catalog` | int | 3 | Per-catalog limit for series-only catalogs. -1 for unlimited |
+| `--items-per-mixed-catalog` | int | 20 | Per-catalog limit for mixed-type catalogs. -1 for unlimited |
+| `--max-execution-time` / `-t` | time | 90m | Execution time limit. Script stops gracefully after this duration. -1 (with any unit) for unlimited |
 
 ### Optional Arguments
 
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
-| `--delay` / `-d` | time | 0s | Delay between requests. Format: 500ms, 30s, 5m, 2h, 1d |
+| `--delay` / `-d` | time | 2s | Delay between requests. Format: 500ms, 30s, 5m, 2h, 1d |
 | `--proxy` | string | None | HTTP proxy URL (e.g., http://proxy.example.com:8080) |
 | `--randomize-catalog-processing` | flag | False | Randomize the order in which catalogs are processed |
 | `--randomize-item-prefetching` | flag | False | Randomize the order of items within a catalog |

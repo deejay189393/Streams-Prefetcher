@@ -49,44 +49,62 @@
             <!-- Limit Configuration -->
             <div class="form-row">
                 <div class="form-group">
-                    <label for="movies-global-limit">Movies Global Limit</label>
-                    <input type="number" id="movies-global-limit" value="200" min="-1">
+                    <label for="movies-global-limit">
+                        Movies Global Limit
+                        <span class="info-icon" data-tooltip="Total maximum number of movie items to prefetch across all catalogs. Set to -1 for unlimited. Default: -1">ℹ️</span>
+                    </label>
+                    <input type="number" id="movies-global-limit" value="-1" min="-1">
                     <p class="help-text">-1 for unlimited</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="series-global-limit">Series Global Limit</label>
-                    <input type="number" id="series-global-limit" value="15" min="-1">
+                    <label for="series-global-limit">
+                        Series Global Limit
+                        <span class="info-icon" data-tooltip="Total maximum number of series items to prefetch across all catalogs. Set to -1 for unlimited. Default: -1">ℹ️</span>
+                    </label>
+                    <input type="number" id="series-global-limit" value="-1" min="-1">
                     <p class="help-text">-1 for unlimited</p>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="movies-per-catalog">Movies per Catalog</label>
+                    <label for="movies-per-catalog">
+                        Movies per Catalog
+                        <span class="info-icon" data-tooltip="Maximum number of movie items to prefetch from each movie catalog. Set to -1 for unlimited. Default: 50">ℹ️</span>
+                    </label>
                     <input type="number" id="movies-per-catalog" value="50" min="-1">
                     <p class="help-text">-1 for unlimited</p>
                 </div>
 
                 <div class="form-group">
-                    <label for="series-per-catalog">Series per Catalog</label>
-                    <input type="number" id="series-per-catalog" value="5" min="-1">
+                    <label for="series-per-catalog">
+                        Series per Catalog
+                        <span class="info-icon" data-tooltip="Maximum number of series items to prefetch from each series catalog. Set to -1 for unlimited. Default: 3">ℹ️</span>
+                    </label>
+                    <input type="number" id="series-per-catalog" value="3" min="-1">
                     <p class="help-text">-1 for unlimited</p>
                 </div>
             </div>
 
             <div class="form-group">
-                <label for="items-per-mixed-catalog">Items per Mixed Catalog</label>
-                <input type="number" id="items-per-mixed-catalog" value="30" min="-1" style="max-width: 200px;">
+                <label for="items-per-mixed-catalog">
+                    Items per Mixed Catalog
+                    <span class="info-icon" data-tooltip="Maximum number of items to prefetch from catalogs that contain both movies and series. Set to -1 for unlimited. Default: 20">ℹ️</span>
+                </label>
+                <input type="number" id="items-per-mixed-catalog" value="20" min="-1" style="max-width: 200px;">
                 <p class="help-text">-1 for unlimited</p>
             </div>
 
             <!-- Time-based Parameters -->
             <div class="form-row">
                 <div class="form-group">
-                    <label for="delay">Delay Between Requests</label>
+                    <label for="delay">
+                        Delay Between Requests
+                        <span class="info-icon" data-tooltip="Time delay between consecutive stream requests to avoid overloading addons. Default: 2 seconds">ℹ️</span>
+                    </label>
                     <div class="time-input">
-                        <input type="number" id="delay-value" value="0" min="0" step="0.1">
+                        <input type="number" id="delay-value" value="2" min="0" step="0.1">
                         <select id="delay-unit">
                             <option value="0.001">Milliseconds</option>
                             <option value="1" selected>Seconds</option>
@@ -97,7 +115,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="cache-validity">Cache Validity</label>
+                    <label for="cache-validity">
+                        Streams Cache Validity
+                        <span class="info-icon" data-tooltip="How long prefetched streams remain in the addon cache before expiring. Default: 3 days">ℹ️</span>
+                    </label>
                     <div class="time-input">
                         <input type="number" id="cache-validity-value" value="3" min="0">
                         <select id="cache-validity-unit">
@@ -112,12 +133,15 @@
             </div>
 
             <div class="form-group">
-                <label for="max-execution-time">Max Execution Time</label>
+                <label for="max-execution-time">
+                    Max Execution Time
+                    <span class="info-icon" data-tooltip="Maximum time allowed for a single prefetch job to run. Set to -1 for unlimited. Default: 90 minutes">ℹ️</span>
+                </label>
                 <div class="time-input">
-                    <input type="number" id="max-execution-time-value" value="-1" step="0.1">
+                    <input type="number" id="max-execution-time-value" value="90" step="0.1">
                     <select id="max-execution-time-unit">
-                        <option value="1" selected>Seconds</option>
-                        <option value="60">Minutes</option>
+                        <option value="1">Seconds</option>
+                        <option value="60" selected>Minutes</option>
                         <option value="3600">Hours</option>
                         <option value="86400">Days</option>
                     </select>
@@ -127,14 +151,20 @@
 
             <!-- Proxy Configuration -->
             <div class="form-group">
-                <label for="proxy">HTTP Proxy (Optional)</label>
+                <label for="proxy">
+                    HTTP Proxy (Optional)
+                    <span class="info-icon" data-tooltip="Optional HTTP proxy server for all addon requests. Leave empty if not needed. Format: http://proxy.example.com:8080">ℹ️</span>
+                </label>
                 <input type="text" id="proxy" placeholder="http://proxy.example.com:8080">
             </div>
 
             <!-- Boolean Flags -->
             <div class="form-row">
                 <div class="form-group">
-                    <label>Randomize Catalog Processing</label>
+                    <label>
+                        Randomize Catalog Processing
+                        <span class="info-icon" data-tooltip="Process catalogs in random order instead of sequential order. Helps distribute load. Default: Disabled">ℹ️</span>
+                    </label>
                     <div class="radio-group">
                         <label><input type="radio" name="randomize-catalog" value="true"> Enabled</label>
                         <label><input type="radio" name="randomize-catalog" value="false" checked> Disabled</label>
@@ -142,7 +172,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Randomize Item Prefetching</label>
+                    <label>
+                        Randomize Item Prefetching
+                        <span class="info-icon" data-tooltip="Fetch items from catalogs in random order instead of sequential order. Default: Disabled">ℹ️</span>
+                    </label>
                     <div class="radio-group">
                         <label><input type="radio" name="randomize-item" value="true"> Enabled</label>
                         <label><input type="radio" name="randomize-item" value="false" checked> Disabled</label>
@@ -151,7 +184,10 @@
             </div>
 
             <div class="form-group">
-                <label>Enable Logging</label>
+                <label>
+                    Enable Logging
+                    <span class="info-icon" data-tooltip="Enable detailed logging output during prefetch operations. Useful for debugging. Default: Disabled">ℹ️</span>
+                </label>
                 <div class="radio-group">
                     <label><input type="radio" name="enable-logging" value="true"> Enabled</label>
                     <label><input type="radio" name="enable-logging" value="false" checked> Disabled</label>
@@ -186,13 +222,16 @@
             <p class="help-text">Configure recurring prefetch jobs using cron-like scheduling</p>
 
             <div class="form-group">
-                <label for="cron-expression">Cron Expression</label>
-                <input type="text" id="cron-expression" placeholder="0 2 * * *">
-                <p class="help-text">Format: minute hour day month weekday (e.g., "0 2 * * *" = daily at 2 AM)</p>
+                <label for="cron-expression">
+                    Cron Expression
+                    <span class="info-icon" data-tooltip="Schedule format: minute hour day month weekday. For multiple times, use commas: '0 2,5,8 * * *' runs at 2 AM, 5 AM, and 8 AM daily.">ℹ️</span>
+                </label>
+                <input type="text" id="cron-expression" placeholder="0 2,5,8 * * *">
+                <p class="help-text">Example: "0 2,5,8 * * *" = daily at 2 AM, 5 AM, and 8 AM</p>
             </div>
 
             <div class="form-row">
-                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Enable Schedule</button>
+                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
                 <button type="button" class="btn btn-secondary" onclick="disableSchedule()">Disable Schedule</button>
             </div>
 
@@ -208,28 +247,53 @@
             <div id="status-idle" class="status-box status-idle">
                 <h3>Ready</h3>
                 <p>No job is currently running</p>
-                <button type="button" class="btn btn-success" onclick="runJob()">Run Prefetch Now</button>
+                <button type="button" class="btn btn-success" onclick="runJob()" id="start-now-btn">Start Prefetch Now</button>
             </div>
 
             <div id="status-scheduled" class="status-box status-scheduled" style="display: none;">
                 <h3>Scheduled</h3>
                 <div id="next-run-info"></div>
+                <div style="margin-top: 15px;">
+                    <button type="button" class="btn btn-success" onclick="runJob()" id="start-now-btn-scheduled">Start Prefetch Now</button>
+                </div>
             </div>
 
             <div id="status-running" class="status-box status-running" style="display: none;">
                 <h3>Running</h3>
+
+                <!-- Overall Progress -->
+                <div style="margin-bottom: 15px;">
+                    <strong>Overall Progress</strong>
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="overall-progress-fill" style="width: 0%;">
+                            <span id="overall-progress-text">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Catalog Progress -->
+                <div style="margin-bottom: 15px;">
+                    <strong>Current Catalog: <span id="current-catalog-name">-</span></strong>
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="catalog-progress-fill" style="width: 0%;">
+                            <span id="catalog-progress-text">0%</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="progress-info">
                     <!-- Progress information will be populated here -->
                 </div>
                 <div id="live-output" class="live-output">
                     <!-- Live output will be streamed here -->
                 </div>
-                <button type="button" class="btn btn-danger" onclick="cancelJob()">Cancel Job</button>
+                <button type="button" class="btn btn-danger" onclick="terminateJob()">Terminate Job</button>
             </div>
 
             <div id="status-completed" class="status-box status-completed" style="display: none;">
                 <h3>Completed</h3>
                 <p>Last job completed successfully</p>
+                <button type="button" class="btn btn-success" onclick="runJob()">Start Prefetch Now</button>
             </div>
         </section>
 

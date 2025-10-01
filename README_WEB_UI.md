@@ -224,14 +224,14 @@ This directory is mounted as a Docker volume, ensuring data persists across cont
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| Movies Global Limit | 200 | Total movies to prefetch |
-| Series Global Limit | 15 | Total series to prefetch |
+| Movies Global Limit | -1 (Unlimited) | Total movies to prefetch |
+| Series Global Limit | -1 (Unlimited) | Total series to prefetch |
 | Movies per Catalog | 50 | Max movies per catalog |
-| Series per Catalog | 5 | Max series per catalog |
-| Items per Mixed Catalog | 30 | Max items per mixed catalog |
-| Delay | 0 seconds | Delay between requests |
+| Series per Catalog | 3 | Max series per catalog |
+| Items per Mixed Catalog | 20 | Max items per mixed catalog |
+| Delay | 2 seconds | Delay between requests |
 | Cache Validity | 3 days | Cache validity period |
-| Max Execution Time | Unlimited | Max runtime for jobs |
+| Max Execution Time | 90 minutes | Max runtime for jobs |
 | Randomize Catalogs | Disabled | Randomize catalog order |
 | Randomize Items | Disabled | Randomize item order |
 | Logging | Disabled | Enable detailed logging |

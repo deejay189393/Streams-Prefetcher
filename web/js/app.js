@@ -11,6 +11,8 @@ let currentConfig = {};
 let loadedCatalogs = [];
 let eventSource = null;
 let catalogsLoaded = false;
+let countdownInterval = null;
+let nextRunTimestamp = null;
 
 // ============================================================================
 // Initialization
@@ -20,10 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
     loadConfiguration();
     loadScheduleInfo();
     loadJobStatus();
+    loadSavedCatalogSelection();
     connectEventSource();
 
     // Enable drag and drop for addon URLs
     initializeAddonUrlDragDrop();
+
+    // Initialize tooltips
+    initializeTooltips();
 });
 
 // ============================================================================
@@ -75,18 +81,28 @@ function populateConfigurationForm(config) {
     document.getElementById('items-per-mixed-catalog').value = config.items_per_mixed_catalog;
 
     // Populate time-based parameters
-    const delayValue = config.delay || 0;
+    const delayValue = config.delay !== undefined ? config.delay : 2;
     document.getElementById('delay-value').value = delayValue;
     document.getElementById('delay-unit').value = '1';
 
-    const cacheValidityValue = config.cache_validity || 259200;
+    const cacheValidityValue = config.cache_validity !== undefined ? config.cache_validity : 259200;
     const cacheDays = cacheValidityValue / 86400;
     document.getElementById('cache-validity-value').value = cacheDays;
     document.getElementById('cache-validity-unit').value = '86400';
 
-    const maxExecValue = config.max_execution_time || -1;
-    document.getElementById('max-execution-time-value').value = maxExecValue;
-    document.getElementById('max-execution-time-unit').value = '1';
+    // Max execution time - convert from seconds to minutes if >= 60 seconds
+    const maxExecSeconds = config.max_execution_time !== undefined ? config.max_execution_time : 5400;
+    if (maxExecSeconds === -1) {
+        document.getElementById('max-execution-time-value').value = -1;
+        document.getElementById('max-execution-time-unit').value = '60';
+    } else if (maxExecSeconds >= 60) {
+        // Convert to minutes if 60 seconds or more
+        document.getElementById('max-execution-time-value').value = maxExecSeconds / 60;
+        document.getElementById('max-execution-time-unit').value = '60';
+    } else {
+        document.getElementById('max-execution-time-value').value = maxExecSeconds;
+        document.getElementById('max-execution-time-unit').value = '1';
+    }
 
     // Populate proxy
     document.getElementById('proxy').value = config.proxy || '';
@@ -261,6 +277,23 @@ async function saveConfiguration() {
 // Catalog Loading and Selection
 // ============================================================================
 
+async function loadSavedCatalogSelection() {
+    try {
+        const response = await fetch('/api/catalogs/selection');
+        const data = await response.json();
+
+        if (data.success && data.catalogs && data.catalogs.length > 0) {
+            loadedCatalogs = data.catalogs;
+            renderCatalogList(data.catalogs);
+            document.getElementById('catalog-list-container').style.display = 'block';
+            catalogsLoaded = true;
+            updateLoadCatalogsButtonText();
+        }
+    } catch (error) {
+        console.error('Error loading saved catalog selection:', error);
+    }
+}
+
 async function loadCatalogs() {
     const btn = document.getElementById('load-catalogs-btn');
     btn.disabled = true;
@@ -271,10 +304,45 @@ async function loadCatalogs() {
         const data = await response.json();
 
         if (data.success) {
-            loadedCatalogs = data.catalogs;
-            renderCatalogList(data.catalogs);
+            // Merge with existing saved selections
+            const savedSelections = {};
+            loadedCatalogs.forEach(cat => {
+                savedSelections[cat.id] = {
+                    enabled: cat.enabled,
+                    order: cat.order
+                };
+            });
+
+            // Apply saved selections to newly loaded catalogs
+            const mergedCatalogs = [];
+            const newCatalogs = [];
+
+            data.catalogs.forEach(catalog => {
+                if (savedSelections[catalog.id]) {
+                    catalog.enabled = savedSelections[catalog.id].enabled;
+                    catalog.order = savedSelections[catalog.id].order;
+                    mergedCatalogs.push(catalog);
+                } else {
+                    // New catalog - add to end
+                    newCatalogs.push(catalog);
+                }
+            });
+
+            // Sort merged catalogs by order
+            mergedCatalogs.sort((a, b) => a.order - b.order);
+
+            // Append new catalogs at the end
+            newCatalogs.forEach((catalog, index) => {
+                catalog.enabled = true;
+                catalog.order = mergedCatalogs.length + index;
+                mergedCatalogs.push(catalog);
+            });
+
+            loadedCatalogs = mergedCatalogs;
+            renderCatalogList(mergedCatalogs);
             document.getElementById('catalog-list-container').style.display = 'block';
             catalogsLoaded = true;
+            updateLoadCatalogsButtonText();
 
             showNotification(`Loaded ${data.total_catalogs} catalogs from ${data.total_addons} addons`, 'success');
 
@@ -289,8 +357,13 @@ async function loadCatalogs() {
         showNotification('Error loading catalogs', 'error');
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Load Catalogs';
+        updateLoadCatalogsButtonText();
     }
+}
+
+function updateLoadCatalogsButtonText() {
+    const btn = document.getElementById('load-catalogs-btn');
+    btn.textContent = catalogsLoaded ? 'Reload Catalogs' : 'Load Catalogs';
 }
 
 function renderCatalogList(catalogs) {
@@ -432,19 +505,44 @@ async function loadScheduleInfo() {
 
 function updateScheduleInfo(schedule) {
     const infoBox = document.getElementById('schedule-info');
-    const nextRun = new Date(schedule.next_run_time);
-    const timeUntil = Math.max(0, schedule.time_until_next_run || 0);
+    nextRunTimestamp = new Date(schedule.next_run_time).getTime();
+
+    // Clear existing countdown interval
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+
+    // Start live countdown
+    updateCountdown();
+    countdownInterval = setInterval(updateCountdown, 1000);
+
+    infoBox.style.display = 'block';
+}
+
+function updateCountdown() {
+    if (!nextRunTimestamp) return;
+
+    const now = Date.now();
+    const timeUntil = Math.max(0, Math.floor((nextRunTimestamp - now) / 1000));
 
     const hours = Math.floor(timeUntil / 3600);
     const minutes = Math.floor((timeUntil % 3600) / 60);
     const seconds = Math.floor(timeUntil % 60);
+
+    const nextRun = new Date(nextRunTimestamp);
+    const infoBox = document.getElementById('schedule-info');
 
     infoBox.innerHTML = `
         <strong>Schedule Active</strong><br>
         Next Run: ${nextRun.toLocaleString()}<br>
         Time Until Next Run: ${hours}h ${minutes}m ${seconds}s
     `;
-    infoBox.style.display = 'block';
+
+    // Clear interval if countdown reached zero
+    if (timeUntil === 0 && countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
 }
 
 async function saveSchedule() {
@@ -465,10 +563,10 @@ async function saveSchedule() {
         const data = await response.json();
 
         if (data.success) {
-            showNotification('Schedule enabled successfully', 'success');
+            showNotification('Schedule saved successfully', 'success');
             loadScheduleInfo();
         } else {
-            showNotification(data.error || 'Failed to enable schedule', 'error');
+            showNotification(data.error || 'Failed to save schedule', 'error');
         }
     } catch (error) {
         console.error('Error saving schedule:', error);
@@ -484,6 +582,13 @@ async function disableSchedule() {
         if (data.success) {
             showNotification('Schedule disabled successfully', 'success');
             document.getElementById('schedule-info').style.display = 'none';
+
+            // Clear countdown interval
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            nextRunTimestamp = null;
         } else {
             showNotification(data.error || 'Failed to disable schedule', 'error');
         }
@@ -522,9 +627,19 @@ function updateJobStatusUI(status) {
     } else if (status.status === 'scheduled') {
         document.getElementById('status-scheduled').style.display = 'block';
         updateNextRunInfo(status);
+
+        // Enable Start Now button for scheduled state
+        const startNowBtn = document.getElementById('start-now-btn-scheduled');
+        if (startNowBtn) {
+            startNowBtn.disabled = false;
+        }
     } else if (status.status === 'running') {
         document.getElementById('status-running').style.display = 'block';
         updateProgressInfo(status.progress);
+
+        // Disable Start Now buttons when running
+        const startNowBtns = document.querySelectorAll('[id^="start-now-btn"]');
+        startNowBtns.forEach(btn => btn.disabled = true);
     } else if (status.status === 'completed') {
         document.getElementById('status-completed').style.display = 'block';
     }
@@ -536,6 +651,17 @@ function updateJobStatusUI(status) {
 
 function updateNextRunInfo(status) {
     if (status.next_run_time) {
+        nextRunTimestamp = new Date(status.next_run_time).getTime();
+
+        // Clear existing countdown
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+        }
+
+        // Start countdown
+        updateCountdown();
+        countdownInterval = setInterval(updateCountdown, 1000);
+
         const nextRun = new Date(status.next_run_time);
         document.getElementById('next-run-info').innerHTML = `
             Next scheduled run: ${nextRun.toLocaleString()}
@@ -544,22 +670,56 @@ function updateNextRunInfo(status) {
 }
 
 function updateProgressInfo(progress) {
-    const container = document.getElementById('progress-info');
-
     if (!progress || Object.keys(progress).length === 0) {
-        container.innerHTML = '<p>Starting...</p>';
+        document.getElementById('progress-info').innerHTML = '<p>Starting...</p>';
+        document.getElementById('overall-progress-fill').style.width = '0%';
+        document.getElementById('overall-progress-text').textContent = '0%';
+        document.getElementById('catalog-progress-fill').style.width = '0%';
+        document.getElementById('catalog-progress-text').textContent = '0%';
+        document.getElementById('current-catalog-name').textContent = '-';
         return;
     }
 
+    // Update current catalog name
+    document.getElementById('current-catalog-name').textContent = progress.catalog_name || 'N/A';
+
+    // Calculate overall progress
+    const completedCatalogs = progress.completed_catalogs || 0;
+    const totalCatalogs = progress.total_catalogs || 1;
+    const overallPercent = Math.round((completedCatalogs / totalCatalogs) * 100);
+
+    // Update overall progress bar
+    document.getElementById('overall-progress-fill').style.width = `${overallPercent}%`;
+    document.getElementById('overall-progress-text').textContent = `${completedCatalogs} / ${totalCatalogs} catalogs`;
+
+    // Calculate current catalog progress
+    const currentItems = progress.current_catalog_items || 0;
+    const currentLimit = progress.current_catalog_limit || -1;
+
+    let catalogPercent = 0;
+    let catalogText = '';
+
+    if (currentLimit === -1) {
+        // Unlimited - just show count
+        catalogText = `${currentItems} of ∞`;
+        catalogPercent = 0; // Don't fill bar for unlimited
+    } else if (currentLimit > 0) {
+        catalogPercent = Math.round((currentItems / currentLimit) * 100);
+        catalogText = `${currentItems} / ${currentLimit}`;
+    }
+
+    // Update catalog progress bar
+    document.getElementById('catalog-progress-fill').style.width = `${catalogPercent}%`;
+    document.getElementById('catalog-progress-text').textContent = catalogText;
+
+    // Update detailed info
+    const container = document.getElementById('progress-info');
     const html = `
         <div>
-            <strong>Current Catalog:</strong> ${progress.catalog_name || 'N/A'} (${progress.catalog_mode || 'N/A'})<br>
-            <strong>Progress:</strong> ${progress.completed_catalogs || 0} / ${progress.total_catalogs || 0} catalogs<br>
             <strong>Movies Prefetched:</strong> ${progress.movies_prefetched || 0} / ${progress.movies_limit === -1 ? '∞' : progress.movies_limit}<br>
             <strong>Series Prefetched:</strong> ${progress.series_prefetched || 0} / ${progress.series_limit === -1 ? '∞' : progress.series_limit}
         </div>
     `;
-
     container.innerHTML = html;
 }
 
@@ -579,20 +739,29 @@ async function runJob() {
     }
 }
 
-async function cancelJob() {
+async function terminateJob() {
+    if (!confirm('Are you sure you want to terminate the running prefetch job?')) {
+        return;
+    }
+
     try {
         const response = await fetch('/api/job/cancel', { method: 'POST' });
         const data = await response.json();
 
         if (data.success) {
-            showNotification('Job cancelled', 'info');
+            showNotification('Job terminated', 'info');
         } else {
-            showNotification(data.error || 'Failed to cancel job', 'error');
+            showNotification(data.error || 'Failed to terminate job', 'error');
         }
     } catch (error) {
-        console.error('Error cancelling job:', error);
-        showNotification('Error cancelling job', 'error');
+        console.error('Error terminating job:', error);
+        showNotification('Error terminating job', 'error');
     }
+}
+
+// Keep old function name for backwards compatibility
+async function cancelJob() {
+    await terminateJob();
 }
 
 // ============================================================================
@@ -666,4 +835,55 @@ function appendOutput(lines) {
 
     // Auto-scroll to bottom
     outputContainer.scrollTop = outputContainer.scrollHeight;
+}
+
+// ============================================================================
+// Tooltip System
+// ============================================================================
+
+function initializeTooltips() {
+    const infoIcons = document.querySelectorAll('.info-icon');
+
+    infoIcons.forEach(icon => {
+        icon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleTooltip(icon);
+        });
+    });
+
+    // Close tooltips when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('info-icon')) {
+            closeAllTooltips();
+        }
+    });
+}
+
+function toggleTooltip(icon) {
+    const existingTooltip = icon.querySelector('.info-tooltip');
+
+    if (existingTooltip) {
+        // Close existing tooltip
+        existingTooltip.remove();
+    } else {
+        // Close all other tooltips first
+        closeAllTooltips();
+
+        // Create and show tooltip
+        const tooltipText = icon.getAttribute('data-tooltip');
+        if (tooltipText) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'info-tooltip active';
+            tooltip.innerHTML = `
+                <button class="tooltip-close" onclick="event.stopPropagation(); this.parentElement.remove();">×</button>
+                ${tooltipText}
+            `;
+            icon.appendChild(tooltip);
+        }
+    }
+}
+
+function closeAllTooltips() {
+    const tooltips = document.querySelectorAll('.info-tooltip');
+    tooltips.forEach(tooltip => tooltip.remove());
 }
