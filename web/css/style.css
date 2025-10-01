@@ -5,25 +5,25 @@
 
 /* Variables - DARK Dark Theme (Eye-Friendly) */
 :root {
-    --primary-color: #0ea5e9;
-    --primary-glow: #0ea5e9;
-    --secondary-color: #06b6d4;
+    --primary-color: #1e40af;
+    --primary-glow: rgba(30, 64, 175, 0.5);
+    --secondary-color: #1e3a8a;
     --success-color: #10b981;
     --danger-color: #ef4444;
     --warning-color: #f59e0b;
-    --info-color: #3b82f6;
+    --info-color: #1e40af;
     --dark-bg: #000000;
     --card-bg: #0a0a0a;
     --card-hover-bg: #0f1419;
-    --border-color: #1a2332;
+    --border-color: #1e293b;
     --text-color: #e5e7eb;
     --text-muted: #6b7280;
-    --card-shadow: 0 4px 12px rgba(0,0,0,0.8);
+    --card-shadow: 0 4px 12px rgba(0,0,0,0.8), 0 0 20px rgba(30, 64, 175, 0.1);
     --transition: all 0.3s ease;
     --input-bg: #0f1419;
     --input-border: #1e293b;
-    --primary-color-rgb: 14, 165, 233;
-    --cyber-accent: rgba(14, 165, 233, 0.15);
+    --primary-color-rgb: 30, 64, 175;
+    --cyber-accent: rgba(30, 64, 175, 0.15);
 }
 
 /* Reset and Base Styles */
@@ -76,6 +76,12 @@ header h1 {
 .card {
     padding: 30px;
     border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 0 10px rgba(30, 64, 175, 0.05);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0 20px rgba(30, 64, 175, 0.1);
 }
 
 .card:last-of-type {
@@ -265,9 +271,12 @@ select:focus {
 .btn-primary {
     background: var(--primary-color);
     color: white;
+    box-shadow: 0 0 20px var(--primary-glow);
 }
 
 .btn-primary:hover:not(:disabled) {
+    box-shadow: 0 0 30px var(--primary-glow);
+
     background: var(--secondary-color);
 }
 
@@ -653,7 +662,7 @@ footer {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    background: linear-gradient(90deg, #1e40af, #2563eb);
 }
 
 .save-notification-content {
@@ -707,7 +716,7 @@ footer {
     flex: 1;
     background: rgba(59, 130, 246, 0.15);
     border: 1px solid rgba(59, 130, 246, 0.3);
-    color: #93c5fd;
+    color: #60a5fa;
     padding: 7px 12px;
     border-radius: 6px;
     font-size: 12px;
@@ -720,7 +729,7 @@ footer {
 .save-notification-btn:hover {
     background: rgba(59, 130, 246, 0.25);
     border-color: rgba(59, 130, 246, 0.5);
-    color: #bfdbfe;
+    color: #93c5fd;
     transform: translateY(-1px);
 }
 
@@ -733,7 +742,7 @@ footer {
     bottom: 0;
     left: 0;
     height: 2px;
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    background: linear-gradient(90deg, #1e40af, #2563eb);
     animation: progressBar 3s linear;
     transform-origin: left;
 }
@@ -1243,10 +1252,10 @@ footer {
 .page-fetch-items {
     font-size: 14px;
     font-weight: 600;
-    color: rgb(139, 92, 246);
+    color: #1e40af;
     display: inline-block;
     padding: 4px 12px;
-    background: rgba(139, 92, 246, 0.15);
+    background: rgba(30, 64, 175, 0.15);
     border-radius: 20px;
     animation: fadeIn 0.3s ease-out;
 }

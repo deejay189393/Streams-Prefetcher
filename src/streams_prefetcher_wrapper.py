@@ -44,11 +44,15 @@ class StreamsPrefetcherWrapper:
         # Parse addon URLs with their catalog filters
         addon_urls = []
         for item in config.get('addon_urls', []):
-            if item['url'] in addon_catalog_map:
+            # Include catalog addons that have enabled catalogs
+            if item['type'] in ['catalog', 'both'] and item['url'] in addon_catalog_map:
+                addon_urls.append((item['url'], item['type']))
+            # Always include stream-only addons regardless of catalog selection
+            elif item['type'] == 'stream':
                 addon_urls.append((item['url'], item['type']))
 
         if not addon_urls:
-            raise ValueError("No addon URLs with enabled catalogs configured")
+            raise ValueError("No addon URLs configured or no catalogs enabled")
 
         # Build catalog filter (catalog IDs to include)
         catalog_filter = []

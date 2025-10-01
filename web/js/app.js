@@ -1558,8 +1558,11 @@ async function runJob() {
 
         if (data.success) {
             showNotification('Job started successfully', 'success');
-            // Immediately refresh job status to update UI
+            // Immediately refresh job status to update UI multiple times
+            loadJobStatus();
+            setTimeout(() => loadJobStatus(), 200);
             setTimeout(() => loadJobStatus(), 500);
+            setTimeout(() => loadJobStatus(), 1000);
         } else {
             showNotification(data.error || 'Failed to start job', 'error');
         }
