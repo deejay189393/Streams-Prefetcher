@@ -3,21 +3,24 @@
    Modern, clean, and lightweight design
    ============================================================================ */
 
-/* Variables */
+/* Variables - Dark Theme */
 :root {
-    --primary-color: #7B2FBE;
-    --secondary-color: #5C1F8D;
-    --success-color: #28a745;
-    --danger-color: #dc3545;
-    --warning-color: #ffc107;
-    --info-color: #17a2b8;
-    --light-bg: #f8f9fa;
-    --dark-bg: #343a40;
-    --border-color: #dee2e6;
-    --text-color: #212529;
-    --text-muted: #6c757d;
-    --card-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    --primary-color: #9D4EDD;
+    --secondary-color: #7B2CBF;
+    --success-color: #2ea043;
+    --danger-color: #f85149;
+    --warning-color: #d29922;
+    --info-color: #58a6ff;
+    --dark-bg: #0a0a0a;
+    --card-bg: #161616;
+    --card-hover-bg: #1f1f1f;
+    --border-color: #30363d;
+    --text-color: #e6edf3;
+    --text-muted: #8b949e;
+    --card-shadow: 0 4px 12px rgba(0,0,0,0.5);
     --transition: all 0.3s ease;
+    --input-bg: #0d1117;
+    --input-border: #30363d;
 }
 
 /* Reset and Base Styles */
@@ -32,7 +35,7 @@ body {
     font-size: 14px;
     line-height: 1.6;
     color: var(--text-color);
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--dark-bg);
     min-height: 100vh;
     padding: 20px;
 }
@@ -41,9 +44,10 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    background: white;
+    background: var(--card-bg);
     border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
     overflow: hidden;
 }
 
@@ -105,7 +109,9 @@ input[type="number"],
 select {
     width: 100%;
     padding: 10px;
-    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--input-border);
     border-radius: 5px;
     font-size: 14px;
     transition: var(--transition);
@@ -116,7 +122,8 @@ input[type="number"]:focus,
 select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(123, 47, 190, 0.1);
+    background: var(--card-hover-bg);
+    box-shadow: 0 0 0 3px rgba(157, 78, 221, 0.2);
 }
 
 .help-text {
@@ -234,7 +241,7 @@ select:focus {
     border: 1px solid var(--border-color);
     border-radius: 5px;
     padding: 15px;
-    background: var(--light-bg);
+    background: var(--input-bg);
 }
 
 .addon-section h4 {
@@ -249,7 +256,7 @@ select:focus {
 }
 
 .addon-item {
-    background: white;
+    background: var(--card-hover-bg);
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 5px;
@@ -293,13 +300,13 @@ select:focus {
     border: 1px solid var(--border-color);
     border-radius: 5px;
     padding: 15px;
-    background: var(--light-bg);
+    background: var(--input-bg);
     max-height: 400px;
     overflow-y: auto;
 }
 
 .catalog-item {
-    background: white;
+    background: var(--card-hover-bg);
     padding: 12px;
     margin-bottom: 10px;
     border-radius: 5px;
@@ -358,22 +365,22 @@ select:focus {
 }
 
 .status-idle {
-    background: var(--light-bg);
+    background: var(--input-bg);
     border-color: var(--border-color);
 }
 
 .status-scheduled {
-    background: #e7f3ff;
+    background: rgba(88, 166, 255, 0.1);
     border-color: var(--info-color);
 }
 
 .status-running {
-    background: #fff3cd;
+    background: rgba(210, 153, 34, 0.1);
     border-color: var(--warning-color);
 }
 
 .status-completed {
-    background: #d4edda;
+    background: rgba(46, 160, 67, 0.1);
     border-color: var(--success-color);
 }
 
@@ -390,10 +397,11 @@ select:focus {
 
 .progress-bar {
     height: 25px;
-    background: var(--light-bg);
+    background: var(--input-bg);
     border-radius: 5px;
     overflow: hidden;
     margin: 10px 0;
+    border: 1px solid var(--border-color);
 }
 
 .progress-bar-fill {
@@ -425,24 +433,26 @@ select:focus {
 
 /* Info Box */
 .info-box {
-    background: var(--light-bg);
+    background: var(--input-bg);
     padding: 15px;
     border-radius: 5px;
     border-left: 4px solid var(--info-color);
+    border: 1px solid var(--border-color);
 }
 
 /* Footer */
 footer {
-    background: var(--light-bg);
+    background: var(--input-bg);
     padding: 20px;
     text-align: center;
     color: var(--text-muted);
     font-size: 13px;
+    border-top: 1px solid var(--border-color);
 }
 
 /* Loading Spinner */
 .spinner {
-    border: 3px solid var(--light-bg);
+    border: 3px solid var(--border-color);
     border-top: 3px solid var(--primary-color);
     border-radius: 50%;
     width: 30px;
@@ -530,11 +540,11 @@ footer {
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--light-bg);
+    background: var(--input-bg);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--text-muted);
+    background: var(--border-color);
     border-radius: 4px;
 }
 
