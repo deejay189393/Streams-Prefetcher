@@ -21,6 +21,7 @@ let configSaveTimeout = null;
 let currentSchedules = [];
 let editingScheduleIndex = null;
 let isPageLoading = true; // Prevent notifications during initial load
+let completionScreenLocked = false; // Prevent accidental hiding of completion screen
 
 // ============================================================================
 // Collapsible Section Helpers
@@ -1704,6 +1705,12 @@ async function loadJobStatus() {
 }
 
 function updateJobStatusUI(status) {
+    // If completion screen is locked, don't allow status changes to hide it
+    // unless we're explicitly showing completion again or user dismissed it
+    if (completionScreenLocked && status.status !== 'completed') {
+        return;
+    }
+
     // Hide all status displays
     document.querySelectorAll('.status-display').forEach(box => {
         box.style.display = 'none';
@@ -1712,6 +1719,7 @@ function updateJobStatusUI(status) {
     // Show appropriate status display
     if (status.status === 'idle') {
         document.getElementById('status-idle').style.display = 'block';
+        completionScreenLocked = false; // Unlock when returning to idle
     } else if (status.status === 'scheduled') {
         const scheduledDisplay = document.getElementById('status-scheduled');
         if (scheduledDisplay) {
@@ -1735,6 +1743,7 @@ function updateJobStatusUI(status) {
         const completedDisplay = document.getElementById('status-completed');
         if (completedDisplay) {
             completedDisplay.style.display = 'block';
+            completionScreenLocked = true; // Lock the completion screen
 
             // Populate completion stats if summary data is available
             if (status.summary) {
@@ -1933,6 +1942,9 @@ async function runJob() {
             // Mark that a prefetch job has been run for smart collapse behavior
             localStorage.setItem('has-run-prefetch-job', 'true');
 
+            // Unlock completion screen if it was locked
+            completionScreenLocked = false;
+
             // Immediately show the first selected catalog name for instant feedback
             const selectedCatalogs = loadedCatalogs.filter(cat => cat.enabled);
             if (selectedCatalogs.length > 0) {
@@ -1959,6 +1971,8 @@ async function runJob() {
 // See startTerminateCountdown() and performTerminate() functions above
 
 function dismissCompletion() {
+    // Unlock the completion screen before dismissing
+    completionScreenLocked = false;
     // Hide completion screen and show idle/ready state
     updateJobStatusUI({ status: 'idle' });
 }
