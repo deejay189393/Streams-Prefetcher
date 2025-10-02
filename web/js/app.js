@@ -1782,6 +1782,24 @@ function updateJobStatusUI(status) {
                 populateCompletionStats(status.summary, status.start_time, status.end_time);
             }
         }
+    } else if (status.status === 'failed') {
+        const failedDisplay = document.getElementById('status-failed');
+        if (failedDisplay) {
+            failedDisplay.style.display = 'block';
+
+            // Populate error details
+            const errorMessage = document.getElementById('error-message');
+            const errorTimestamp = document.getElementById('error-timestamp');
+
+            if (errorMessage && status.error) {
+                errorMessage.textContent = status.error;
+            }
+
+            if (errorTimestamp && status.end_time) {
+                const endDate = new Date(status.end_time * 1000);
+                errorTimestamp.textContent = `Failed at ${endDate.toLocaleString()}`;
+            }
+        }
     }
 
     // Disable config changes if running
@@ -2021,6 +2039,11 @@ function dismissCompletion() {
     // Unlock the completion screen before dismissing
     completionScreenLocked = false;
     // Hide completion screen and show idle/ready state
+    updateJobStatusUI({ status: 'idle' });
+}
+
+function dismissError() {
+    // Hide error screen and show idle/ready state
     updateJobStatusUI({ status: 'idle' });
 }
 

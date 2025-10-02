@@ -672,6 +672,70 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Failed/Error State -->
+            <div id="status-failed" class="status-display status-failed" style="display: none;">
+                <div class="error-header">
+                    <div class="status-icon-wrapper">
+                        <div class="status-icon error-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <h3 class="error-title">Prefetch Job Failed</h3>
+                    <p class="error-subtitle">An error occurred while running the prefetch job</p>
+                </div>
+
+                <div class="error-content">
+                    <div class="error-details-card">
+                        <div class="error-details-header">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            <span>Error Details</span>
+                        </div>
+                        <div class="error-message" id="error-message">
+                            An unexpected error occurred
+                        </div>
+                        <div class="error-timestamp" id="error-timestamp">
+                            <!-- Timestamp will be inserted here -->
+                        </div>
+                    </div>
+
+                    <div class="error-help-card">
+                        <div class="error-help-header">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            <span>What to try</span>
+                        </div>
+                        <ul class="error-suggestions">
+                            <li>Check your configuration settings and addon URLs</li>
+                            <li>Ensure at least one catalog is selected</li>
+                            <li>Verify your network connection</li>
+                            <li>Check container logs for detailed error information</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="error-actions">
+                    <button type="button" class="btn-modern btn-error-dismiss" onclick="dismissError()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        Dismiss
+                    </button>
+                </div>
+            </div>
         </section>
 
         <!-- Reset to Defaults Section -->

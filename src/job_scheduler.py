@@ -337,6 +337,14 @@ class JobScheduler:
             self.job_end_time = time.time()
             self.job_error = str(e)
 
+            # LOG THE EXCEPTION SO WE CAN SEE WHAT WENT WRONG
+            logger.error("=" * 60)
+            logger.error("PREFETCH JOB FAILED WITH EXCEPTION")
+            logger.error("=" * 60)
+            logger.error(f"Error: {self.job_error}")
+            logger.exception(e)  # This logs the full traceback
+            logger.error("=" * 60)
+
             self._notify_callbacks('job_error', {
                 'status': self.job_status,
                 'error': self.job_error,
