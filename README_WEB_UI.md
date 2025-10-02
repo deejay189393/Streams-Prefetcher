@@ -12,6 +12,8 @@ A modern web-based interface for the Streams Prefetcher, designed to work with *
 - **Real-Time Monitoring**: Live progress updates and output streaming during prefetch jobs
 - **Job Scheduling**: Configure recurring prefetch jobs using cron-like expressions
 - **Catalog Management**: Load, select, and reorder catalogs with drag-and-drop
+- **Completion Statistics**: Detailed post-job analytics with graphs, timelines, and processing rates
+- **Smart Addon URL Management**: Automatic manifest fetching and URL validation
 - **State Persistence**: All configurations and selections persist across sessions
 - **Docker-Based**: Easy deployment with Docker Compose
 - **Lightweight & Efficient**: Optimized for minimal resource usage
@@ -25,6 +27,8 @@ A modern web-based interface for the Streams Prefetcher, designed to work with *
 - **Multi-Addon Support**: Separate catalog and stream addons with flexible configuration
 - **Time-Based Limits**: Set execution time limits and delays with human-readable formats
 - **Persistent State**: Jobs continue running even if you close the browser
+- **Reset Functionality**: Clear cache and reset configurations with one click
+- **Catalog Filtering**: Advanced filtering options for catalog selection
 
 ## Architecture
 
@@ -54,7 +58,7 @@ A modern web-based interface for the Streams Prefetcher, designed to work with *
 ### Prerequisites
 
 - Docker and Docker Compose installed
-- A domain or subdomain pointed to your server (e.g., `streams-prefetcher.yourdomain.com`)
+- A domain or subdomain pointed to your server (optional, e.g., `streams-prefetcher.yourdomain.com`)
 - Self-hosted Stremio addon(s) to prefetch from
 
 ### Installation
@@ -66,14 +70,41 @@ A modern web-based interface for the Streams Prefetcher, designed to work with *
    git checkout web-ui
    ```
 
-2. **Start the application**:
+2. **Configure environment variables** (optional):
    ```bash
-   docker-compose up -d
+   cp .env.example .env
+   # Edit .env to set your configuration
    ```
 
-3. **Access the web interface**:
+3. **Start the application**:
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Access the web interface**:
    - Direct access: `http://your-server-ip:5000`
    - With domain: Configure your reverse proxy (see below)
+
+### Environment Variables
+
+Create a `.env` file (copy from `.env.example`) to customize:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `STREAMS_PREFETCHER_HOSTNAME` | Required for Traefik | Hostname for reverse proxy routing |
+| `DOCKER_DATA_DIR` | Required | Directory for persistent data storage |
+| `PORT` | 5000 | Port the application runs on |
+| `TZ` | UTC | Timezone for logs and scheduled jobs |
+| `LOG_LEVEL` | INFO | Logging verbosity (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
+
+**Example `.env`:**
+```bash
+STREAMS_PREFETCHER_HOSTNAME=streams-prefetcher.yourdomain.com
+DOCKER_DATA_DIR=/opt/docker-data
+PORT=5000
+TZ=America/New_York
+LOG_LEVEL=INFO
+```
 
 ### Reverse Proxy Configuration (Nginx)
 
@@ -103,17 +134,18 @@ server {
 
 ### Reverse Proxy Configuration (Traefik)
 
-If you're using Traefik, uncomment and configure the labels in `docker-compose.yml`:
+The labels in `compose.yaml` already include Traefik configuration. Ensure you set the `STREAMS_PREFETCHER_HOSTNAME` environment variable:
 
 ```yaml
 labels:
   - "traefik.enable=true"
-  - "traefik.http.routers.streams-prefetcher.rule=Host(`streams-prefetcher.yourdomain.com`)"
+  - "traefik.http.routers.streams-prefetcher.rule=Host(`${STREAMS_PREFETCHER_HOSTNAME?}`)"
   - "traefik.http.routers.streams-prefetcher.entrypoints=websecure"
-  - "traefik.http.routers.streams-prefetcher.tls=true"
   - "traefik.http.routers.streams-prefetcher.tls.certresolver=letsencrypt"
-  - "traefik.http.services.streams-prefetcher.loadbalancer.server.port=5000"
+  - "traefik.http.routers.streams-prefetcher.middlewares=authelia@docker"
 ```
+
+**Note:** The Authelia middleware is included for authentication. Remove this line if you're not using Authelia.
 
 ## User Guide
 
@@ -129,6 +161,7 @@ Configure your addon URLs in three categories:
 - Add unlimited addon URLs
 - Drag and drop URLs between categories
 - Reorder URLs within categories
+- Automatic manifest fetching and validation
 
 #### Limits
 Set global and per-catalog limits:
@@ -151,6 +184,10 @@ Format: Enter a number and select the unit (milliseconds, seconds, minutes, hour
 - **Randomize Item Prefetching**: Process items within catalogs in random order
 - **Enable Logging**: Save detailed logs to `data/logs/` directory
 
+#### Reset Configuration
+- **Reset to Defaults**: Click the reset button to restore all settings to default values
+- **Clear Cache**: Option to clear the prefetch cache database
+
 ### 2. Catalog Selection
 
 1. Click **Load Catalogs** to fetch all available catalogs from your configured addons
@@ -164,6 +201,7 @@ Format: Enter a number and select the unit (milliseconds, seconds, minutes, hour
 - Visual type indicators (Movie, Series, Mixed)
 - Drag-and-drop reordering
 - Enable/disable individual catalogs
+- Advanced filtering options
 
 ### 3. Job Scheduling
 
@@ -194,9 +232,18 @@ Jobs will run automatically based on your configured schedule.
 When a job is running, you'll see:
 - Current catalog being processed
 - Progress bars for catalogs and items
+- Catalog-specific statistics (Movies/Series fetched per catalog)
 - Live output from the prefetcher
 - Timing information and ETA
 - Success/failure statistics
+
+#### Completion Statistics
+After a job completes, view detailed analytics:
+- **Timing Overview**: Start time, end time, total duration, processing time
+- **Statistics Summary**: Total catalogs, movies, series, pages processed, cache hits, success rate
+- **Processing Rates**: Movies per minute, series per minute, overall processing speed
+- **Catalog Timeline**: Visual timeline graph showing when each catalog was processed
+- **Catalog Details**: Detailed breakdown of each catalog with processing stats
 
 #### Job Control
 - **Cancel Job**: Stop a running job gracefully
@@ -273,7 +320,7 @@ Cache Validity: 7 days
 
 Check logs:
 ```bash
-docker-compose logs streams-prefetcher
+docker compose logs streams-prefetcher
 ```
 
 Ensure port 5000 is available:
@@ -313,7 +360,7 @@ sudo netstat -tlnp | grep 5000
 
 ### Resource Limits
 
-Adjust in `docker-compose.yml`:
+Adjust in `compose.yaml`:
 ```yaml
 deploy:
   resources:
@@ -354,6 +401,7 @@ Since this version doesn't include built-in authentication, protect access using
 2. **Authelia** (recommended for advanced use):
    - Integrates with Traefik/Nginx
    - Provides 2FA, SSO, and access policies
+   - Already configured in compose.yaml Traefik labels
 
 3. **VPN/Tailscale**:
    - Access only via private network
@@ -380,9 +428,9 @@ Your existing cache database will work with the web UI version. The configuratio
 
 ```bash
 git pull origin web-ui
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```
 
 Your data in the `data/` directory will be preserved.
@@ -394,21 +442,31 @@ Your data in the `data/` directory will be preserved.
 ```
 Stremio-Streams-Prefetcher/
 ├── src/
-│   ├── web_app.py               # Flask application
-│   ├── job_scheduler.py         # Job scheduling
-│   ├── config_manager.py        # Configuration persistence
-│   ├── streams_prefetcher.py    # Core prefetcher logic
-│   └── streams_prefetcher_wrapper.py  # Wrapper for programmatic use
+│   ├── web_app.py                      # Flask application & API server
+│   ├── job_scheduler.py                # Job scheduling with APScheduler
+│   ├── config_manager.py               # Configuration persistence
+│   ├── catalog_filter.py               # Catalog filtering logic
+│   ├── logger.py                       # Logging infrastructure
+│   ├── streams_prefetcher.py           # Core prefetcher logic
+│   ├── streams_prefetcher_filtered.py  # Filtered prefetcher variant
+│   ├── streams_prefetcher_wrapper.py   # Wrapper for programmatic use
+│   └── prefetch/
+│       ├── __init__.py                 # Prefetch module initialization
+│       └── models.py                   # Data models
 ├── web/
-│   ├── index.html               # Frontend HTML
+│   ├── index.html                      # Frontend HTML
 │   ├── css/
-│   │   └── style.css            # Styles
+│   │   └── style.css                   # Styles
 │   └── js/
-│       └── app.js               # Frontend JavaScript
-├── data/                        # Persistent data (created at runtime)
-├── Dockerfile                   # Docker build instructions
-├── docker-compose.yml           # Docker Compose configuration
-└── requirements.txt             # Python dependencies
+│       └── app.js                      # Frontend JavaScript
+├── data/                               # Persistent data (created at runtime)
+│   ├── config/
+│   ├── db/
+│   └── logs/
+├── Dockerfile                          # Docker build instructions
+├── compose.yaml                        # Docker Compose configuration
+├── requirements.txt                    # Python dependencies
+└── .env.example                        # Environment variables template
 ```
 
 ### Running Locally (Development)
@@ -436,18 +494,35 @@ The web UI uses a REST API for all operations. Full API documentation:
 
 ### Endpoints
 
+#### Configuration
 - `GET /api/config` - Get current configuration
 - `POST /api/config` - Update configuration
+- `POST /api/config/reset` - Reset configuration to defaults
+
+#### Catalogs
 - `POST /api/catalogs/load` - Load catalogs from addons
+- `GET /api/catalogs/selection` - Get saved catalog selection
 - `POST /api/catalogs/selection` - Save catalog selection
+
+#### Addon Management
+- `POST /api/addon/manifest` - Fetch addon manifest from URL
+
+#### Scheduling
 - `GET /api/schedule` - Get schedule information
 - `POST /api/schedule` - Update schedule
 - `DELETE /api/schedule` - Disable schedule
+
+#### Job Control
 - `GET /api/job/status` - Get job status
 - `POST /api/job/run` - Run job manually
 - `POST /api/job/cancel` - Cancel running job
+- `GET /api/job/output` - Get job output logs
+
+#### Real-Time Updates
 - `GET /api/events` - Server-Sent Events for real-time updates
-- `GET /api/health` - Health check
+
+#### Health
+- `GET /api/health` - Health check endpoint
 
 ## Support
 
