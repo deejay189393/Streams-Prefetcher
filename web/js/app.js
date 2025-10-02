@@ -1377,35 +1377,32 @@ async function performTerminate() {
     btn.disabled = true;
 
     try {
-        // Set flag to prevent completion screen from showing
+        // Set flag to indicate termination was requested
+        // We'll still show completion screen with results when job finishes
         jobTerminationRequested = true;
 
-        // Make the API call (don't wait for response)
-        fetch('/api/job/cancel', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Job terminated', 'info');
-                } else {
-                    showNotification(data.error || 'Failed to terminate job', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error terminating job:', error);
-                showNotification('Error terminating job', 'error');
-            });
+        // Make the API call and wait for completion results
+        const response = await fetch('/api/job/cancel', { method: 'POST' });
+        const data = await response.json();
 
-        // IMMEDIATELY switch to idle state without waiting
-        updateJobStatusUI({ status: 'idle' });
-        btn.classList.remove('terminating');
-        btn.disabled = false;
-        btn.textContent = 'Terminate';
+        if (data.success) {
+            showNotification('Job terminating... waiting for results', 'info');
+            // Don't switch to idle - wait for job_complete event with results
+        } else {
+            showNotification(data.error || 'Failed to terminate job', 'error');
+            // Reset button on error
+            btn.classList.remove('terminating');
+            btn.disabled = false;
+            btn.textContent = 'Terminate';
+            jobTerminationRequested = false;
+        }
     } catch (error) {
         console.error('Error terminating job:', error);
         showNotification('Error terminating job', 'error');
         btn.disabled = false;
         btn.textContent = 'Terminate';
         btn.classList.remove('terminating');
+        jobTerminationRequested = false;
     }
 }
 
@@ -1720,16 +1717,23 @@ function updateJobStatusUI(status) {
         return;
     }
 
-    // If job termination was requested, don't show completion screen
-    // User already terminated and returned to idle, so ignore any late completion status
-    if (status.status === 'completed' && jobTerminationRequested) {
-        status = { status: 'idle' };
-        jobTerminationRequested = false; // Clear flag after handling
-    }
+    // Treat 'cancelled' status as 'completed' for UI purposes (show results)
+    const isCompleted = status.status === 'completed' || status.status === 'cancelled';
 
     // If this completion was dismissed, show idle instead
-    if (status.status === 'completed' && dismissedCompletionId === String(currentCompletionId)) {
+    if (isCompleted && dismissedCompletionId === String(currentCompletionId)) {
         status = { status: 'idle' };
+    }
+
+    // Clear termination flag when completion screen is shown
+    if (isCompleted && jobTerminationRequested) {
+        jobTerminationRequested = false;
+        // Continue to show completion screen with partial results
+    }
+
+    // Normalize cancelled to completed for display
+    if (status.status === 'cancelled') {
+        status.status = 'completed';
     }
 
     // Hide all status displays

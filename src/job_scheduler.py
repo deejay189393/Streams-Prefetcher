@@ -7,6 +7,7 @@ import threading
 import time
 import sys
 import io
+import ctypes
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, Callable
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -42,6 +43,7 @@ class JobScheduler:
         # Job state
         self.current_job = None
         self.job_thread = None
+        self.wrapper = None  # Store reference to current wrapper
         self.job_status = JobStatus.IDLE
         self.job_start_time = None
         self.job_end_time = None
@@ -255,13 +257,13 @@ class JobScheduler:
             sys.stdout = output_capture
 
             # Create wrapper and run
-            wrapper = StreamsPrefetcherWrapper(
+            self.wrapper = StreamsPrefetcherWrapper(
                 self.config_manager,
                 progress_callback=self._update_progress,
                 output_callback=self._append_output
             )
 
-            result = wrapper.run()
+            result = self.wrapper.run()
 
             # Restore stdout
             sys.stdout = old_stdout
@@ -273,15 +275,21 @@ class JobScheduler:
 
             # Extract success and summary
             success = result.get('success', False) if isinstance(result, dict) else result
+            interrupted = result.get('interrupted', False) if isinstance(result, dict) else False
             self.job_summary = result.get('results') if isinstance(result, dict) else None
 
-            # Update status
-            self.job_status = JobStatus.COMPLETED if success else JobStatus.FAILED
+            # Update status - if interrupted, mark as CANCELLED but keep summary
+            if interrupted or self.job_status == JobStatus.CANCELLED:
+                self.job_status = JobStatus.CANCELLED
+            else:
+                self.job_status = JobStatus.COMPLETED if success else JobStatus.FAILED
+
             self.job_end_time = time.time()
             duration = self.job_end_time - self.job_start_time
 
             logger.info("=" * 60)
-            logger.info(f"PREFETCH JOB {'COMPLETED' if success else 'FAILED'}")
+            status_str = 'CANCELLED' if interrupted else ('COMPLETED' if success else 'FAILED')
+            logger.info(f"PREFETCH JOB {status_str}")
             logger.info("=" * 60)
             logger.info(f"Duration: {int(duration // 60)}m {int(duration % 60)}s")
 
@@ -373,26 +381,48 @@ class JobScheduler:
             'is_scheduled': len(scheduled_jobs) > 0
         }
 
-        # Include summary data for completed jobs
-        if self.job_status == JobStatus.COMPLETED and self.job_summary:
+        # Include summary data for completed or cancelled jobs (cancelled jobs have partial results)
+        if (self.job_status == JobStatus.COMPLETED or self.job_status == JobStatus.CANCELLED) and self.job_summary:
             status_data['summary'] = self.job_summary
 
         return status_data
 
     def cancel_job(self):
-        """Cancel running job"""
-        if self.job_status == JobStatus.RUNNING:
-            # Note: This is a best-effort cancellation
-            # The actual job might take time to stop
-            self.job_status = JobStatus.CANCELLED
-            self.job_end_time = time.time()
+        """Cancel running job by injecting KeyboardInterrupt into the thread"""
+        if self.job_status == JobStatus.RUNNING and self.job_thread and self.job_thread.is_alive():
+            # Inject KeyboardInterrupt into the running thread
+            # This allows the wrapper to catch it and return partial results
+            try:
+                thread_id = self.job_thread.ident
+                exc = ctypes.py_object(KeyboardInterrupt)
+                res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                    ctypes.c_long(thread_id), exc
+                )
 
-            self._notify_callbacks('job_cancelled', {
-                'status': self.job_status,
-                'end_time': self.job_end_time
-            })
+                if res == 0:
+                    # Invalid thread ID
+                    logger.warning("Failed to cancel job: invalid thread ID")
+                    return False
+                elif res > 1:
+                    # More than one thread affected, undo
+                    ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                        ctypes.c_long(thread_id), None
+                    )
+                    logger.warning("Failed to cancel job: multiple threads affected")
+                    return False
 
-            return True
+                # Mark as cancelled (will be confirmed when thread finishes)
+                self.job_status = JobStatus.CANCELLED
+
+                # Don't set end_time yet - wait for thread to finish
+                # The thread will capture results and call job_complete
+
+                logger.info("Cancellation signal sent to job thread")
+                return True
+
+            except Exception as e:
+                logger.error(f"Error cancelling job: {e}")
+                return False
         return False
 
     def shutdown(self):
