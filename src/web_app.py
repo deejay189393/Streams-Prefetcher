@@ -225,7 +225,7 @@ def update_config():
 
 @app.route('/api/config/reset', methods=['POST'])
 def reset_config():
-    """Reset configuration to defaults"""
+    """Reset configuration to defaults and clear all data except database"""
     try:
         # Check if job is running
         if job_scheduler.job_status == JobStatus.RUNNING:
@@ -237,12 +237,33 @@ def reset_config():
         # Reset configuration to defaults
         success = config_manager.reset()
 
-        if success:
-            return jsonify({'success': True, 'config': config_manager.get_all()})
-        else:
+        if not success:
             return jsonify({'success': False, 'error': 'Failed to reset configuration'}), 500
 
+        # Clear addon name cache
+        config_manager.set('addon_name_cache', {})
+
+        # Clear all log files (they contain addon URLs and could be a privacy issue)
+        log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'logs')
+        if os.path.exists(log_dir):
+            for log_file in os.listdir(log_dir):
+                log_path = os.path.join(log_dir, log_file)
+                if os.path.isfile(log_path) and log_file.endswith('.txt'):
+                    try:
+                        os.remove(log_path)
+                        logger.info(f"Deleted log file: {log_file}")
+                    except Exception as e:
+                        logger.warning(f"Failed to delete log file {log_file}: {e}")
+
+        # Disable any active schedule
+        job_scheduler.disable_schedule()
+
+        logger.info("Configuration reset completed - all settings cleared, database preserved")
+
+        return jsonify({'success': True, 'config': config_manager.get_all()})
+
     except Exception as e:
+        logger.error(f"Error during reset: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -355,6 +376,54 @@ def save_catalog_selection():
         return jsonify({'success': True})
 
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/addon/manifest', methods=['POST'])
+def fetch_addon_manifest():
+    """Fetch addon manifest and extract name"""
+    try:
+        data = request.get_json()
+        if not data or 'url' not in data:
+            return jsonify({'success': False, 'error': 'No URL provided'}), 400
+
+        addon_url = data['url'].rstrip('/')
+
+        try:
+            # Fetch manifest
+            response = requests.get(
+                f"{addon_url}/manifest.json",
+                timeout=10,
+                headers={
+                    'User-Agent': 'Stremio Streams Prefetcher Web/1.0',
+                    'Accept': 'application/json'
+                }
+            )
+            response.raise_for_status()
+            manifest = response.json()
+
+            addon_name = manifest.get('name', 'Unknown Addon')
+
+            # Cache the addon name in config
+            addon_name_cache = config_manager.get('addon_name_cache', {})
+            addon_name_cache[addon_url] = addon_name
+            config_manager.set('addon_name_cache', addon_name_cache)
+
+            return jsonify({
+                'success': True,
+                'name': addon_name,
+                'url': addon_url
+            })
+
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Failed to fetch manifest from {addon_url}: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': f'Failed to fetch manifest: {str(e)}'
+            }), 400
+
+    except Exception as e:
+        logger.error(f"Error fetching addon manifest: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

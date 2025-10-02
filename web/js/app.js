@@ -433,6 +433,20 @@ function setupConfigChangeListeners() {
             autoSaveConfiguration();
         });
     }
+
+    // Listen to addon URLs section inputs for auto-save
+    const addonSection = document.getElementById('addon-urls');
+    if (addonSection) {
+        addonSection.addEventListener('input', () => {
+            configModified = true;
+            autoSaveConfiguration();
+        });
+
+        addonSection.addEventListener('change', () => {
+            configModified = true;
+            autoSaveConfiguration();
+        });
+    }
 }
 
 // ============================================================================
@@ -685,26 +699,63 @@ function renderAddonUrls(addonUrls) {
         document.getElementById(`addon-list-${type}`).innerHTML = '';
     });
 
-    // Render each URL
+    // Render each URL with cached name - no fetching on page load
     addonUrls.forEach((item, index) => {
         const container = document.getElementById(`addon-list-${item.type}`);
-        const itemDiv = createAddonUrlItem(item.url, item.type, index);
+        const itemDiv = createAddonUrlItem(item.url, item.type, index, item.name);
         container.appendChild(itemDiv);
     });
 }
 
-function createAddonUrlItem(url, type, index) {
+function createAddonUrlItem(url, type, index, name = null) {
     const div = document.createElement('div');
     div.className = 'addon-item';
     div.draggable = true;
     div.dataset.type = type;
     div.dataset.index = index;
+    div.dataset.url = url;
+    div.dataset.name = name || '';
 
-    div.innerHTML = `
-        <span class="drag-handle">⋮⋮</span>
-        <input type="text" value="${url}" placeholder="https://addon.example.com">
-        <button class="remove-btn" onclick="removeAddonUrl(this)">×</button>
-    `;
+    const isEditing = !url || url === '';
+    const displayName = name || url;
+
+    if (isEditing) {
+        // Editing mode - show input field
+        div.innerHTML = `
+            <span class="drag-handle">⋮⋮</span>
+            <input type="url" class="addon-url-input" value="${url}" placeholder="https://addon.example.com">
+            <button class="remove-btn" onclick="removeAddonUrl(this)">×</button>
+        `;
+
+        // Add input listener for auto-fetch manifest
+        const input = div.querySelector('.addon-url-input');
+        let fetchTimeout = null;
+        input.addEventListener('input', (e) => {
+            const newUrl = e.target.value.trim();
+            div.dataset.url = newUrl;
+
+            // Clear existing timeout
+            if (fetchTimeout) {
+                clearTimeout(fetchTimeout);
+            }
+
+            // Fetch manifest after 2 second delay (but don't save yet)
+            if (newUrl && newUrl.startsWith('http')) {
+                fetchTimeout = setTimeout(() => {
+                    fetchAddonManifest(newUrl, div);
+                    fetchTimeout = null;
+                }, 2000);
+            }
+        });
+    } else {
+        // Display mode - show name/URL as read-only
+        div.innerHTML = `
+            <span class="drag-handle">⋮⋮</span>
+            <span class="addon-display-name" title="${url}">${displayName}</span>
+            <button class="edit-btn" onclick="editAddonUrl(this)">✏️</button>
+            <button class="remove-btn" onclick="removeAddonUrl(this)">×</button>
+        `;
+    }
 
     setupAddonDragDrop(div);
 
@@ -716,11 +767,81 @@ function addAddonUrl(type) {
     const index = container.children.length;
     const itemDiv = createAddonUrlItem('', type, index);
     container.appendChild(itemDiv);
-    autoSaveConfiguration();
+    // Don't auto-save here - will save after manifest is fetched
 }
 
 function removeAddonUrl(btn) {
     btn.closest('.addon-item').remove();
+    // Save immediately when removing (this is a complete action)
+    updateAddonUrlsConfig();
+}
+
+function editAddonUrl(btn) {
+    const div = btn.closest('.addon-item');
+    const url = div.dataset.url;
+    const type = div.dataset.type;
+    const index = div.dataset.index;
+
+    // Recreate item in editing mode
+    const newDiv = createAddonUrlItem(url, type, index, null);
+    div.replaceWith(newDiv);
+}
+
+async function fetchAddonManifest(url, addonDiv) {
+    try {
+        const response = await fetch('/api/addon/manifest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.name) {
+            // Update the addon item with the fetched name
+            addonDiv.dataset.name = data.name;
+            addonDiv.dataset.url = data.url;
+
+            // Convert to display mode
+            const type = addonDiv.dataset.type;
+            const index = addonDiv.dataset.index;
+            const newDiv = createAddonUrlItem(data.url, type, index, data.name);
+            addonDiv.replaceWith(newDiv);
+
+            // Update config with the name
+            updateAddonUrlsConfig();
+        }
+    } catch (error) {
+        console.error('Error fetching addon manifest:', error);
+    }
+}
+
+function updateAddonUrlsConfig() {
+    // Collect all addon URLs with their names
+    // Only save URLs that are in display mode (successfully fetched)
+    const addonUrls = [];
+    ['both', 'catalog', 'stream'].forEach(type => {
+        const container = document.getElementById(`addon-list-${type}`);
+        const items = container.querySelectorAll('.addon-item');
+        items.forEach(item => {
+            // Only save if URL has been validated (has display name, not in edit mode)
+            const displayName = item.querySelector('.addon-display-name');
+            if (displayName) {
+                const url = item.dataset.url;
+                const name = item.dataset.name || null;
+                if (url && url.trim()) {
+                    addonUrls.push({
+                        url: url.trim(),
+                        type: type,
+                        name: name
+                    });
+                }
+            }
+        });
+    });
+
+    // Save to config
+    currentConfig.addon_urls = addonUrls;
     autoSaveConfiguration();
 }
 
@@ -912,15 +1033,24 @@ function autoSaveConfiguration() {
 
 async function saveConfigurationSilent() {
     try {
-        // Collect addon URLs
+        // Collect addon URLs (only validated ones in display mode)
         const addonUrls = [];
         ['both', 'catalog', 'stream'].forEach(type => {
             const container = document.getElementById(`addon-list-${type}`);
             const items = container.querySelectorAll('.addon-item');
             items.forEach(item => {
-                const url = item.querySelector('input').value.trim();
-                if (url) {
-                    addonUrls.push({ url, type });
+                // Check if in display mode (has display name) or edit mode (has input)
+                const displayName = item.querySelector('.addon-display-name');
+                if (displayName) {
+                    // Display mode - get from dataset
+                    const url = item.dataset.url;
+                    const name = item.dataset.name || null;
+                    if (url && url.trim()) {
+                        addonUrls.push({ url: url.trim(), type, name });
+                    }
+                } else {
+                    // Edit mode - skip, don't save incomplete URLs
+                    // URLs will be saved after manifest fetch succeeds
                 }
             });
         });

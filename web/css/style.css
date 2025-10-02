@@ -391,10 +391,34 @@ input:disabled {
     flex: 1;
 }
 
+.addon-item .addon-display-name {
+    flex: 1;
+    color: var(--text-color);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .addon-item .drag-handle {
     cursor: move;
     color: var(--text-muted);
     font-size: 18px;
+}
+
+.addon-item .edit-btn {
+    background: var(--info-color);
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s ease;
+}
+
+.addon-item .edit-btn:hover {
+    background: #2563eb;
 }
 
 .addon-item .remove-btn {
