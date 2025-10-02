@@ -1683,8 +1683,9 @@ function updateProgressInfo(progress) {
         document.getElementById('current-catalog-name').textContent = '-';
         document.querySelector('.current-action').textContent = 'Starting...';
 
-        // Hide page fetch status
+        // Hide page fetch status and catalog stats
         document.getElementById('page-fetch-status').style.display = 'none';
+        document.getElementById('catalog-stats').style.display = 'none';
         return;
     }
 
@@ -1713,9 +1714,55 @@ function updateProgressInfo(progress) {
         actionText += ` (${catalogMode})`;
     }
     if (currentTitle) {
-        actionText = `Prefetching: ${currentTitle}`;
+        // Parse format: "Prefetching streams for Movie: The Whale (2022)"
+        // or "Prefetching streams for Series: Breaking Bad S01E01"
+        const match = currentTitle.match(/Prefetching streams for (Movie|Series): (.+)/);
+        if (match) {
+            const itemType = match[1];
+            const titleText = match[2];
+            // Format: Title in bold, type on new line in small text
+            document.querySelector('.current-action').innerHTML = `<strong>${titleText}</strong><br><small style="font-size: 0.85em; color: var(--text-muted);">${itemType}</small>`;
+        } else {
+            actionText = `Prefetching: ${currentTitle}`;
+            document.querySelector('.current-action').textContent = actionText;
+        }
+    } else {
+        document.querySelector('.current-action').textContent = actionText;
     }
-    document.querySelector('.current-action').textContent = actionText;
+
+    // Update catalog-specific stats based on catalog type
+    const catalogMovies = progress.catalog_movies_count || 0;
+    const catalogSeries = progress.catalog_series_count || 0;
+
+    // Show/hide catalog stats container and cards based on catalog mode
+    const catalogStatsContainer = document.getElementById('catalog-stats');
+    const catalogMoviesCard = document.getElementById('catalog-movies-card');
+    const catalogSeriesCard = document.getElementById('catalog-series-card');
+
+    if (catalogMode) {
+        catalogStatsContainer.style.display = 'block';
+
+        // Show appropriate cards based on catalog type
+        if (catalogMode.toLowerCase().includes('movie')) {
+            catalogMoviesCard.style.display = 'flex';
+            catalogSeriesCard.style.display = 'none';
+            document.getElementById('catalog-movies').textContent = catalogMovies;
+        } else if (catalogMode.toLowerCase().includes('series')) {
+            catalogMoviesCard.style.display = 'none';
+            catalogSeriesCard.style.display = 'flex';
+            document.getElementById('catalog-series').textContent = catalogSeries;
+        } else if (catalogMode.toLowerCase().includes('mixed')) {
+            // Show both cards for mixed catalogs
+            catalogMoviesCard.style.display = 'flex';
+            catalogSeriesCard.style.display = 'flex';
+            document.getElementById('catalog-movies').textContent = catalogMovies;
+            document.getElementById('catalog-series').textContent = catalogSeries;
+        } else {
+            catalogStatsContainer.style.display = 'none';
+        }
+    } else {
+        catalogStatsContainer.style.display = 'none';
+    }
 
     // Update current catalog name
     document.getElementById('current-catalog-name').textContent = catalogName;

@@ -1059,6 +1059,8 @@ class StreamsPrefetcher:
                         'per_catalog_limit': per_catalog_limit,
                         'prefetched_movies_count_at_start': initial_movies_count,
                         'prefetched_series_count_at_start': initial_series_count,
+                        'catalog_movies_count': self.prefetched_movies_count - initial_movies_count,
+                        'catalog_series_count': self.prefetched_series_count - initial_series_count,
                         'start_time': self.processing_start,
                         'max_execution_time': self.max_execution_time
                     }

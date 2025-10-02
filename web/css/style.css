@@ -1033,6 +1033,30 @@ footer {
     margin-bottom: 30px;
 }
 
+/* Catalog-specific stats */
+.catalog-stats-grid {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.catalog-stat-card {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    border-radius: 10px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 160px;
+}
+
+.catalog-stat-card .stat-icon {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+}
+
 .stat-card {
     background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
     border: 1px solid var(--border-color);
