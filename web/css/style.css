@@ -997,11 +997,35 @@ footer {
     background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
     color: white;
     box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .btn-terminate:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+}
+
+.btn-terminate.terminating {
+    pointer-events: all;
+    cursor: pointer;
+}
+
+.btn-terminate.pulsating {
+    animation: pulse-terminate var(--pulse-duration, 2s) ease-in-out infinite;
+}
+
+@keyframes pulse-terminate {
+    0%, 100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    50% {
+        transform: scale(1.08);
+        filter: brightness(1.15);
+    }
 }
 
 /* Running Status Header */

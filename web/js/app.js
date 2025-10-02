@@ -1299,6 +1299,111 @@ async function performReset() {
 }
 
 // ============================================================================
+// Terminate Job with Hold-Down Countdown
+// ============================================================================
+
+let terminateCountdownInterval = null;
+let terminateStartTime = null;
+const TERMINATE_HOLD_DURATION = 5000; // 5 seconds in milliseconds
+
+function startTerminateCountdown() {
+    const btn = document.getElementById('terminate-btn');
+
+    // Prevent multiple countdowns
+    if (terminateCountdownInterval) {
+        return;
+    }
+
+    terminateStartTime = Date.now();
+    btn.classList.add('terminating', 'pulsating');
+
+    // Update button text and animation every 100ms
+    terminateCountdownInterval = setInterval(() => {
+        const elapsed = Date.now() - terminateStartTime;
+        const remaining = TERMINATE_HOLD_DURATION - elapsed;
+        const secondsRemaining = Math.ceil(remaining / 1000);
+
+        if (remaining <= 0) {
+            // Countdown complete - perform termination
+            clearInterval(terminateCountdownInterval);
+            terminateCountdownInterval = null;
+            performTerminate();
+        } else {
+            // Update button text
+            btn.textContent = `Keep pressing for ${secondsRemaining} second${secondsRemaining !== 1 ? 's' : ''}...`;
+
+            // Update animation based on progress
+            const progress = elapsed / TERMINATE_HOLD_DURATION;
+            updateTerminateAnimation(btn, progress);
+        }
+    }, 100);
+}
+
+function cancelTerminateCountdown() {
+    if (terminateCountdownInterval) {
+        clearInterval(terminateCountdownInterval);
+        terminateCountdownInterval = null;
+        terminateStartTime = null;
+
+        const btn = document.getElementById('terminate-btn');
+        btn.textContent = 'Terminate';
+        btn.classList.remove('terminating', 'pulsating');
+        btn.style.removeProperty('--pulse-duration');
+    }
+}
+
+function updateTerminateAnimation(btn, progress) {
+    // Smoothly transition animation speed from 2s (slow) to 0.25s (very fast)
+    // Using an exponential curve for more dramatic acceleration
+    const minDuration = 0.25; // seconds (very fast)
+    const maxDuration = 2.0;  // seconds (slow)
+
+    // Exponential easing: starts slow, accelerates dramatically near the end
+    const easedProgress = Math.pow(progress, 2);
+    const duration = maxDuration - (easedProgress * (maxDuration - minDuration));
+
+    // Set CSS variable for smooth animation speed transition
+    btn.style.setProperty('--pulse-duration', `${duration}s`);
+}
+
+async function performTerminate() {
+    const btn = document.getElementById('terminate-btn');
+    btn.textContent = 'Terminating...';
+    btn.classList.remove('pulsating');
+    btn.style.removeProperty('--pulse-duration');
+    btn.disabled = true;
+
+    try {
+        // Make the API call (don't wait for response)
+        fetch('/api/job/cancel', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Job terminated', 'info');
+                } else {
+                    showNotification(data.error || 'Failed to terminate job', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error terminating job:', error);
+                showNotification('Error terminating job', 'error');
+            });
+
+        // IMMEDIATELY switch to idle state without waiting
+        updateJobStatusUI({ status: 'idle' });
+        btn.classList.remove('terminating');
+        btn.disabled = false;
+        btn.textContent = 'Terminate';
+    } catch (error) {
+        console.error('Error terminating job:', error);
+        showNotification('Error terminating job', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Terminate';
+        btn.classList.remove('terminating');
+    }
+}
+
+// ============================================================================
 // Catalog Loading and Selection
 // ============================================================================
 
@@ -1877,30 +1982,8 @@ async function runJob() {
     }
 }
 
-async function terminateJob() {
-    if (!confirm('Are you sure you want to terminate the running prefetch job?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/job/cancel', { method: 'POST' });
-        const data = await response.json();
-
-        if (data.success) {
-            showNotification('Job terminated', 'info');
-        } else {
-            showNotification(data.error || 'Failed to terminate job', 'error');
-        }
-    } catch (error) {
-        console.error('Error terminating job:', error);
-        showNotification('Error terminating job', 'error');
-    }
-}
-
-// Keep old function name for backwards compatibility
-async function cancelJob() {
-    await terminateJob();
-}
+// terminateJob() has been replaced with hold-down countdown pattern
+// See startTerminateCountdown() and performTerminate() functions above
 
 // ============================================================================
 // Real-time Updates via Server-Sent Events (SSE)

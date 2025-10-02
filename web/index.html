@@ -530,7 +530,13 @@
                 </div>
 
                 <div class="action-buttons">
-                    <button type="button" class="btn-modern btn-terminate" onclick="terminateJob()">
+                    <button type="button" class="btn-modern btn-terminate" id="terminate-btn"
+                            onmousedown="startTerminateCountdown()"
+                            onmouseup="cancelTerminateCountdown()"
+                            onmouseleave="cancelTerminateCountdown()"
+                            ontouchstart="startTerminateCountdown()"
+                            ontouchend="cancelTerminateCountdown()"
+                            ontouchcancel="cancelTerminateCountdown()">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="15" y1="9" x2="9" y2="15"></line>
