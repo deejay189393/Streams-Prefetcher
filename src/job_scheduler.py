@@ -40,15 +40,18 @@ class JobScheduler:
         self.scheduler = BackgroundScheduler(timezone=pytz.UTC)
         self.scheduler.start()
 
-        # Job state
+        # Job state - Always start fresh on initialization
         self.current_job = None
         self.job_thread = None
         self.wrapper = None  # Store reference to current wrapper
-        self.job_status = JobStatus.IDLE
+        self.job_status = JobStatus.IDLE  # Reset to IDLE on startup
         self.job_start_time = None
         self.job_end_time = None
         self.job_error = None
         self.job_summary = None  # Store completion summary
+
+        # Log startup state
+        logger.info("JobScheduler initialized - job status reset to IDLE")
 
         # Live output buffer
         self.output_lines = []
@@ -213,8 +216,22 @@ class JobScheduler:
 
     def run_job(self, manual: bool = False):
         """Run a prefetch job"""
+        # Check if job is actually running (not just status stuck)
         if self.job_status == JobStatus.RUNNING:
-            return False, "Job is already running"
+            # If thread is dead but status is stuck, reset it
+            if not self.job_thread or not self.job_thread.is_alive():
+                logger.warning("Job status was RUNNING but thread is dead - resetting status")
+                self.job_status = JobStatus.IDLE
+            else:
+                return False, "Job is already running"
+
+        # Also reset if status is CANCELLED but thread is dead
+        if self.job_status == JobStatus.CANCELLED:
+            if not self.job_thread or not self.job_thread.is_alive():
+                logger.warning("Job status was CANCELLED but thread is dead - resetting status")
+                self.job_status = JobStatus.IDLE
+            else:
+                return False, "Job is being cancelled"
 
         # Clear previous state
         with self.output_lock:
