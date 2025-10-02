@@ -587,6 +587,7 @@ class StreamsPrefetcher:
 
         self.prefetched_movies_count = 0
         self.prefetched_series_count = 0
+        self.prefetched_cached_count = 0
 
         # Initialize timing
         self.start_time = None
@@ -1055,6 +1056,7 @@ class StreamsPrefetcher:
                         'movies_global_limit': self.movies_global_limit,
                         'prefetched_series_count': self.prefetched_series_count,
                         'series_global_limit': self.series_global_limit,
+                        'prefetched_cached_count': self.prefetched_cached_count,
                         'prefetched_in_this_catalog': prefetched_in_this_catalog,
                         'per_catalog_limit': per_catalog_limit,
                         'prefetched_movies_count_at_start': initial_movies_count,
@@ -1069,7 +1071,7 @@ class StreamsPrefetcher:
                         imdb_id, title = self.extract_imdb_id(item), self.get_title_from_item(item)
                         self.progress_tracker.redraw_dashboard(current_title=f"Prefetching streams for Movie: {title}", **dashboard_args)
                         if not imdb_id: failed_count += 1; item_statuses_on_page.append('failed'); continue
-                        if self.is_cache_valid(imdb_id): cached_count += 1; item_statuses_on_page.append('cached'); continue
+                        if self.is_cache_valid(imdb_id): cached_count += 1; self.prefetched_cached_count += 1; item_statuses_on_page.append('cached'); continue
 
                         # Check time limit before starting HTTP request
                         if self._check_time_limit():
@@ -1089,7 +1091,7 @@ class StreamsPrefetcher:
                         if not episodes: failed_count += 1; item_statuses_on_page.append('failed'); continue
                         self.results['statistics']['episodes_found'] += len(episodes)
                         cached_episodes = sum(1 for ep in episodes if self.is_cache_valid(ep['id']))
-                        if (cached_episodes / len(episodes)) >= 0.75: cached_count += 1; item_statuses_on_page.append('cached'); continue
+                        if (cached_episodes / len(episodes)) >= 0.75: cached_count += 1; self.prefetched_cached_count += 1; item_statuses_on_page.append('cached'); continue
                         series_had_success = False
                         for ep in episodes:
                             if self.is_cache_valid(ep['id']): continue
