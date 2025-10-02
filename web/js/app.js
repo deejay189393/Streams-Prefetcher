@@ -22,6 +22,7 @@ let currentSchedules = [];
 let editingScheduleIndex = null;
 let isPageLoading = true; // Prevent notifications during initial load
 let completionScreenLocked = false; // Prevent accidental hiding of completion screen
+let currentCompletionId = null; // Track current completion to handle dismissal
 
 // ============================================================================
 // Collapsible Section Helpers
@@ -1705,10 +1706,19 @@ async function loadJobStatus() {
 }
 
 function updateJobStatusUI(status) {
+    // Check if this completion was already dismissed
+    const dismissedCompletionId = localStorage.getItem('dismissed-completion-id');
+    const currentCompletionId = status.start_time; // Use start time as unique ID
+
     // If completion screen is locked, don't allow status changes to hide it
     // unless we're explicitly showing completion again or user dismissed it
     if (completionScreenLocked && status.status !== 'completed') {
         return;
+    }
+
+    // If this completion was dismissed, show idle instead
+    if (status.status === 'completed' && dismissedCompletionId === String(currentCompletionId)) {
+        status = { status: 'idle' };
     }
 
     // Hide all status displays
@@ -1720,6 +1730,12 @@ function updateJobStatusUI(status) {
     if (status.status === 'idle') {
         document.getElementById('status-idle').style.display = 'block';
         completionScreenLocked = false; // Unlock when returning to idle
+
+        // Re-enable Start Now button when returning to idle
+        const startBtn = document.getElementById('start-now-btn');
+        if (startBtn) {
+            startBtn.disabled = false;
+        }
     } else if (status.status === 'scheduled') {
         const scheduledDisplay = document.getElementById('status-scheduled');
         if (scheduledDisplay) {
@@ -1744,6 +1760,7 @@ function updateJobStatusUI(status) {
         if (completedDisplay) {
             completedDisplay.style.display = 'block';
             completionScreenLocked = true; // Lock the completion screen
+            currentCompletionId = status.start_time; // Store completion ID
 
             // Populate completion stats if summary data is available
             if (status.summary) {
@@ -1942,6 +1959,9 @@ async function runJob() {
             // Mark that a prefetch job has been run for smart collapse behavior
             localStorage.setItem('has-run-prefetch-job', 'true');
 
+            // Clear any dismissed completion from previous job
+            localStorage.removeItem('dismissed-completion-id');
+
             // Unlock completion screen if it was locked
             completionScreenLocked = false;
 
@@ -1971,6 +1991,11 @@ async function runJob() {
 // See startTerminateCountdown() and performTerminate() functions above
 
 function dismissCompletion() {
+    // Store the dismissed completion ID so it stays dismissed after refresh
+    if (currentCompletionId) {
+        localStorage.setItem('dismissed-completion-id', String(currentCompletionId));
+    }
+
     // Unlock the completion screen before dismissing
     completionScreenLocked = false;
     // Hide completion screen and show idle/ready state
