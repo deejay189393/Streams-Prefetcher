@@ -2182,6 +2182,7 @@ function populateCompletionStats(summary, startTime, endTime) {
     const catalogsProcessed = stats.filtered_catalogs || catalogs.length || 0;
     const moviesCount = stats.movies_prefetched || 0;
     const seriesCount = stats.series_prefetched || 0;
+    const episodesCount = stats.episodes_found || 0;
     const pagesCount = stats.total_pages_fetched || 0;
     const cachedCount = stats.items_from_cache || 0;
     const successfulCount = stats.cache_requests_successful || 0;
@@ -2191,6 +2192,7 @@ function populateCompletionStats(summary, startTime, endTime) {
     document.getElementById('completion-catalogs').textContent = catalogsProcessed;
     document.getElementById('completion-movies').textContent = moviesCount;
     document.getElementById('completion-series').textContent = seriesCount;
+    document.getElementById('completion-episodes').textContent = episodesCount;
     document.getElementById('completion-pages').textContent = pagesCount;
     document.getElementById('completion-cached').textContent = cachedCount;
     document.getElementById('completion-success-rate').textContent = `${successRate}%`;
