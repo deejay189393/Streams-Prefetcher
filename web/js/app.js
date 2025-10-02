@@ -2210,12 +2210,12 @@ function populateCompletionStats(summary, startTime, endTime) {
     if (processingDuration > 0) {
         const durationMinutes = processingDuration / 60;
         const movieRate = (moviesCount / durationMinutes).toFixed(1);
-        const seriesRate = (seriesCount / durationMinutes).toFixed(1);
-        const totalItems = moviesCount + seriesCount;
+        const episodesRate = (episodesCount / durationMinutes).toFixed(1);
+        const totalItems = moviesCount + episodesCount;
         const overallRate = (totalItems / durationMinutes).toFixed(1);
 
         document.getElementById('completion-movie-rate').textContent = movieRate;
-        document.getElementById('completion-series-rate').textContent = seriesRate;
+        document.getElementById('completion-series-rate').textContent = episodesRate;
         document.getElementById('completion-overall-rate').textContent = overallRate;
     } else {
         document.getElementById('completion-movie-rate').textContent = '-';
