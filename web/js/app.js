@@ -23,6 +23,7 @@ let editingScheduleIndex = null;
 let isPageLoading = true; // Prevent notifications during initial load
 let completionScreenLocked = false; // Prevent accidental hiding of completion screen
 let currentCompletionId = null; // Track current completion to handle dismissal
+let jobTerminationRequested = false; // Track if user requested termination
 
 // ============================================================================
 // Collapsible Section Helpers
@@ -1376,6 +1377,9 @@ async function performTerminate() {
     btn.disabled = true;
 
     try {
+        // Set flag to prevent completion screen from showing
+        jobTerminationRequested = true;
+
         // Make the API call (don't wait for response)
         fetch('/api/job/cancel', { method: 'POST' })
             .then(response => response.json())
@@ -1716,6 +1720,13 @@ function updateJobStatusUI(status) {
         return;
     }
 
+    // If job termination was requested, don't show completion screen
+    // User already terminated and returned to idle, so ignore any late completion status
+    if (status.status === 'completed' && jobTerminationRequested) {
+        status = { status: 'idle' };
+        jobTerminationRequested = false; // Clear flag after handling
+    }
+
     // If this completion was dismissed, show idle instead
     if (status.status === 'completed' && dismissedCompletionId === String(currentCompletionId)) {
         status = { status: 'idle' };
@@ -1961,6 +1972,9 @@ async function runJob() {
 
             // Clear any dismissed completion from previous job
             localStorage.removeItem('dismissed-completion-id');
+
+            // Clear termination flag when starting new job
+            jobTerminationRequested = false;
 
             // Unlock completion screen if it was locked
             completionScreenLocked = false;
