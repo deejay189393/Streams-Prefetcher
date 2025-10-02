@@ -1812,6 +1812,7 @@ function updateProgressInfo(progress) {
         document.getElementById('stat-movies-limit').textContent = 'of ∞';
         document.getElementById('stat-series').textContent = '0';
         document.getElementById('stat-series-limit').textContent = 'of ∞';
+        document.getElementById('stat-episodes').textContent = '0';
         document.getElementById('stat-cached').textContent = '0';
 
         document.getElementById('overall-progress-fill').style.width = '0%';
@@ -1835,6 +1836,7 @@ function updateProgressInfo(progress) {
     const moviesLimit = progress.movies_limit || -1;
     const seriesPrefetched = progress.series_prefetched || 0;
     const seriesLimit = progress.series_limit || -1;
+    const episodesPrefetched = progress.episodes_prefetched || 0;
     const cachedCount = progress.cached_count || 0;
 
     document.getElementById('stat-movies').textContent = moviesPrefetched;
@@ -1842,6 +1844,8 @@ function updateProgressInfo(progress) {
 
     document.getElementById('stat-series').textContent = seriesPrefetched;
     document.getElementById('stat-series-limit').textContent = seriesLimit === -1 ? 'of ∞' : `of ${seriesLimit}`;
+
+    document.getElementById('stat-episodes').textContent = episodesPrefetched;
 
     document.getElementById('stat-cached').textContent = cachedCount;
 
@@ -2182,7 +2186,7 @@ function populateCompletionStats(summary, startTime, endTime) {
     const catalogsProcessed = stats.filtered_catalogs || catalogs.length || 0;
     const moviesCount = stats.movies_prefetched || 0;
     const seriesCount = stats.series_prefetched || 0;
-    const episodesCount = stats.episodes_found || 0;
+    const episodesCount = stats.episodes_prefetched || 0;
     const pagesCount = stats.total_pages_fetched || 0;
     const cachedCount = stats.items_from_cache || 0;
     const successfulCount = stats.cache_requests_successful || 0;

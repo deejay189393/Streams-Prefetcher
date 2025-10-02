@@ -587,6 +587,7 @@ class StreamsPrefetcher:
 
         self.prefetched_movies_count = 0
         self.prefetched_series_count = 0
+        self.prefetched_episodes_count = 0
         self.prefetched_cached_count = 0
 
         # Initialize timing
@@ -744,7 +745,7 @@ class StreamsPrefetcher:
             'processed_catalogs': [],
             'statistics': {
                 'total_catalogs_in_manifest': 0, 'filtered_catalogs': 0, 'total_pages_fetched': 0,
-                'movies_prefetched': 0, 'series_prefetched': 0, 'episodes_found': 0,
+                'movies_prefetched': 0, 'series_prefetched': 0, 'episodes_found': 0, 'episodes_prefetched': 0,
                 'cache_requests_made': 0, 'cache_requests_successful': 0, 'items_from_cache': 0, 'errors': 0
             }
         }
@@ -1104,7 +1105,7 @@ class StreamsPrefetcher:
                             dashboard_args['item_statuses'] = item_statuses_on_page # Ensure dashboard has latest statuses
                             self.progress_tracker.redraw_dashboard(current_title=f"Prefetching streams for Series: {ep_title}", **dashboard_args)
                             if self.prefetch_streams(ep['id'], 'series'):
-                               self.update_cache(ep['id'], ep_title); series_had_success = True
+                               self.update_cache(ep['id'], ep_title); series_had_success = True; self.prefetched_episodes_count += 1
 
                         if series_had_success:
                             success_count += 1; prefetched_in_this_catalog += 1; self.prefetched_series_count += 1
@@ -1141,6 +1142,7 @@ class StreamsPrefetcher:
         self.progress_tracker.cleanup_dashboard()
         self.results['statistics']['movies_prefetched'] = self.prefetched_movies_count
         self.results['statistics']['series_prefetched'] = self.prefetched_series_count
+        self.results['statistics']['episodes_prefetched'] = self.prefetched_episodes_count
         
         # Store timing information in results
         self.results['timing'] = {
