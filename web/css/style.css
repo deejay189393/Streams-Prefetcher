@@ -876,8 +876,8 @@ footer {
 }
 
 .idle-icon {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
-    border: 2px solid rgba(168, 85, 247, 0.3);
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.15) 0%, rgba(30, 58, 138, 0.15) 100%);
+    border: 2px solid rgba(30, 64, 175, 0.3);
     color: var(--primary-color);
 }
 
@@ -978,12 +978,12 @@ footer {
 .btn-start {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+    box-shadow: 0 4px 15px rgba(30, 64, 175, 0.4);
 }
 
 .btn-start:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.6);
+    box-shadow: 0 6px 20px rgba(30, 64, 175, 0.6);
 }
 
 .btn-start:disabled {

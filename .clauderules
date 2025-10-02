@@ -1,0 +1,9 @@
+# Streams Prefetcher Project Rules
+
+## Docker Container Management
+
+When restarting the container after making changes:
+1. Navigate to `/opt/docker`
+2. Run: `COMPOSE_PROFILES=streams-prefetcher docker compose up -d --build streams-prefetcher`
+
+This ensures the container is properly rebuilt and restarted with the correct profile configuration.
