@@ -1985,6 +1985,11 @@ async function runJob() {
 // terminateJob() has been replaced with hold-down countdown pattern
 // See startTerminateCountdown() and performTerminate() functions above
 
+function dismissCompletion() {
+    // Hide completion screen and show idle/ready state
+    updateJobStatusUI({ status: 'idle' });
+}
+
 // ============================================================================
 // Real-time Updates via Server-Sent Events (SSE)
 // ============================================================================
