@@ -1788,9 +1788,8 @@ function updateProgressInfo(progress) {
         document.getElementById('current-catalog-name').textContent = '-';
         document.querySelector('.current-action').textContent = 'Starting...';
 
-        // Hide page fetch status and catalog stats
+        // Hide page fetch status
         document.getElementById('page-fetch-status').style.display = 'none';
-        document.getElementById('catalog-stats').style.display = 'none';
         return;
     }
 
@@ -1833,40 +1832,6 @@ function updateProgressInfo(progress) {
         }
     } else {
         document.querySelector('.current-action').textContent = actionText;
-    }
-
-    // Update catalog-specific stats based on catalog type
-    const catalogMovies = progress.catalog_movies_count || 0;
-    const catalogSeries = progress.catalog_series_count || 0;
-
-    // Show/hide catalog stats container and cards based on catalog mode
-    const catalogStatsContainer = document.getElementById('catalog-stats');
-    const catalogMoviesCard = document.getElementById('catalog-movies-card');
-    const catalogSeriesCard = document.getElementById('catalog-series-card');
-
-    if (catalogMode) {
-        catalogStatsContainer.style.display = 'block';
-
-        // Show appropriate cards based on catalog type
-        if (catalogMode.toLowerCase().includes('movie')) {
-            catalogMoviesCard.style.display = 'flex';
-            catalogSeriesCard.style.display = 'none';
-            document.getElementById('catalog-movies').textContent = catalogMovies;
-        } else if (catalogMode.toLowerCase().includes('series')) {
-            catalogMoviesCard.style.display = 'none';
-            catalogSeriesCard.style.display = 'flex';
-            document.getElementById('catalog-series').textContent = catalogSeries;
-        } else if (catalogMode.toLowerCase().includes('mixed')) {
-            // Show both cards for mixed catalogs
-            catalogMoviesCard.style.display = 'flex';
-            catalogSeriesCard.style.display = 'flex';
-            document.getElementById('catalog-movies').textContent = catalogMovies;
-            document.getElementById('catalog-series').textContent = catalogSeries;
-        } else {
-            catalogStatsContainer.style.display = 'none';
-        }
-    } else {
-        catalogStatsContainer.style.display = 'none';
     }
 
     // Update current catalog name
@@ -1967,6 +1932,14 @@ async function runJob() {
 
             // Mark that a prefetch job has been run for smart collapse behavior
             localStorage.setItem('has-run-prefetch-job', 'true');
+
+            // Immediately show the first selected catalog name for instant feedback
+            const selectedCatalogs = loadedCatalogs.filter(cat => cat.enabled);
+            if (selectedCatalogs.length > 0) {
+                const firstCatalog = selectedCatalogs[0];
+                document.getElementById('current-catalog-name').textContent = firstCatalog.name || 'Starting...';
+                document.querySelector('.current-action').textContent = `Starting ${firstCatalog.name}...`;
+            }
 
             // Immediately refresh job status to update UI multiple times
             loadJobStatus();
@@ -2119,7 +2092,6 @@ function closeAllTooltips() {
 // Completion Stats Population
 // ============================================================================
 
-let catalogChart = null; // Store chart instance for cleanup
 
 function populateCompletionStats(summary, startTime, endTime) {
     const timing = summary.timing || {};
@@ -2188,114 +2160,8 @@ function populateCompletionStats(summary, startTime, endTime) {
         document.getElementById('completion-overall-rate').textContent = '-';
     }
 
-    // Create Catalog Processing Chart
-    createCatalogChart(catalogs);
-
     // Populate Catalog Details Table
     populateCatalogTable(catalogs);
-}
-
-function createCatalogChart(catalogs) {
-    const canvas = document.getElementById('catalog-chart');
-    if (!canvas) return;
-
-    // Destroy existing chart if it exists
-    if (catalogChart) {
-        catalogChart.destroy();
-    }
-
-    // Prepare data
-    const labels = catalogs.map(cat => {
-        const name = cat.name || 'Unknown';
-        return name.length > 20 ? name.substring(0, 17) + '...' : name;
-    });
-    
-    const durations = catalogs.map(cat => (cat.duration || 0).toFixed(2));
-    const success = catalogs.map(cat => cat.success_count || 0);
-    const failed = catalogs.map(cat => cat.failed_count || 0);
-
-    const ctx = canvas.getContext('2d');
-    catalogChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Success',
-                    data: success,
-                    backgroundColor: 'rgba(16, 185, 129, 0.6)',
-                    borderColor: 'rgba(16, 185, 129, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Failed',
-                    data: failed,
-                    backgroundColor: 'rgba(239, 68, 68, 0.6)',
-                    borderColor: 'rgba(239, 68, 68, 1)',
-                    borderWidth: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        color: '#e5e7eb',
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                title: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        afterLabel: function(context) {
-                            const index = context.dataIndex;
-                            const duration = durations[index];
-                            return `Duration: ${duration}s`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    stacked: false,
-                    grid: {
-                        color: 'rgba(30, 41, 59, 0.5)'
-                    },
-                    ticks: {
-                        color: '#9ca3af',
-                        font: {
-                            size: 10
-                        }
-                    }
-                },
-                y: {
-                    stacked: false,
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(30, 41, 59, 0.5)'
-                    },
-                    ticks: {
-                        color: '#9ca3af',
-                        font: {
-                            size: 11
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'Items Processed',
-                        color: '#9ca3af'
-                    }
-                }
-            }
-        }
-    });
 }
 
 function populateCatalogTable(catalogs) {
