@@ -56,15 +56,69 @@ body {
 
 /* Header */
 header {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: linear-gradient(135deg, #0a0e1a, #0f1624, #0a0e1a);
     color: white;
     padding: 30px;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Cyberpunk scan line effect - STATIC (no animation) */
+header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 150, 255, 0.05) 0%,
+        transparent 2%,
+        transparent 98%,
+        rgba(0, 150, 255, 0.05) 100%
+    );
+    pointer-events: none;
+    opacity: 0.4;
 }
 
 header h1 {
     font-size: 2.5rem;
     margin-bottom: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    position: relative;
+    z-index: 1;
+
+    /* Epic neon glow effect - STATIC (no animation for performance) */
+    color: #00a8d4;
+    text-shadow:
+        0 0 10px rgba(0, 168, 212, 0.9),
+        0 0 20px rgba(0, 168, 212, 0.6),
+        0 0 40px rgba(0, 100, 200, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.8);
+
+    /* Performance hint */
+    will-change: auto;
+}
+
+/* Animated lightning emoji with white pulsating glow */
+.lightning-emoji {
+    display: inline-block;
+    animation: lightningPulse 2s ease-in-out infinite;
+}
+
+@keyframes lightningPulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.6))
+                drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+    }
+    50% {
+        filter: drop-shadow(0 0 8px rgba(255, 255, 255, 1))
+                drop-shadow(0 0 15px rgba(255, 255, 255, 0.8))
+                drop-shadow(0 0 20px rgba(200, 230, 255, 0.5));
+    }
 }
 
 .subtitle {
@@ -1047,11 +1101,29 @@ footer {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     box-shadow: 0 4px 15px rgba(30, 64, 175, 0.4);
+    animation: buttonGlow 3s ease-in-out infinite;
+}
+
+@keyframes buttonGlow {
+    0%, 100% {
+        box-shadow:
+            0 4px 15px rgba(30, 64, 175, 0.4),
+            0 0 5px rgba(30, 64, 175, 0.2);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow:
+            0 4px 15px rgba(30, 64, 175, 0.5),
+            0 0 12px rgba(30, 120, 255, 0.4),
+            0 0 20px rgba(30, 120, 255, 0.2);
+        transform: scale(1.02);
+    }
 }
 
 .btn-start:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(30, 64, 175, 0.6);
+    animation: none; /* Stop pulsing on hover */
 }
 
 .btn-start:disabled {
