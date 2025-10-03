@@ -437,12 +437,10 @@
             <h2>🚀 Prefetch Status</h2>
 
             <!-- DEBUG PANEL (Hidden by default - Long-press ⚡ to toggle) -->
-            <div id="debug-panel" style="display: none; background: #1a1a1a; border: 3px solid #ff3366; padding: 15px; margin-bottom: 20px; font-family: 'Courier New', monospace; font-size: 11px; max-height: 400px; overflow-y: auto;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <div style="color: #ff3366; font-weight: bold; font-size: 13px;">🔍 DEBUG LOG (Long-press ⚡ to toggle)</div>
-                    <button onclick="copyDebugLog(event)" style="background: #ff3366; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace;">COPY</button>
-                </div>
-                <div id="debug-content" style="color: #00ff00; white-space: pre-wrap; word-break: break-all; line-height: 1.4;"></div>
+            <div id="debug-panel" style="display: none; background: #1a1a1a; border: 3px solid #ff3366; padding: 15px; margin-bottom: 20px; font-family: 'Courier New', monospace; font-size: 11px;">
+                <div style="color: #ff3366; font-weight: bold; font-size: 13px; margin-bottom: 10px;">🔍 DEBUG LOG (Long-press ⚡ to toggle)</div>
+                <div id="debug-content" style="color: #00ff00; white-space: pre-wrap; word-break: break-all; line-height: 1.4; max-height: 350px; overflow-y: auto; margin-bottom: 10px; padding: 10px; background: #0a0a0a; border: 1px solid #333;"></div>
+                <button onclick="copyDebugLog(event)" style="background: #ff3366; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; width: 100%;">📋 COPY ALL LOGS</button>
             </div>
 
             <!-- Idle State -->
