@@ -240,7 +240,7 @@
                             <div class="form-group">
                                 <label>
                                     Randomize Catalog Processing
-                                    <span class="info-icon" data-tooltip="Process catalogs in random order instead of sequential order. Helps distribute load. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Process catalogs in random order instead of sequential order. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -254,7 +254,7 @@
                             <div class="form-group">
                                 <label>
                                     Randomize Item Prefetching
-                                    <span class="info-icon" data-tooltip="Fetch items from catalogs in random order instead of sequential order. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Prefetch streams of items fetched from a catalog's page in random order instead of sequential order. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -274,7 +274,7 @@
                     <div class="subsection-content">
                         <div class="form-group">
                             <label for="cache-validity">
-                                Skip Prefetching if Already Done Within
+                                Skip Prefetching if already done within
                                 <span class="info-icon" data-tooltip="Skip prefetching streams for items if they were already prefetched within this time period. Check 'Unlimited' to never re-prefetch items (once done, always skipped). Set to 0 to always prefetch (never skip). Default: 1 week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
@@ -289,11 +289,11 @@
                                     <option value="86400">Days</option>
                                     <option value="604800" selected>Weeks</option>
                                 </select>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="cache-validity-unlimited" onchange="toggleUnlimitedTime('cache-validity')">
-                                    Unlimited
-                                </label>
                             </div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="cache-validity-unlimited" onchange="toggleUnlimitedTime('cache-validity')">
+                                Unlimited
+                            </label>
                         </div>
 
                         <div class="form-group">
@@ -540,7 +540,7 @@
                     <div class="stat-card">
                         <div class="stat-icon cached-icon">⚡</div>
                         <div class="stat-content">
-                            <div class="stat-label">In Cache</div>
+                            <div class="stat-label">Already Prefetched</div>
                             <div class="stat-value" id="stat-cached">0</div>
                         </div>
                     </div>
@@ -674,7 +674,7 @@
                         <div class="summary-stat">
                             <div class="summary-stat-icon">⚡</div>
                             <div class="summary-stat-value" id="completion-cached">0</div>
-                            <div class="summary-stat-label">In Cache</div>
+                            <div class="summary-stat-label">Already Prefetched</div>
                         </div>
                         <div class="summary-stat">
                             <div class="summary-stat-icon">✓</div>

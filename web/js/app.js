@@ -2118,7 +2118,9 @@ function updateJobStatusUI(status, caller = 'unknown') {
             if ((!status.progress || !status.progress.catalog_name) && loadedCatalogs.length > 0) {
                 const firstEnabledCatalog = loadedCatalogs.find(cat => cat.enabled);
                 if (firstEnabledCatalog) {
-                    document.getElementById('current-catalog-name').textContent = firstEnabledCatalog.name;
+                    const typeCapitalized = firstEnabledCatalog.type ? firstEnabledCatalog.type.charAt(0).toUpperCase() + firstEnabledCatalog.type.slice(1) : '';
+                    const displayText = typeCapitalized ? `${firstEnabledCatalog.name} (${typeCapitalized})` : firstEnabledCatalog.name;
+                    document.getElementById('current-catalog-name').textContent = displayText;
                     document.querySelector('.current-action').textContent = `Processing ${firstEnabledCatalog.name}`;
                 }
             }
@@ -2407,8 +2409,10 @@ function updateProgressInfo(progress) {
         document.querySelector('.current-action').textContent = actionText;
     }
 
-    // Update current catalog name
-    document.getElementById('current-catalog-name').textContent = catalogName;
+    // Update current catalog name with type
+    const catalogType = catalogMode ? catalogMode.charAt(0).toUpperCase() + catalogMode.slice(1) : '';
+    const catalogDisplayText = catalogType ? `${catalogName} (${catalogType})` : catalogName;
+    document.getElementById('current-catalog-name').textContent = catalogDisplayText;
 
     // Handle page fetching status
     const pageFetchStatus = document.getElementById('page-fetch-status');
@@ -2522,7 +2526,9 @@ async function runJob() {
             const selectedCatalogs = loadedCatalogs.filter(cat => cat.enabled);
             if (selectedCatalogs.length > 0) {
                 const firstCatalog = selectedCatalogs[0];
-                document.getElementById('current-catalog-name').textContent = firstCatalog.name || 'Starting...';
+                const typeCapitalized = firstCatalog.type ? firstCatalog.type.charAt(0).toUpperCase() + firstCatalog.type.slice(1) : '';
+                const displayText = typeCapitalized ? `${firstCatalog.name} (${typeCapitalized})` : (firstCatalog.name || 'Starting...');
+                document.getElementById('current-catalog-name').textContent = displayText;
                 document.querySelector('.current-action').textContent = `Starting ${firstCatalog.name}...`;
             }
 
