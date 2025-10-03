@@ -232,6 +232,65 @@ function setupLongPressToggle() {
 }
 
 // ============================================================================
+// Date/Time Formatting Helpers
+// ============================================================================
+
+function getOrdinalSuffix(day) {
+    if (day > 3 && day < 21) return 'th'; // 11th-20th
+    switch (day % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+    }
+}
+
+function formatCustomTime(timestamp) {
+    if (!timestamp) return '-';
+    const date = new Date(timestamp * 1000);
+    let hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    return `${hours}:${minutes}:${seconds} ${ampm}`;
+}
+
+function formatCustomDate(timestamp) {
+    if (!timestamp) return '-';
+    const date = new Date(timestamp * 1000);
+    const day = date.getDate();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+    const ordinal = getOrdinalSuffix(day);
+    return `${day}${ordinal} ${month} ${year}`;
+}
+
+function formatCustomDateTime(timestamp) {
+    if (!timestamp) return '-';
+    return `${formatCustomTime(timestamp)}, ${formatCustomDate(timestamp)}`;
+}
+
+function formatDuration(seconds) {
+    if (!seconds || seconds < 0) return '-';
+
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+
+    const parts = [];
+    if (d > 0) parts.push(`${d}d`);
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0) parts.push(`${m}m`);
+    if (s > 0 || parts.length === 0) parts.push(`${s}s`);
+
+    return parts.join(' ');
+}
+
+// ============================================================================
 // Collapsible Section Helpers
 // ============================================================================
 
@@ -2179,14 +2238,7 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     addDebugLog(`📊 [COMPLETION STATS] stats object: ${JSON.stringify(stats)}`);
 
                     // Timing
-                    const formatTime = (ts) => ts ? new Date(ts * 1000).toLocaleString() : '-';
-                    const formatDuration = (secs) => {
-                        if (!secs || secs < 0) return '-';
-                        const h = Math.floor(secs / 3600);
-                        const m = Math.floor((secs % 3600) / 60);
-                        const s = Math.floor(secs % 60);
-                        return h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
-                    };
+                    const formatTime = (ts) => formatCustomDateTime(ts);
 
                     const setEl = (id, val) => {
                         const el = document.getElementById(id);
@@ -2303,8 +2355,7 @@ function updateJobStatusUI(status, caller = 'unknown') {
             }
 
             if (errorTimestamp && status.end_time) {
-                const endDate = new Date(status.end_time * 1000);
-                errorTimestamp.textContent = `Failed at ${endDate.toLocaleString()}`;
+                errorTimestamp.textContent = `Failed at ${formatCustomDateTime(status.end_time)}`;
             }
         }
     }
@@ -2333,9 +2384,9 @@ function updateNextRunInfo(status) {
         updateCountdown();
         countdownInterval = setInterval(updateCountdown, 1000);
 
-        const nextRun = new Date(status.next_run_time);
+        const nextRunTimestamp = new Date(status.next_run_time).getTime() / 1000;
         document.getElementById('next-run-info').innerHTML = `
-            Next scheduled run: ${nextRun.toLocaleString()}
+            Next scheduled run: ${formatCustomDateTime(nextRunTimestamp)}
         `;
     }
 }
@@ -2763,25 +2814,7 @@ stats.series_prefetched: ${stats.series_prefetched}
 stats.episodes_prefetched: ${stats.episodes_prefetched}`);
 
     // Format helper functions
-    const formatTime = (timestamp) => {
-        if (!timestamp) return '-';
-        return new Date(timestamp * 1000).toLocaleString();
-    };
-
-    const formatDuration = (seconds) => {
-        if (!seconds || seconds < 0) return '-';
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = Math.floor(seconds % 60);
-        
-        if (hours > 0) {
-            return `${hours}h ${minutes}m ${secs}s`;
-        } else if (minutes > 0) {
-            return `${minutes}m ${secs}s`;
-        } else {
-            return `${secs}s`;
-        }
-    };
+    const formatTime = (timestamp) => formatCustomDateTime(timestamp);
 
     // Populate Timing Overview
     document.getElementById('completion-start-time').textContent = formatTime(timing.start_time);
