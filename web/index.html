@@ -25,30 +25,40 @@
                     <h3 class="subsection-title">🔗 Addon URLs</h3>
                     <div class="subsection-content">
                         <div class="form-group">
-                            <p class="help-text">Configure addon URLs for catalog and stream sources</p>
-
                             <div class="addon-url-sections">
                                 <!-- Both Section -->
                                 <div class="addon-section" data-type="both">
-                                    <h4>Both (Catalog + Stream)</h4>
+                                    <h4>
+                                        Both (Catalog + Stream)
+                                        <span class="info-icon" data-tooltip="Addons that provide both catalog listings and stream links. Most common addon type.">ℹ️</span>
+                                    </h4>
                                     <div class="addon-list" id="addon-list-both"></div>
                                     <button type="button" class="btn btn-sm" onclick="addAddonUrl('both')">+ Add URL</button>
                                 </div>
 
                                 <!-- Catalog Section -->
                                 <div class="addon-section" data-type="catalog">
-                                    <h4>Catalog Only</h4>
+                                    <h4>
+                                        Catalog Only
+                                        <span class="info-icon" data-tooltip="Addons that only provide catalog listings (content discovery). Use with separate stream addons.">ℹ️</span>
+                                    </h4>
                                     <div class="addon-list" id="addon-list-catalog"></div>
                                     <button type="button" class="btn btn-sm" onclick="addAddonUrl('catalog')">+ Add URL</button>
                                 </div>
 
                                 <!-- Stream Section -->
                                 <div class="addon-section" data-type="stream">
-                                    <h4>Stream Only</h4>
+                                    <h4>
+                                        Stream Only
+                                        <span class="info-icon" data-tooltip="Addons that only provide stream links. Must be paired with catalog addons.">ℹ️</span>
+                                    </h4>
                                     <div class="addon-list" id="addon-list-stream"></div>
                                     <button type="button" class="btn btn-sm" onclick="addAddonUrl('stream')">+ Add URL</button>
                                 </div>
                             </div>
+                            <p style="margin-top: 15px; font-size: 13px; color: var(--text-muted); text-align: center;">
+                                <em>💡 Tip: Drag and drop to reorder addon URLs</em>
+                            </p>
                         </div>
                     </div>
                 </div>
