@@ -115,42 +115,74 @@ label {
 }
 
 .info-icon {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    font-size: 14px;
-    margin-left: 5px;
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
+    margin-left: 8px;
+    padding: 6px;
     position: relative;
+    transition: all 0.3s ease;
+    min-width: 32px;
+    min-height: 32px;
+    overflow: visible;
 }
 
-.info-icon:hover {
-    opacity: 1;
+.info-icon svg {
+    width: 20px;
+    height: 20px;
+    color: var(--primary-color);
+    filter: drop-shadow(0 0 4px rgba(30, 64, 175, 0.3));
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    overflow: visible;
+}
+
+.info-icon:hover svg {
+    color: #3b82f6;
+    filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8));
+    transform: rotate(15deg) scale(1.1);
 }
 
 .info-tooltip {
     position: absolute;
-    background: var(--card-hover-bg);
+    background: rgba(10, 10, 10, 0.98);
     border: 1px solid var(--primary-color);
-    border-radius: 5px;
-    padding: 10px;
+    border-radius: 8px;
+    padding: 12px 14px;
     min-width: 250px;
     max-width: 350px;
     z-index: 1000;
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 1.5;
     color: var(--text-color);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.8),
+                0 0 20px rgba(30, 64, 175, 0.4);
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(4px);
     top: calc(100% + 8px);
     display: none;
     white-space: normal;
     font-weight: normal;
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .info-tooltip.active {
     display: block;
+    animation: tooltipFadeIn 0.3s ease forwards;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 .info-tooltip::before {
@@ -159,8 +191,9 @@ label {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    border: 6px solid transparent;
+    border: 7px solid transparent;
     border-bottom-color: var(--primary-color);
+    filter: drop-shadow(0 -2px 4px rgba(30, 64, 175, 0.3));
 }
 
 /* Close button for tooltips */
@@ -424,18 +457,36 @@ input:disabled {
 }
 
 .addon-item .edit-btn {
-    background: var(--info-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white;
     border: none;
-    border-radius: 3px;
-    padding: 5px 10px;
+    border-radius: 6px;
+    padding: 6px 12px;
     cursor: pointer;
-    font-size: 14px;
-    transition: background 0.2s ease;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(30, 64, 175, 0.3);
+}
+
+.addon-item .edit-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.5;
+    transition: transform 0.3s ease;
 }
 
 .addon-item .edit-btn:hover {
-    background: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.6);
+    transform: translateY(-2px);
+}
+
+.addon-item .edit-btn:hover svg {
+    transform: rotate(-5deg);
 }
 
 .addon-item .remove-btn {
@@ -1514,28 +1565,52 @@ input:checked + .toggle-slider:before {
 }
 
 .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 8px 12px;
     background: transparent;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.3s ease;
     color: var(--text-color);
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.btn-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.5;
+    transition: transform 0.3s ease;
 }
 
 .btn-icon:hover {
     background: var(--border-color);
+    transform: translateY(-1px);
 }
 
 .btn-icon.edit:hover {
     border-color: var(--primary-color);
     color: var(--primary-color);
+    background: rgba(30, 64, 175, 0.1);
+    box-shadow: 0 0 15px rgba(30, 64, 175, 0.3);
+}
+
+.btn-icon.edit:hover svg {
+    transform: rotate(-5deg);
 }
 
 .btn-icon.delete:hover {
     border-color: var(--danger-color);
     color: var(--danger-color);
+    background: rgba(239, 68, 68, 0.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+.btn-icon.delete:hover svg {
+    transform: scale(1.1);
 }
 
 /* Modal */

@@ -30,7 +30,12 @@
                                 <div class="addon-section" data-type="both">
                                     <h4>
                                         Both (Catalog + Stream)
-                                        <span class="info-icon" data-tooltip="Addons that provide both catalog listings and stream links. Most common addon type.">ℹ️</span>
+                                        <span class="info-icon" data-tooltip="Addons that provide both catalog listings and stream links. Most common addon type.">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg>
+                                        </span>
                                     </h4>
                                     <div class="addon-list" id="addon-list-both"></div>
                                     <button type="button" class="btn btn-sm" onclick="addAddonUrl('both')">+ Add URL</button>
@@ -40,7 +45,10 @@
                                 <div class="addon-section" data-type="catalog">
                                     <h4>
                                         Catalog Only
-                                        <span class="info-icon" data-tooltip="Addons that only provide catalog listings (content discovery). Use with separate stream addons.">ℹ️</span>
+                                        <span class="info-icon" data-tooltip="Addons that only provide catalog listings (content discovery). Use with separate stream addons."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                                     </h4>
                                     <div class="addon-list" id="addon-list-catalog"></div>
                                     <button type="button" class="btn btn-sm" onclick="addAddonUrl('catalog')">+ Add URL</button>
@@ -50,14 +58,17 @@
                                 <div class="addon-section" data-type="stream">
                                     <h4>
                                         Stream Only
-                                        <span class="info-icon" data-tooltip="Addons that only provide stream links. Must be paired with catalog addons.">ℹ️</span>
+                                        <span class="info-icon" data-tooltip="Addons that only provide stream links. Must be paired with catalog addons."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                                     </h4>
                                     <div class="addon-list" id="addon-list-stream"></div>
                                     <button type="button" class="btn btn-sm" onclick="addAddonUrl('stream')">+ Add URL</button>
                                 </div>
                             </div>
                             <p style="margin-top: 15px; font-size: 13px; color: var(--text-muted); text-align: center;">
-                                <em>💡 Tip: Drag and drop to reorder addon URLs</em>
+                                💡 <i><b>Tip</b>: Drag and drop addon URLs to another section to change their type</i>
                             </p>
                         </div>
                     </div>
@@ -81,7 +92,10 @@
                             <div class="form-group">
                                 <label for="movies-global-limit">
                                     Movies Global Limit
-                                    <span class="info-icon" data-tooltip="Total maximum number of movie items to prefetch across all catalogs. Check 'Unlimited' for no limit. Default: Unlimited">ℹ️</span>
+                                    <span class="info-icon" data-tooltip="Total maximum number of movie items to prefetch across all catalogs. Check 'Unlimited' for no limit. Default: Unlimited"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                                 </label>
                                 <input type="number" id="movies-global-limit" value="200" min="0">
                                 <label class="checkbox-label">
@@ -93,7 +107,10 @@
                             <div class="form-group">
                                 <label for="series-global-limit">
                                     Series Global Limit
-                                    <span class="info-icon" data-tooltip="Total maximum number of series items to prefetch across all catalogs. Check 'Unlimited' for no limit. Default: Unlimited">ℹ️</span>
+                                    <span class="info-icon" data-tooltip="Total maximum number of series items to prefetch across all catalogs. Check 'Unlimited' for no limit. Default: Unlimited"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                                 </label>
                                 <input type="number" id="series-global-limit" value="15" min="0">
                                 <label class="checkbox-label">
@@ -107,7 +124,10 @@
                             <div class="form-group">
                                 <label for="movies-per-catalog">
                                     Movies per Catalog
-                                    <span class="info-icon" data-tooltip="Maximum number of movie items to prefetch from each movie catalog. Check 'Unlimited' for no limit. Default: 50">ℹ️</span>
+                                    <span class="info-icon" data-tooltip="Maximum number of movie items to prefetch from each movie catalog. Check 'Unlimited' for no limit. Default: 50"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                                 </label>
                                 <input type="number" id="movies-per-catalog" value="50" min="0">
                                 <label class="checkbox-label">
@@ -119,7 +139,10 @@
                             <div class="form-group">
                                 <label for="series-per-catalog">
                                     Series per Catalog
-                                    <span class="info-icon" data-tooltip="Maximum number of series items to prefetch from each series catalog. Check 'Unlimited' for no limit. Default: 5">ℹ️</span>
+                                    <span class="info-icon" data-tooltip="Maximum number of series items to prefetch from each series catalog. Check 'Unlimited' for no limit. Default: 5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                                 </label>
                                 <input type="number" id="series-per-catalog" value="5" min="0">
                                 <label class="checkbox-label">
@@ -132,7 +155,10 @@
                         <div class="form-group">
                             <label for="items-per-mixed-catalog">
                                 Items per Mixed Catalog
-                                <span class="info-icon" data-tooltip="Maximum number of items to prefetch from catalogs that contain both movies and series. Check 'Unlimited' for no limit. Default: 30">ℹ️</span>
+                                <span class="info-icon" data-tooltip="Maximum number of items to prefetch from catalogs that contain both movies and series. Check 'Unlimited' for no limit. Default: 30"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                             </label>
                             <input type="number" id="items-per-mixed-catalog" value="30" min="0" style="max-width: 200px;">
                             <label class="checkbox-label">
@@ -144,7 +170,10 @@
                         <div class="form-group">
                             <label for="max-execution-time">
                                 Max Execution Time
-                                <span class="info-icon" data-tooltip="Maximum time allowed for a single prefetch job to run. Check 'Unlimited' for no time limit. Default: 90 minutes">ℹ️</span>
+                                <span class="info-icon" data-tooltip="Maximum time allowed for a single prefetch job to run. Check 'Unlimited' for no time limit. Default: 90 minutes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                             </label>
                             <div class="time-input">
                                 <input type="number" id="max-execution-time-value" value="90" min="0" step="0.1">
@@ -170,7 +199,10 @@
                         <div class="form-group">
                             <label for="delay">
                                 Delay Between Requests
-                                <span class="info-icon" data-tooltip="Time delay between consecutive stream requests to avoid overloading addons. Default: 2 seconds">ℹ️</span>
+                                <span class="info-icon" data-tooltip="Time delay between consecutive stream requests to avoid overloading addons. Default: 2 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                             </label>
                             <div class="time-input">
                                 <input type="number" id="delay-value" value="2" min="0" step="0.1">
@@ -190,7 +222,10 @@
                         <div class="form-group">
                             <label for="proxy">
                                 HTTP Proxy (Optional)
-                                <span class="info-icon" data-tooltip="Optional HTTP proxy server for all addon requests. Leave empty if not needed. Format: http://proxy.example.com:8080">ℹ️</span>
+                                <span class="info-icon" data-tooltip="Optional HTTP proxy server for all addon requests. Leave empty if not needed. Format: http://proxy.example.com:8080"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                             </label>
                             <input type="text" id="proxy" placeholder="http://proxy.example.com:8080">
                         </div>
@@ -205,7 +240,10 @@
                             <div class="form-group">
                                 <label>
                                     Randomize Catalog Processing
-                                    <span class="info-icon" data-tooltip="Process catalogs in random order instead of sequential order. Helps distribute load. Default: Disabled">ℹ️</span>
+                                    <span class="info-icon" data-tooltip="Process catalogs in random order instead of sequential order. Helps distribute load. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                                 </label>
                                 <div class="radio-group">
                                     <label><input type="radio" name="randomize-catalog" value="true"> Enabled</label>
@@ -216,7 +254,10 @@
                             <div class="form-group">
                                 <label>
                                     Randomize Item Prefetching
-                                    <span class="info-icon" data-tooltip="Fetch items from catalogs in random order instead of sequential order. Default: Disabled">ℹ️</span>
+                                    <span class="info-icon" data-tooltip="Fetch items from catalogs in random order instead of sequential order. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                                 </label>
                                 <div class="radio-group">
                                     <label><input type="radio" name="randomize-item" value="true"> Enabled</label>
@@ -234,7 +275,10 @@
                         <div class="form-group">
                             <label for="cache-validity">
                                 Streams Cache Validity
-                                <span class="info-icon" data-tooltip="How long prefetched streams remain in the addon cache before expiring. Default: 3 days">ℹ️</span>
+                                <span class="info-icon" data-tooltip="How long prefetched streams remain in the addon cache before expiring. Default: 3 days"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                             </label>
                             <div class="time-input">
                                 <input type="number" id="cache-validity-value" value="3" min="0">
@@ -251,7 +295,10 @@
                         <div class="form-group">
                             <label>
                                 Enable Log File Creation
-                                <span class="info-icon" data-tooltip="Enable creation of detailed log files in data/logs directory during prefetch operations. Useful for debugging and monitoring. Default: Disabled">ℹ️</span>
+                                <span class="info-icon" data-tooltip="Enable creation of detailed log files in data/logs directory during prefetch operations. Useful for debugging and monitoring. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
                             </label>
                             <div class="radio-group">
                                 <label><input type="radio" name="enable-logging" value="true"> Enabled</label>
