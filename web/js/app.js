@@ -2005,7 +2005,19 @@ function updateJobStatusUI(status, caller = 'unknown') {
 
     // Normalize cancelled to completed for display
     if (status.status === 'cancelled') {
-        addDebugLog(`    Normalizing cancelled to completed`);
+        addDebugLog(`    ═══════════════════════════════════════════════════════════`);
+        addDebugLog(`    🔴 [CANCELLED] Job was CANCELLED/TERMINATED`);
+        addDebugLog(`    🔴 [CANCELLED] Full status object: ${JSON.stringify(status, null, 2)}`);
+        addDebugLog(`    🔴 [CANCELLED] status.summary exists? ${!!status.summary}`);
+        if (status.summary) {
+            addDebugLog(`    🔴 [CANCELLED] status.summary.timing: ${JSON.stringify(status.summary.timing, null, 2)}`);
+            addDebugLog(`    🔴 [CANCELLED] status.summary.statistics: ${JSON.stringify(status.summary.statistics, null, 2)}`);
+            addDebugLog(`    🔴 [CANCELLED] status.summary.processed_catalogs: ${JSON.stringify(status.summary.processed_catalogs, null, 2)}`);
+        } else {
+            addDebugLog(`    🔴 [CANCELLED] ❌ NO SUMMARY DATA AVAILABLE!`);
+        }
+        addDebugLog(`    🔴 [CANCELLED] Normalizing status from 'cancelled' to 'completed'`);
+        addDebugLog(`    ═══════════════════════════════════════════════════════════`);
         status.status = 'completed';
     }
 
@@ -2101,8 +2113,38 @@ function updateJobStatusUI(status, caller = 'unknown') {
 
             if (status.summary) {
                 try {
-                    const timing = status.summary.timing || {};
-                    const stats = status.summary.statistics || {};
+                    addDebugLog(`📊 [COMPLETION STATS] ═══════════════════════════════════════`);
+                    addDebugLog(`📊 [COMPLETION STATS] Starting to populate completion screen...`);
+
+                    // WORKAROUND: Backend doesn't populate timing on cancellation, construct it ourselves
+                    let timing = status.summary.timing || {};
+                    if (!timing.start_time && status.start_time) {
+                        addDebugLog(`📊 [COMPLETION STATS] ⚠️ timing missing, constructing from top-level fields`);
+                        timing = {
+                            start_time: status.start_time,
+                            end_time: status.end_time,
+                            total_duration: status.end_time - status.start_time,
+                            processing_duration: status.end_time - status.start_time
+                        };
+                        addDebugLog(`📊 [COMPLETION STATS] Constructed timing: ${JSON.stringify(timing)}`);
+                    }
+
+                    // WORKAROUND: Use progress data as fallback if summary stats are missing/zero
+                    let stats = status.summary.statistics || {};
+                    if (status.progress && (stats.movies_prefetched === 0 && status.progress.movies_prefetched > 0)) {
+                        addDebugLog(`📊 [COMPLETION STATS] ⚠️ Summary stats are zero but progress has data - using progress as fallback`);
+                        stats = {
+                            ...stats,
+                            movies_prefetched: status.progress.movies_prefetched || 0,
+                            series_prefetched: status.progress.series_prefetched || 0,
+                            episodes_prefetched: status.progress.episodes_prefetched || 0,
+                            items_from_cache: status.progress.cached_count || 0
+                        };
+                        addDebugLog(`📊 [COMPLETION STATS] Merged stats with progress: ${JSON.stringify(stats)}`);
+                    }
+
+                    addDebugLog(`📊 [COMPLETION STATS] timing object: ${JSON.stringify(timing)}`);
+                    addDebugLog(`📊 [COMPLETION STATS] stats object: ${JSON.stringify(stats)}`);
 
                     // Timing
                     const formatTime = (ts) => ts ? new Date(ts * 1000).toLocaleString() : '-';
@@ -2116,39 +2158,74 @@ function updateJobStatusUI(status, caller = 'unknown') {
 
                     const setEl = (id, val) => {
                         const el = document.getElementById(id);
+                        addDebugLog(`📊 [COMPLETION STATS] Setting ${id} = "${val}" (element exists: ${!!el})`);
                         if (el) el.textContent = val;
                     };
 
+                    addDebugLog(`📊 [COMPLETION STATS] ─── Populating TIMING fields ───`);
                     setEl('completion-start-time', formatTime(timing.start_time));
                     setEl('completion-end-time', formatTime(timing.end_time));
                     setEl('completion-total-duration', formatDuration(timing.total_duration));
                     setEl('completion-processing-time', formatDuration(timing.processing_duration));
 
                     // Statistics
+                    addDebugLog(`📊 [COMPLETION STATS] ─── Populating STATISTICS fields ───`);
                     setEl('completion-catalogs', stats.filtered_catalogs || 0);
                     setEl('completion-movies', stats.movies_prefetched || 0);
                     setEl('completion-series', stats.series_prefetched || 0);
                     setEl('completion-episodes', stats.episodes_prefetched || 0);
                     setEl('completion-pages', stats.total_pages_fetched || 0);
                     setEl('completion-cached', stats.items_from_cache || 0);
-                    setEl('completion-success-rate', stats.cache_requests_made > 0
+
+                    const successRate = stats.cache_requests_made > 0
                         ? `${Math.round((stats.cache_requests_successful / stats.cache_requests_made) * 100)}%`
-                        : '-');
+                        : '-';
+                    addDebugLog(`📊 [COMPLETION STATS] Success rate calculation: ${stats.cache_requests_successful}/${stats.cache_requests_made} = ${successRate}`);
+                    setEl('completion-success-rate', successRate);
 
                     // Rates
+                    addDebugLog(`📊 [COMPLETION STATS] ─── Populating PROCESSING RATES ───`);
                     const procMins = (timing.processing_duration || 1) / 60;
-                    setEl('completion-movie-rate', (stats.movies_prefetched / procMins).toFixed(1));
-                    setEl('completion-series-rate', (stats.episodes_prefetched / procMins).toFixed(1));
-                    setEl('completion-overall-rate', ((stats.movies_prefetched + stats.series_prefetched) / procMins).toFixed(1));
+                    addDebugLog(`📊 [COMPLETION STATS] Processing minutes: ${procMins.toFixed(2)}`);
+
+                    const movieRate = (stats.movies_prefetched / procMins).toFixed(1);
+                    const seriesRate = (stats.episodes_prefetched / procMins).toFixed(1);
+                    const overallRate = ((stats.movies_prefetched + stats.series_prefetched) / procMins).toFixed(1);
+
+                    setEl('completion-movie-rate', movieRate);
+                    setEl('completion-series-rate', seriesRate);
+                    setEl('completion-overall-rate', overallRate);
 
                     // Catalog Details Table
-                    const catalogs = status.summary.processed_catalogs || [];
+                    addDebugLog(`📊 [COMPLETION STATS] ─── Populating CATALOG DETAILS TABLE ───`);
+                    let catalogs = status.summary.processed_catalogs || [];
+
+                    // WORKAROUND: If no processed catalogs but we have progress with catalog name, create a row
+                    if (catalogs.length === 0 && status.progress && status.progress.catalog_name) {
+                        addDebugLog(`📊 [COMPLETION STATS] ⚠️ No processed_catalogs but progress has catalog_name - creating synthetic row`);
+                        const syntheticCatalog = {
+                            name: status.progress.catalog_name,
+                            type: status.progress.catalog_mode || 'movie',
+                            duration: timing.processing_duration || 0,
+                            success_count: status.progress.movies_prefetched || 0,
+                            failed_count: 0,
+                            cached_count: status.progress.cached_count || 0
+                        };
+                        catalogs = [syntheticCatalog];
+                        addDebugLog(`📊 [COMPLETION STATS] Created synthetic catalog: ${JSON.stringify(syntheticCatalog)}`);
+                    }
+
+                    addDebugLog(`📊 [COMPLETION STATS] Number of processed catalogs: ${catalogs.length}`);
+                    addDebugLog(`📊 [COMPLETION STATS] Catalogs array: ${JSON.stringify(catalogs, null, 2)}`);
+
                     const tbody = document.getElementById('catalog-details-tbody');
                     if (tbody && catalogs.length > 0) {
+                        addDebugLog(`📊 [COMPLETION STATS] Table body found, clearing and populating...`);
                         tbody.innerHTML = '';
-                        catalogs.forEach(cat => {
+                        catalogs.forEach((cat, idx) => {
                             const row = tbody.insertRow();
                             const total = (cat.success_count || 0) + (cat.failed_count || 0) + (cat.cached_count || 0);
+                            addDebugLog(`📊 [COMPLETION STATS] Row ${idx}: ${cat.name} (${cat.type}) - ${total} items`);
                             row.innerHTML = `
                                 <td>${cat.name || '-'}</td>
                                 <td><span class="catalog-type-badge">${cat.type || '-'}</span></td>
@@ -2159,11 +2236,20 @@ function updateJobStatusUI(status, caller = 'unknown') {
                                 <td>${total}</td>
                             `;
                         });
+                        addDebugLog(`📊 [COMPLETION STATS] ✅ Table populated with ${catalogs.length} rows`);
+                    } else {
+                        addDebugLog(`📊 [COMPLETION STATS] ❌ Table body not found or no catalogs (tbody exists: ${!!tbody}, catalogs.length: ${catalogs.length})`);
                     }
+
+                    addDebugLog(`📊 [COMPLETION STATS] ✅ COMPLETED populating all stats`);
+                    addDebugLog(`📊 [COMPLETION STATS] ═══════════════════════════════════════`);
                 } catch (error) {
-                    addDebugLog(`    ERROR populating completion stats: ${error.message}`);
+                    addDebugLog(`📊 [COMPLETION STATS] ❌❌❌ ERROR: ${error.message}`);
+                    addDebugLog(`📊 [COMPLETION STATS] Stack trace: ${error.stack}`);
                     console.error('Error populating completion stats:', error);
                 }
+            } else {
+                addDebugLog(`📊 [COMPLETION STATS] ❌❌❌ NO SUMMARY DATA - Cannot populate stats!`);
             }
         }
     } else if (status.status === 'failed') {
@@ -2517,7 +2603,11 @@ function handleSSEEvent(event, data) {
         case 'job_complete':
         case 'job_error':
         case 'job_cancelled':
-            addDebugLog(`📨 [SSE] Job completion event: ${event}`);
+            addDebugLog(`📨 [SSE] ═══════════════════════════════════════════════════════`);
+            addDebugLog(`📨 [SSE] Job completion event received: ${event}`);
+            addDebugLog(`📨 [SSE] Event data: ${JSON.stringify(data, null, 2)}`);
+            addDebugLog(`📨 [SSE] Now fetching full job status via API...`);
+            addDebugLog(`📨 [SSE] ═══════════════════════════════════════════════════════`);
             loadJobStatus(`SSE-${event}`);
             break;
 
