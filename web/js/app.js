@@ -1608,6 +1608,15 @@ async function performReset() {
     btn.disabled = true;
 
     try {
+        // Delete all log files first
+        try {
+            await fetch('/api/logs', { method: 'DELETE' });
+        } catch (logError) {
+            console.error('Error deleting log files during reset:', logError);
+            // Continue with reset even if log deletion fails
+        }
+
+        // Reset configuration
         const response = await fetch('/api/config/reset', {
             method: 'POST'
         });

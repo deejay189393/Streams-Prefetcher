@@ -378,50 +378,6 @@
             </div>
         </section>
 
-        <!-- Log Files Viewer Section -->
-        <section id="log-viewer" class="card">
-            <div class="section-header-collapsible" onclick="toggleLogSection()">
-                <span class="collapse-icon collapsed" id="log-viewer-icon">▼</span>
-                <h2>📄 View Log Files</h2>
-            </div>
-            <div id="log-viewer-content" class="collapsible-content collapsed">
-                <!-- Log Files List -->
-                <div id="log-list-view">
-                    <div class="log-controls">
-                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteAllLogs()" id="delete-all-logs-btn">
-                            🗑️ Delete All
-                        </button>
-                    </div>
-                    <div id="log-loading" style="display: none; text-align: center; padding: 20px; color: #666;">
-                        <div class="spinner"></div>
-                        <p>Loading log files...</p>
-                    </div>
-                    <div id="log-list-empty" style="display: none; text-align: center; padding: 20px; color: #666;">
-                        <p>No log files found</p>
-                    </div>
-                    <div id="log-list-container" class="log-list"></div>
-                </div>
-
-                <!-- Log File Content Viewer -->
-                <div id="log-content-view" style="display: none;">
-                    <div class="log-controls" style="justify-content: space-between;">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="backToLogList()">
-                            ← Back to List
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteCurrentLog()" id="delete-current-log-btn">
-                            🗑️ Delete
-                        </button>
-                    </div>
-                    <div id="log-filename-display" class="log-filename"></div>
-                    <div id="log-content-loading" style="display: none; text-align: center; padding: 20px; color: #666;">
-                        <div class="spinner"></div>
-                        <p>Loading log content...</p>
-                    </div>
-                    <pre id="log-content-text" class="log-content"></pre>
-                </div>
-            </div>
-        </section>
-
         <!-- Add/Edit Schedule Modal -->
         <div id="schedule-modal" class="modal" style="display: none;">
             <div class="modal-content">
@@ -846,6 +802,50 @@
                         </svg>
                         Dismiss
                     </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Log Files Viewer Section -->
+        <section id="log-viewer" class="card">
+            <div class="section-header-collapsible" onclick="toggleLogSection()">
+                <span class="collapse-icon collapsed" id="log-viewer-icon">▼</span>
+                <h2>📄 View Log Files</h2>
+            </div>
+            <div id="log-viewer-content" class="collapsible-content collapsed">
+                <!-- Log Files List -->
+                <div id="log-list-view">
+                    <div class="log-controls">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteAllLogs()" id="delete-all-logs-btn">
+                            🗑️ Delete All
+                        </button>
+                    </div>
+                    <div id="log-loading" style="display: none; text-align: center; padding: 20px; color: #666;">
+                        <div class="spinner"></div>
+                        <p>Loading log files...</p>
+                    </div>
+                    <div id="log-list-empty" style="display: none; text-align: center; padding: 20px; color: #666;">
+                        <p>No log files found</p>
+                    </div>
+                    <div id="log-list-container" class="log-list"></div>
+                </div>
+
+                <!-- Log File Content Viewer -->
+                <div id="log-content-view" style="display: none;">
+                    <div class="log-controls" style="justify-content: space-between;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="backToLogList()">
+                            ← Back to List
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteCurrentLog()" id="delete-current-log-btn">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                    <div id="log-filename-display" class="log-filename"></div>
+                    <div id="log-content-loading" style="display: none; text-align: center; padding: 20px; color: #666;">
+                        <div class="spinner"></div>
+                        <p>Loading log content...</p>
+                    </div>
+                    <pre id="log-content-text" class="log-content"></pre>
                 </div>
             </div>
         </section>
