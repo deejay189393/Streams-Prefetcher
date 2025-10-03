@@ -554,6 +554,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     addDebugLog('=== PAGE LOAD START ===');
     addDebugLog('DOMContentLoaded event fired');
+
+    // Debug: Check localStorage for dismissed completion
+    const storedDismissedId = localStorage.getItem('dismissed-completion-id');
+    addDebugLog(`[PAGE LOAD] localStorage 'dismissed-completion-id': ${storedDismissedId}`);
+    addDebugLog(`[PAGE LOAD] Global currentCompletionId: ${currentCompletionId}`);
+
     logStatusScreens();
 
     // Load saved catalog selection first, before loading config
@@ -1950,8 +1956,10 @@ function updateJobStatusUI(status) {
 
     // Check if this completion was already dismissed
     const dismissedCompletionId = localStorage.getItem('dismissed-completion-id');
-    const currentCompletionId = status.start_time; // Use start time as unique ID
-    addDebugLog(`    dismissedCompletionId=${dismissedCompletionId}, currentCompletionId=${currentCompletionId}`);
+    currentCompletionId = status.start_time; // Use start time as unique ID (set global)
+    addDebugLog(`[DISMISS CHECK] dismissedCompletionId from localStorage: ${dismissedCompletionId}`);
+    addDebugLog(`[DISMISS CHECK] currentCompletionId set to: ${currentCompletionId}`);
+    addDebugLog(`[DISMISS CHECK] Global currentCompletionId is now: ${window.currentCompletionId || currentCompletionId}`);
 
     // If completion screen is locked, don't allow status changes to hide it
     // unless we're explicitly showing completion again or user dismissed it
@@ -1965,9 +1973,14 @@ function updateJobStatusUI(status) {
     addDebugLog(`    isCompleted=${isCompleted}`);
 
     // If this completion was dismissed, show idle instead
+    addDebugLog(`[DISMISS CHECK] isCompleted: ${isCompleted}`);
+    addDebugLog(`[DISMISS CHECK] Comparing: "${dismissedCompletionId}" === "${String(currentCompletionId)}"`);
+    addDebugLog(`[DISMISS CHECK] Match result: ${dismissedCompletionId === String(currentCompletionId)}`);
     if (isCompleted && dismissedCompletionId === String(currentCompletionId)) {
-        addDebugLog(`    Completion dismissed, changing status to idle`);
+        addDebugLog(`[DISMISS CHECK] ✅ MATCH! Completion was dismissed, changing status to idle`);
         status = { status: 'idle' };
+    } else if (isCompleted) {
+        addDebugLog(`[DISMISS CHECK] No match - showing completion screen`);
     }
 
     // Clear termination flag when completion screen is shown
@@ -2021,6 +2034,16 @@ function updateJobStatusUI(status) {
         addDebugLog(`    Showing RUNNING screen`);
         document.getElementById('status-running').style.display = 'block';
         logStatusScreens();
+
+        // If no progress yet, but we have loaded catalogs, show first enabled catalog immediately
+        if ((!status.progress || !status.progress.catalog_name) && loadedCatalogs.length > 0) {
+            const firstEnabledCatalog = loadedCatalogs.find(cat => cat.enabled);
+            if (firstEnabledCatalog) {
+                document.getElementById('current-catalog-name').textContent = firstEnabledCatalog.name;
+                document.querySelector('.current-action').textContent = `Processing ${firstEnabledCatalog.name}`;
+            }
+        }
+
         updateProgressInfo(status.progress);
 
         // Disable Start Now buttons when running
@@ -2325,7 +2348,10 @@ async function runJob() {
             localStorage.setItem('has-run-prefetch-job', 'true');
 
             // Clear any dismissed completion from previous job
+            const oldDismissedId = localStorage.getItem('dismissed-completion-id');
+            addDebugLog(`[NEW JOB] Starting new job - clearing old dismissed completion ID: ${oldDismissedId}`);
             localStorage.removeItem('dismissed-completion-id');
+            addDebugLog(`[NEW JOB] localStorage 'dismissed-completion-id' cleared`);
 
             // Clear termination flag when starting new job
             jobTerminationRequested = false;
@@ -2359,13 +2385,22 @@ async function runJob() {
 // See startTerminateCountdown() and performTerminate() functions above
 
 function dismissCompletion() {
+    addDebugLog(`[DISMISS] dismissCompletion() called`);
+    addDebugLog(`[DISMISS] currentCompletionId value: ${currentCompletionId}`);
+
     // Store the dismissed completion ID so it stays dismissed after refresh
     if (currentCompletionId) {
-        localStorage.setItem('dismissed-completion-id', String(currentCompletionId));
+        const idToSave = String(currentCompletionId);
+        localStorage.setItem('dismissed-completion-id', idToSave);
+        addDebugLog(`[DISMISS] ✅ Saved to localStorage: "${idToSave}"`);
+        addDebugLog(`[DISMISS] Verification - reading back from localStorage: "${localStorage.getItem('dismissed-completion-id')}"`);
+    } else {
+        addDebugLog(`[DISMISS] ❌ WARNING: currentCompletionId is null/undefined! Nothing saved.`);
     }
 
     // Unlock the completion screen before dismissing
     completionScreenLocked = false;
+    addDebugLog(`[DISMISS] Unlocked completion screen, calling updateJobStatusUI with idle`);
     // Hide completion screen and show idle/ready state
     updateJobStatusUI({ status: 'idle' });
 }
