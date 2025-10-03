@@ -26,6 +26,212 @@ let currentCompletionId = null; // Track current completion to handle dismissal
 let jobTerminationRequested = false; // Track if user requested termination
 
 // ============================================================================
+// Debug Logging (Mobile-Friendly)
+// ============================================================================
+
+let debugLogs = [];
+let debugStartTime = Date.now();
+
+function addDebugLog(message) {
+    const elapsed = ((Date.now() - debugStartTime) / 1000).toFixed(3);
+    const timestamp = new Date().toISOString().split('T')[1].substring(0, 12);
+    const logLine = `[${timestamp}] [+${elapsed}s] ${message}`;
+    debugLogs.push(logLine);
+
+    // Keep only last 100 logs
+    if (debugLogs.length > 100) {
+        debugLogs = debugLogs.slice(-100);
+    }
+
+    // Update debug panel
+    const debugContent = document.getElementById('debug-content');
+    if (debugContent) {
+        debugContent.textContent = debugLogs.join('\n');
+        // Auto-scroll to bottom
+        const debugPanel = document.getElementById('debug-panel');
+        if (debugPanel) {
+            debugPanel.scrollTop = debugPanel.scrollHeight;
+        }
+    }
+
+    // Also log to console
+    console.log(logLine);
+}
+
+function logStatusScreens() {
+    const screens = ['idle', 'scheduled', 'running', 'completed', 'failed'];
+    const states = screens.map(screen => {
+        const el = document.getElementById(`status-${screen}`);
+        const display = el ? el.style.display : 'MISSING';
+        return `${screen}=${display}`;
+    }).join(', ');
+    addDebugLog(`Screen states: ${states}`);
+}
+
+function copyDebugLog(event) {
+    const debugContent = document.getElementById('debug-content');
+    if (debugContent) {
+        const text = debugContent.textContent;
+        const btn = event ? event.target : null;
+
+        const showSuccess = () => {
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = 'COPIED!';
+                btn.style.background = '#00ff00';
+                btn.style.color = '#000';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#ff3366';
+                    btn.style.color = '#fff';
+                }, 2000);
+            }
+        };
+
+        // Try modern Clipboard API first
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showSuccess();
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                // Try fallback
+                fallbackCopy(text, showSuccess);
+            });
+        } else {
+            // Fallback for older browsers
+            fallbackCopy(text, showSuccess);
+        }
+    }
+}
+
+function fallbackCopy(text, successCallback) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.top = '0';
+    textarea.style.left = '0';
+    textarea.style.width = '2em';
+    textarea.style.height = '2em';
+    textarea.style.padding = '0';
+    textarea.style.border = 'none';
+    textarea.style.outline = 'none';
+    textarea.style.boxShadow = 'none';
+    textarea.style.background = 'transparent';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            successCallback();
+        } else {
+            alert('Copy failed. Please long-press the debug text and copy manually.');
+        }
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        alert('Copy not supported. Please long-press the debug text and copy manually.');
+    }
+
+    document.body.removeChild(textarea);
+}
+
+function toggleDebugPanel() {
+    const panel = document.getElementById('debug-panel');
+    if (panel) {
+        const isVisible = panel.style.display !== 'none';
+        panel.style.display = isVisible ? 'none' : 'block';
+
+        // Save state to localStorage
+        localStorage.setItem('debug-panel-visible', isVisible ? 'false' : 'true');
+
+        // Log the toggle
+        if (!isVisible) {
+            addDebugLog('=== DEBUG PANEL ENABLED (Long-press ⚡ to toggle) ===');
+        }
+    }
+}
+
+function initializeDebugPanel() {
+    const panel = document.getElementById('debug-panel');
+    if (panel) {
+        // Check localStorage for saved state (default: hidden)
+        const savedState = localStorage.getItem('debug-panel-visible');
+        if (savedState === 'true') {
+            panel.style.display = 'block';
+            addDebugLog('=== DEBUG PANEL ENABLED (Long-press ⚡ to toggle) ===');
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+}
+
+// Long-press functionality for mobile
+let longPressTimer = null;
+let longPressTriggered = false;
+
+function setupLongPressToggle() {
+    const pageTitle = document.getElementById('page-title');
+    if (!pageTitle) return;
+
+    const LONG_PRESS_DURATION = 800; // 800ms = 0.8 seconds
+
+    // Touch events for mobile
+    pageTitle.addEventListener('touchstart', (e) => {
+        longPressTriggered = false;
+        longPressTimer = setTimeout(() => {
+            longPressTriggered = true;
+            toggleDebugPanel();
+            // Vibrate if supported (nice tactile feedback)
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }, LONG_PRESS_DURATION);
+    });
+
+    pageTitle.addEventListener('touchend', (e) => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        // Prevent click if long-press was triggered
+        if (longPressTriggered) {
+            e.preventDefault();
+        }
+    });
+
+    pageTitle.addEventListener('touchcancel', (e) => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    });
+
+    // Mouse events for desktop (still useful for testing)
+    pageTitle.addEventListener('mousedown', (e) => {
+        longPressTriggered = false;
+        longPressTimer = setTimeout(() => {
+            longPressTriggered = true;
+            toggleDebugPanel();
+        }, LONG_PRESS_DURATION);
+    });
+
+    pageTitle.addEventListener('mouseup', (e) => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    });
+
+    pageTitle.addEventListener('mouseleave', (e) => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    });
+}
+
+// ============================================================================
 // Collapsible Section Helpers
 // ============================================================================
 
@@ -340,13 +546,32 @@ function toggleNoDelay() {
 // ============================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize debug panel (hidden by default, unless localStorage says otherwise)
+    initializeDebugPanel();
+
+    // Setup long-press toggle on page title
+    setupLongPressToggle();
+
+    addDebugLog('=== PAGE LOAD START ===');
+    addDebugLog('DOMContentLoaded event fired');
+    logStatusScreens();
+
     // Load saved catalog selection first, before loading config
+    addDebugLog('Loading saved catalog selection...');
     await loadSavedCatalogSelection();
+    addDebugLog('Catalog selection loaded');
 
     // Now load config (which will auto-load catalogs if needed)
+    addDebugLog('Loading configuration...');
     loadConfiguration();
+    addDebugLog('Loading schedules...');
     loadSchedules();
-    loadJobStatus();
+    addDebugLog('Loading job status (AWAIT START)...');
+    logStatusScreens();
+    await loadJobStatus(); // Await to prevent showing idle screen during status fetch
+    addDebugLog('Job status loaded (AWAIT COMPLETE)');
+    logStatusScreens();
+    addDebugLog('Connecting event source...');
     connectEventSource();
 
     // Enable drag and drop for addon URLs
@@ -371,7 +596,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Wait longer than auto-save debounce (2s) to prevent initial load notifications
     setTimeout(() => {
         isPageLoading = false;
+        addDebugLog('=== PAGE LOAD COMPLETE (isPageLoading=false) ===');
     }, 4000);
+
+    addDebugLog('=== DOMContentLoaded HANDLER COMPLETE ===');
+    logStatusScreens();
 });
 
 function restoreCollapsedStates() {
@@ -1695,56 +1924,79 @@ async function saveCatalogSelection() {
 
 async function loadJobStatus() {
     try {
+        addDebugLog('  loadJobStatus: Fetching /api/job/status...');
         const response = await fetch('/api/job/status');
+        addDebugLog('  loadJobStatus: Response received');
         const data = await response.json();
+        addDebugLog(`  loadJobStatus: JSON parsed, success=${data.success}`);
 
         if (data.success) {
+            addDebugLog(`  loadJobStatus: Status from API: ${data.status.status}`);
+            addDebugLog(`  loadJobStatus: Calling updateJobStatusUI...`);
             updateJobStatusUI(data.status);
+            addDebugLog(`  loadJobStatus: updateJobStatusUI returned`);
+        } else {
+            addDebugLog(`  loadJobStatus: API returned success=false`);
         }
     } catch (error) {
+        addDebugLog(`  loadJobStatus: ERROR - ${error.message}`);
         console.error('Error loading job status:', error);
     }
 }
 
 function updateJobStatusUI(status) {
+    addDebugLog(`    updateJobStatusUI: ENTRY, status=${status.status}`);
+    logStatusScreens();
+
     // Check if this completion was already dismissed
     const dismissedCompletionId = localStorage.getItem('dismissed-completion-id');
     const currentCompletionId = status.start_time; // Use start time as unique ID
+    addDebugLog(`    dismissedCompletionId=${dismissedCompletionId}, currentCompletionId=${currentCompletionId}`);
 
     // If completion screen is locked, don't allow status changes to hide it
     // unless we're explicitly showing completion again or user dismissed it
     if (completionScreenLocked && status.status !== 'completed') {
+        addDebugLog(`    Completion screen locked, status != completed, RETURNING EARLY`);
         return;
     }
 
     // Treat 'cancelled' status as 'completed' for UI purposes (show results)
     const isCompleted = status.status === 'completed' || status.status === 'cancelled';
+    addDebugLog(`    isCompleted=${isCompleted}`);
 
     // If this completion was dismissed, show idle instead
     if (isCompleted && dismissedCompletionId === String(currentCompletionId)) {
+        addDebugLog(`    Completion dismissed, changing status to idle`);
         status = { status: 'idle' };
     }
 
     // Clear termination flag when completion screen is shown
     if (isCompleted && jobTerminationRequested) {
+        addDebugLog(`    Clearing termination flag`);
         jobTerminationRequested = false;
         // Continue to show completion screen with partial results
     }
 
     // Normalize cancelled to completed for display
     if (status.status === 'cancelled') {
+        addDebugLog(`    Normalizing cancelled to completed`);
         status.status = 'completed';
     }
 
     // Hide all status displays
+    addDebugLog(`    Hiding all status displays...`);
     document.querySelectorAll('.status-display').forEach(box => {
         box.style.display = 'none';
     });
+    logStatusScreens();
 
     // Show appropriate status display
+    addDebugLog(`    Final status to display: ${status.status}`);
     if (status.status === 'idle') {
+        addDebugLog(`    Showing IDLE screen`);
         document.getElementById('status-idle').style.display = 'block';
         completionScreenLocked = false; // Unlock when returning to idle
+        logStatusScreens();
 
         // Re-enable Start Now button when returning to idle
         const startBtn = document.getElementById('start-now-btn');
@@ -1752,11 +2004,13 @@ function updateJobStatusUI(status) {
             startBtn.disabled = false;
         }
     } else if (status.status === 'scheduled') {
+        addDebugLog(`    Showing SCHEDULED screen`);
         const scheduledDisplay = document.getElementById('status-scheduled');
         if (scheduledDisplay) {
             scheduledDisplay.style.display = 'block';
             updateNextRunInfo(status);
         }
+        logStatusScreens();
 
         // Enable Start Now button for scheduled state
         const startNowBtn = document.getElementById('start-now-btn-scheduled');
@@ -1764,13 +2018,16 @@ function updateJobStatusUI(status) {
             startNowBtn.disabled = false;
         }
     } else if (status.status === 'running') {
+        addDebugLog(`    Showing RUNNING screen`);
         document.getElementById('status-running').style.display = 'block';
+        logStatusScreens();
         updateProgressInfo(status.progress);
 
         // Disable Start Now buttons when running
         const startNowBtns = document.querySelectorAll('[id^="start-now-btn"]');
         startNowBtns.forEach(btn => btn.disabled = true);
     } else if (status.status === 'completed') {
+        addDebugLog(`    Showing COMPLETED screen`);
         const completedDisplay = document.getElementById('status-completed');
 
         if (completedDisplay) {
@@ -1839,14 +2096,18 @@ function updateJobStatusUI(status) {
                         });
                     }
                 } catch (error) {
+                    addDebugLog(`    ERROR populating completion stats: ${error.message}`);
                     console.error('Error populating completion stats:', error);
                 }
             }
+            logStatusScreens();
         }
     } else if (status.status === 'failed') {
+        addDebugLog(`    Showing FAILED screen`);
         const failedDisplay = document.getElementById('status-failed');
         if (failedDisplay) {
             failedDisplay.style.display = 'block';
+            logStatusScreens();
 
             // Populate error details
             const errorMessage = document.getElementById('error-message');
@@ -1865,7 +2126,13 @@ function updateJobStatusUI(status) {
 
     // Disable config changes if running
     const isRunning = status.status === 'running';
-    document.getElementById('save-config-btn').disabled = isRunning;
+    const saveConfigBtn = document.getElementById('save-config-btn');
+    if (saveConfigBtn) {
+        saveConfigBtn.disabled = isRunning;
+    }
+
+    addDebugLog(`    updateJobStatusUI: EXIT`);
+    logStatusScreens();
 }
 
 function updateNextRunInfo(status) {
