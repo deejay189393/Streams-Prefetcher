@@ -3,3 +3,4 @@ runner/
 __pycache__/
 *.pyc
 .env
+**/[Cc][Ll][Aa][Uu][Dd][Ee]**
