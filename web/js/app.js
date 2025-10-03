@@ -2907,3 +2907,230 @@ function populateCatalogTable(catalogs) {
         tbody.appendChild(row);
     });
 }
+
+// ============================================================================
+// LOG VIEWER FUNCTIONS
+// ============================================================================
+
+let currentLogFilename = null;
+
+function toggleLogSection() {
+    const content = document.getElementById('log-viewer-content');
+    const icon = document.getElementById('log-viewer-icon');
+
+    if (content && icon) {
+        const isCollapsed = content.classList.contains('collapsed');
+
+        content.classList.toggle('collapsed');
+        icon.classList.toggle('collapsed');
+
+        if (isCollapsed) {
+            // Expanding - load logs
+            loadLogFiles();
+        } else {
+            // Collapsing - cleanup memory
+            cleanupLogViewer();
+        }
+
+        // Save state to localStorage
+        localStorage.setItem('log-viewer-collapsed', !isCollapsed);
+    }
+}
+
+function cleanupLogViewer() {
+    // Clear all content and reset state
+    currentLogFilename = null;
+
+    // Clear list view
+    const container = document.getElementById('log-list-container');
+    if (container) container.innerHTML = '';
+
+    // Clear content view
+    const content = document.getElementById('log-content-text');
+    if (content) content.textContent = '';
+
+    const filenameDisplay = document.getElementById('log-filename-display');
+    if (filenameDisplay) filenameDisplay.textContent = '';
+
+    // Reset views
+    document.getElementById('log-list-view').style.display = 'block';
+    document.getElementById('log-content-view').style.display = 'none';
+
+    // Hide loading/empty states
+    document.getElementById('log-loading').style.display = 'none';
+    document.getElementById('log-list-empty').style.display = 'none';
+    document.getElementById('log-content-loading').style.display = 'none';
+}
+
+function parseLogFilename(filename) {
+    // Parse: streams_prefetcher_logs_2025-10-03_16-03-47.txt
+    const match = filename.match(/streams_prefetcher_logs_(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})\.txt/);
+    if (!match) return null;
+
+    const [, year, month, day, hour, minute, second] = match;
+
+    // Create timestamp in seconds
+    const timestamp = new Date(year, month - 1, day, hour, minute, second).getTime() / 1000;
+
+    return {
+        time: formatCustomTime(timestamp),
+        date: formatCustomDate(timestamp),
+        timestamp
+    };
+}
+
+async function loadLogFiles() {
+    const loading = document.getElementById('log-loading');
+    const empty = document.getElementById('log-list-empty');
+    const container = document.getElementById('log-list-container');
+
+    // Show loading
+    loading.style.display = 'block';
+    empty.style.display = 'none';
+    container.innerHTML = '';
+
+    try {
+        const response = await fetch('/api/logs');
+        const data = await response.json();
+
+        loading.style.display = 'none';
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load log files');
+        }
+
+        if (data.logs.length === 0) {
+            empty.style.display = 'block';
+            return;
+        }
+
+        // Render log files (max 8 visible, scrollable)
+        data.logs.forEach(log => {
+            const parsed = parseLogFilename(log.filename);
+            if (!parsed) return;
+
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.onclick = () => viewLogFile(log.filename);
+
+            item.innerHTML = `
+                <div class="log-item-info">
+                    <div class="log-item-chips">
+                        <span class="log-chip log-chip-time">${parsed.time}</span>
+                        <span class="log-chip log-chip-date">${parsed.date}</span>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(item);
+        });
+
+    } catch (error) {
+        loading.style.display = 'none';
+        console.error('Error loading log files:', error);
+        container.innerHTML = `<div style="color: #ef4444; padding: 20px; text-align: center;">Error: ${error.message}</div>`;
+    }
+}
+
+async function viewLogFile(filename) {
+    currentLogFilename = filename;
+
+    // Hide list view, show content view
+    document.getElementById('log-list-view').style.display = 'none';
+    document.getElementById('log-content-view').style.display = 'block';
+
+    const loading = document.getElementById('log-content-loading');
+    const content = document.getElementById('log-content-text');
+    const filenameDisplay = document.getElementById('log-filename-display');
+
+    // Show loading
+    loading.style.display = 'block';
+    content.textContent = '';
+    filenameDisplay.textContent = filename;
+
+    try {
+        const response = await fetch(`/api/logs/${filename}`);
+        const data = await response.json();
+
+        loading.style.display = 'none';
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load log content');
+        }
+
+        content.textContent = data.content;
+
+    } catch (error) {
+        loading.style.display = 'none';
+        console.error('Error loading log content:', error);
+        content.textContent = `Error: ${error.message}`;
+    }
+}
+
+function backToLogList() {
+    currentLogFilename = null;
+    document.getElementById('log-content-view').style.display = 'none';
+    document.getElementById('log-list-view').style.display = 'block';
+
+    // Reload the list
+    loadLogFiles();
+}
+
+async function deleteCurrentLog() {
+    if (!currentLogFilename) return;
+
+    if (!confirm(`Delete ${currentLogFilename}?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/logs/${currentLogFilename}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to delete log file');
+        }
+
+        // Go back to list
+        backToLogList();
+
+    } catch (error) {
+        console.error('Error deleting log file:', error);
+        alert(`Error: ${error.message}`);
+    }
+}
+
+async function deleteAllLogs() {
+    if (!confirm('Delete all log files? This cannot be undone.')) {
+        return;
+    }
+
+    const loading = document.getElementById('log-loading');
+    const container = document.getElementById('log-list-container');
+
+    loading.style.display = 'block';
+    container.innerHTML = '';
+
+    try {
+        const response = await fetch('/api/logs', {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+
+        loading.style.display = 'none';
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to delete log files');
+        }
+
+        // Reload the list
+        loadLogFiles();
+
+    } catch (error) {
+        loading.style.display = 'none';
+        console.error('Error deleting all log files:', error);
+        alert(`Error: ${error.message}`);
+    }
+}

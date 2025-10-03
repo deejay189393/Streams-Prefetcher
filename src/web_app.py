@@ -648,6 +648,114 @@ def stream_events():
 
 
 # ============================================================================
+# LOG FILES API
+# ============================================================================
+
+@app.route('/api/logs', methods=['GET'])
+def list_logs():
+    """List all log files"""
+    try:
+        logs_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'logs')
+
+        if not os.path.exists(logs_dir):
+            return jsonify({'success': True, 'logs': []})
+
+        # Get all .txt files starting with streams_prefetcher_logs_
+        log_files = []
+        for filename in os.listdir(logs_dir):
+            if filename.startswith('streams_prefetcher_logs_') and filename.endswith('.txt'):
+                filepath = os.path.join(logs_dir, filename)
+                stat = os.stat(filepath)
+                log_files.append({
+                    'filename': filename,
+                    'size': stat.st_size,
+                    'modified': stat.st_mtime
+                })
+
+        # Sort by modified time (most recent first)
+        log_files.sort(key=lambda x: x['modified'], reverse=True)
+
+        return jsonify({'success': True, 'logs': log_files})
+
+    except Exception as e:
+        logger.error(f"Error listing log files: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/logs/<filename>', methods=['GET'])
+def get_log_content(filename):
+    """Get content of a specific log file"""
+    try:
+        # Security: only allow files starting with streams_prefetcher_logs_
+        if not filename.startswith('streams_prefetcher_logs_') or not filename.endswith('.txt'):
+            return jsonify({'success': False, 'error': 'Invalid filename'}), 400
+
+        logs_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'logs')
+        filepath = os.path.join(logs_dir, filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({'success': False, 'error': 'File not found'}), 404
+
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        return jsonify({'success': True, 'content': content})
+
+    except Exception as e:
+        logger.error(f"Error reading log file {filename}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/logs/<filename>', methods=['DELETE'])
+def delete_log(filename):
+    """Delete a specific log file"""
+    try:
+        # Security: only allow files starting with streams_prefetcher_logs_
+        if not filename.startswith('streams_prefetcher_logs_') or not filename.endswith('.txt'):
+            return jsonify({'success': False, 'error': 'Invalid filename'}), 400
+
+        logs_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'logs')
+        filepath = os.path.join(logs_dir, filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({'success': False, 'error': 'File not found'}), 404
+
+        os.remove(filepath)
+        logger.info(f"Deleted log file: {filename}")
+
+        return jsonify({'success': True, 'message': f'Deleted {filename}'})
+
+    except Exception as e:
+        logger.error(f"Error deleting log file {filename}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/logs', methods=['DELETE'])
+def delete_all_logs():
+    """Delete all log files"""
+    try:
+        logs_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'logs')
+
+        if not os.path.exists(logs_dir):
+            return jsonify({'success': True, 'deleted': 0})
+
+        deleted_count = 0
+        for filename in os.listdir(logs_dir):
+            if filename.startswith('streams_prefetcher_logs_') and filename.endswith('.txt'):
+                filepath = os.path.join(logs_dir, filename)
+                os.remove(filepath)
+                deleted_count += 1
+
+        logger.info(f"Deleted {deleted_count} log files")
+
+        return jsonify({'success': True, 'deleted': deleted_count})
+
+    except Exception as e:
+        logger.error(f"Error deleting all log files: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================================
 # UTILITY API
 # ============================================================================
 
