@@ -983,7 +983,7 @@ function renderAddonUrls(addonUrls) {
     });
 }
 
-function createAddonUrlItem(url, type, index, name = null) {
+function createAddonUrlItem(url, type, index, name = null, forceEdit = false) {
     const div = document.createElement('div');
     div.className = 'addon-item';
     div.draggable = true;
@@ -992,7 +992,7 @@ function createAddonUrlItem(url, type, index, name = null) {
     div.dataset.url = url;
     div.dataset.name = name || '';
 
-    const isEditing = !url || url === '';
+    const isEditing = forceEdit || !url || url === '';
     const displayName = name || url;
 
     if (isEditing) {
@@ -1064,8 +1064,8 @@ function editAddonUrl(btn) {
     const type = div.dataset.type;
     const index = div.dataset.index;
 
-    // Recreate item in editing mode
-    const newDiv = createAddonUrlItem(url, type, index, null);
+    // Recreate item in editing mode (forceEdit = true)
+    const newDiv = createAddonUrlItem(url, type, index, null, true);
     div.replaceWith(newDiv);
 }
 
