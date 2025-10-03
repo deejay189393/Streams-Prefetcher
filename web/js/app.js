@@ -1772,14 +1772,75 @@ function updateJobStatusUI(status) {
         startNowBtns.forEach(btn => btn.disabled = true);
     } else if (status.status === 'completed') {
         const completedDisplay = document.getElementById('status-completed');
+
         if (completedDisplay) {
             completedDisplay.style.display = 'block';
-            completionScreenLocked = true; // Lock the completion screen
-            currentCompletionId = status.start_time; // Store completion ID
+            completionScreenLocked = true;
 
-            // Populate completion stats if summary data is available
             if (status.summary) {
-                populateCompletionStats(status.summary, status.start_time, status.end_time);
+                try {
+                    const timing = status.summary.timing || {};
+                    const stats = status.summary.statistics || {};
+
+                    // Timing
+                    const formatTime = (ts) => ts ? new Date(ts * 1000).toLocaleString() : '-';
+                    const formatDuration = (secs) => {
+                        if (!secs || secs < 0) return '-';
+                        const h = Math.floor(secs / 3600);
+                        const m = Math.floor((secs % 3600) / 60);
+                        const s = Math.floor(secs % 60);
+                        return h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+                    };
+
+                    const setEl = (id, val) => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = val;
+                    };
+
+                    setEl('completion-start-time', formatTime(timing.start_time));
+                    setEl('completion-end-time', formatTime(timing.end_time));
+                    setEl('completion-total-duration', formatDuration(timing.total_duration));
+                    setEl('completion-processing-time', formatDuration(timing.processing_duration));
+
+                    // Statistics
+                    setEl('completion-catalogs', stats.filtered_catalogs || 0);
+                    setEl('completion-movies', stats.movies_prefetched || 0);
+                    setEl('completion-series', stats.series_prefetched || 0);
+                    setEl('completion-episodes', stats.episodes_prefetched || 0);
+                    setEl('completion-pages', stats.total_pages_fetched || 0);
+                    setEl('completion-cached', stats.items_from_cache || 0);
+                    setEl('completion-success-rate', stats.cache_requests_made > 0
+                        ? `${Math.round((stats.cache_requests_successful / stats.cache_requests_made) * 100)}%`
+                        : '-');
+
+                    // Rates
+                    const procMins = (timing.processing_duration || 1) / 60;
+                    setEl('completion-movie-rate', (stats.movies_prefetched / procMins).toFixed(1));
+                    setEl('completion-series-rate', (stats.episodes_prefetched / procMins).toFixed(1));
+                    setEl('completion-overall-rate', ((stats.movies_prefetched + stats.series_prefetched) / procMins).toFixed(1));
+
+                    // Catalog Details Table
+                    const catalogs = status.summary.processed_catalogs || [];
+                    const tbody = document.getElementById('catalog-details-tbody');
+                    if (tbody && catalogs.length > 0) {
+                        tbody.innerHTML = '';
+                        catalogs.forEach(cat => {
+                            const row = tbody.insertRow();
+                            const total = (cat.success_count || 0) + (cat.failed_count || 0) + (cat.cached_count || 0);
+                            row.innerHTML = `
+                                <td>${cat.name || '-'}</td>
+                                <td><span class="catalog-type-badge">${cat.type || '-'}</span></td>
+                                <td>${formatDuration(cat.duration)}</td>
+                                <td>${cat.success_count || 0}</td>
+                                <td>${cat.failed_count || 0}</td>
+                                <td>${cat.cached_count || 0}</td>
+                                <td>${total}</td>
+                            `;
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error populating completion stats:', error);
+                }
             }
         }
     } else if (status.status === 'failed') {
@@ -2178,9 +2239,42 @@ function closeAllTooltips() {
 
 
 function populateCompletionStats(summary, startTime, endTime) {
+    // SHOW DEBUG INFO VISIBLY ON PAGE - APPEND not replace
+    let debugContent = document.getElementById('debug-content');
+
+    // Function to safely add debug message
+    const addDebug = (msg) => {
+        const dc = document.getElementById('debug-content');
+        if (dc) {
+            dc.textContent += msg;
+        }
+    };
+
+    addDebug(`\n\n--- populateCompletionStats ENTRY ---`);
+
+    if (!summary) {
+        addDebug(`\nERROR: summary is ${summary}`);
+        return;
+    }
+
+    addDebug(`\nSummary exists: YES
+Summary type: ${typeof summary}
+Has timing: ${summary.timing ? 'YES' : 'NO'}
+Has statistics: ${summary.statistics ? 'YES' : 'NO'}
+stats.series_prefetched: ${summary.statistics?.series_prefetched}
+stats.episodes_prefetched: ${summary.statistics?.episodes_prefetched}
+timing.total_duration: ${summary.timing?.total_duration}
+Summary keys: ${Object.keys(summary).join(', ')}`);
+
     const timing = summary.timing || {};
     const stats = summary.statistics || {};
     const catalogs = summary.processed_catalogs || [];
+
+    addDebug(`\n\nAfter extraction:
+timing keys: ${Object.keys(timing).join(', ')}
+stats keys: ${Object.keys(stats).join(', ')}
+stats.series_prefetched: ${stats.series_prefetched}
+stats.episodes_prefetched: ${stats.episodes_prefetched}`);
 
     // Format helper functions
     const formatTime = (timestamp) => {

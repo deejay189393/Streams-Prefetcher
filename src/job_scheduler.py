@@ -267,18 +267,24 @@ class JobScheduler:
 
     def _execute_job(self, manual: bool):
         """Execute the prefetch job (runs in background thread)"""
-        try:
-            # Capture stdout to get live output
-            old_stdout = sys.stdout
-            output_capture = io.StringIO()
-            sys.stdout = output_capture
+        old_stdout = sys.stdout
+        output_capture = None
 
-            # Create wrapper and run
+        try:
+            logger.info("Creating prefetch wrapper")
+
+            # Create wrapper BEFORE capturing stdout to see any errors
             self.wrapper = StreamsPrefetcherWrapper(
                 self.config_manager,
                 progress_callback=self._update_progress,
                 output_callback=self._append_output
             )
+
+            logger.info("Starting stdout capture")
+
+            # Now capture stdout for the actual run
+            output_capture = io.StringIO()
+            sys.stdout = output_capture
 
             result = self.wrapper.run()
 
@@ -330,19 +336,18 @@ class JobScheduler:
             })
 
         except Exception as e:
-            # Restore stdout
+            # CRITICAL: Restore stdout FIRST before any logging
             sys.stdout = old_stdout
 
             self.job_status = JobStatus.FAILED
             self.job_end_time = time.time()
             self.job_error = str(e)
 
-            # LOG THE EXCEPTION SO WE CAN SEE WHAT WENT WRONG
             logger.error("=" * 60)
-            logger.error("PREFETCH JOB FAILED WITH EXCEPTION")
+            logger.error("PREFETCH JOB FAILED")
             logger.error("=" * 60)
             logger.error(f"Error: {self.job_error}")
-            logger.exception(e)  # This logs the full traceback
+            logger.exception(e)
             logger.error("=" * 60)
 
             self._notify_callbacks('job_error', {
