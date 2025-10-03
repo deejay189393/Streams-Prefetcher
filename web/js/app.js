@@ -891,10 +891,40 @@ function populateConfigurationForm(config) {
     }
     toggleNoDelay();
 
-    const cacheValidityValue = config.cache_validity !== undefined ? config.cache_validity : 259200;
-    const cacheDays = cacheValidityValue / 86400;
-    document.getElementById('cache-validity-value').value = cacheDays;
-    document.getElementById('cache-validity-unit').value = '86400';
+    // Cache validity - handle unlimited (-1) and convert to appropriate unit
+    const cacheValiditySeconds = config.cache_validity !== undefined ? config.cache_validity : 604800; // Default: 1 week
+    if (cacheValiditySeconds === -1) {
+        // Unlimited - show 1 week in UI but checkbox will be checked
+        document.getElementById('cache-validity-value').value = 1;
+        document.getElementById('cache-validity-unit').value = '604800';
+        document.getElementById('cache-validity-unlimited').checked = true;
+    } else if (cacheValiditySeconds % 604800 === 0) {
+        // Divisible by weeks
+        document.getElementById('cache-validity-value').value = cacheValiditySeconds / 604800;
+        document.getElementById('cache-validity-unit').value = '604800';
+        document.getElementById('cache-validity-unlimited').checked = false;
+    } else if (cacheValiditySeconds % 86400 === 0) {
+        // Divisible by days
+        document.getElementById('cache-validity-value').value = cacheValiditySeconds / 86400;
+        document.getElementById('cache-validity-unit').value = '86400';
+        document.getElementById('cache-validity-unlimited').checked = false;
+    } else if (cacheValiditySeconds % 3600 === 0) {
+        // Divisible by hours
+        document.getElementById('cache-validity-value').value = cacheValiditySeconds / 3600;
+        document.getElementById('cache-validity-unit').value = '3600';
+        document.getElementById('cache-validity-unlimited').checked = false;
+    } else if (cacheValiditySeconds % 60 === 0) {
+        // Divisible by minutes
+        document.getElementById('cache-validity-value').value = cacheValiditySeconds / 60;
+        document.getElementById('cache-validity-unit').value = '60';
+        document.getElementById('cache-validity-unlimited').checked = false;
+    } else {
+        // Show in seconds
+        document.getElementById('cache-validity-value').value = cacheValiditySeconds;
+        document.getElementById('cache-validity-unit').value = '1';
+        document.getElementById('cache-validity-unlimited').checked = false;
+    }
+    toggleUnlimitedTime('cache-validity');
 
     // Max execution time - convert from seconds to minutes if >= 60 seconds
     const maxExecSeconds = config.max_execution_time !== undefined ? config.max_execution_time : 5400;
@@ -1225,9 +1255,9 @@ function validateTimeFields(config) {
         errors.push('Delay must be 0 or greater');
     }
 
-    // Cache validity must be positive or -1
-    if (config.cache_validity < -1 || config.cache_validity === 0) {
-        errors.push('Cache validity must be positive or -1 for unlimited');
+    // Cache validity must be non-negative or -1 for unlimited
+    if (config.cache_validity < -1) {
+        errors.push('Cache validity must be 0 or positive, or -1 for unlimited');
     }
 
     // Max execution time must be positive or -1
@@ -1325,7 +1355,7 @@ async function saveConfigurationSilent() {
             series_per_catalog: getLimitValue('series-per-catalog'),
             items_per_mixed_catalog: getLimitValue('items-per-mixed-catalog'),
             delay: document.getElementById('delay-no-delay').checked ? 0 : parseFloat(document.getElementById('delay-value').value) * parseFloat(document.getElementById('delay-unit').value),
-            cache_validity: parseFloat(document.getElementById('cache-validity-value').value) * parseFloat(document.getElementById('cache-validity-unit').value),
+            cache_validity: document.getElementById('cache-validity-unlimited').checked ? -1 : parseFloat(document.getElementById('cache-validity-value').value) * parseFloat(document.getElementById('cache-validity-unit').value),
             max_execution_time: document.getElementById('max-execution-time-unlimited').checked ? -1 : parseFloat(document.getElementById('max-execution-time-value').value) * parseFloat(document.getElementById('max-execution-time-unit').value),
             proxy: document.getElementById('proxy').value.trim(),
             randomize_catalog_processing: document.querySelector('input[name="randomize-catalog"]:checked').value === 'true',
@@ -1396,7 +1426,7 @@ async function saveConfiguration() {
             series_per_catalog: getLimitValue('series-per-catalog'),
             items_per_mixed_catalog: getLimitValue('items-per-mixed-catalog'),
             delay: document.getElementById('delay-no-delay').checked ? 0 : parseFloat(document.getElementById('delay-value').value) * parseFloat(document.getElementById('delay-unit').value),
-            cache_validity: parseFloat(document.getElementById('cache-validity-value').value) * parseFloat(document.getElementById('cache-validity-unit').value),
+            cache_validity: document.getElementById('cache-validity-unlimited').checked ? -1 : parseFloat(document.getElementById('cache-validity-value').value) * parseFloat(document.getElementById('cache-validity-unit').value),
             max_execution_time: document.getElementById('max-execution-time-unlimited').checked ? -1 : parseFloat(document.getElementById('max-execution-time-value').value) * parseFloat(document.getElementById('max-execution-time-unit').value),
             proxy: document.getElementById('proxy').value.trim(),
             randomize_catalog_processing: document.querySelector('input[name="randomize-catalog"]:checked').value === 'true',

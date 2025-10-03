@@ -126,14 +126,14 @@ def validate_time_fields(config):
     elif delay < 0:
         errors.append('Delay must be 0 or greater')
 
-    # Cache validity must be positive or -1
+    # Cache validity must be non-negative or -1 for unlimited
     cache_validity = config.get('cache_validity')
     if cache_validity is None:
         errors.append('Cache validity is required')
     elif not isinstance(cache_validity, (int, float)):
         errors.append('Cache validity must be a number')
-    elif cache_validity < -1 or cache_validity == 0:
-        errors.append('Cache validity must be positive or -1 for unlimited')
+    elif cache_validity < -1:
+        errors.append('Cache validity must be 0 or positive, or -1 for unlimited')
 
     # Max execution time must be positive or -1
     max_exec = config.get('max_execution_time')

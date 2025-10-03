@@ -22,7 +22,7 @@ class ConfigManager:
         'proxy': '',
         'randomize_catalog_processing': False,
         'randomize_item_prefetching': False,
-        'cache_validity': 259200,  # 3 days in seconds
+        'cache_validity': 604800,  # 1 week in seconds
         'max_execution_time': 5400,  # 90 minutes in seconds
         'enable_logging': False,
         'catalog_selection': {},  # {catalog_id: {enabled: bool, order: int}}
