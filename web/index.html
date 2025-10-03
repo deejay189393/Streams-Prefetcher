@@ -298,8 +298,8 @@
 
                         <div class="form-group">
                             <label>
-                                Enable Log File Creation
-                                <span class="info-icon" data-tooltip="Enable creation of detailed log files in data/logs directory during prefetch operations. Useful for debugging and monitoring. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                Enable creation of prefetch log files
+                                <span class="info-icon" data-tooltip="Enable creation of detailed log files in data/logs directory for each prefetch run. Useful for debugging and monitoring. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -840,12 +840,14 @@
                             🗑️ Delete
                         </button>
                     </div>
-                    <div id="log-filename-display" class="log-filename"></div>
                     <div id="log-content-loading" style="display: none; text-align: center; padding: 20px; color: #666;">
                         <div class="spinner"></div>
                         <p>Loading log content...</p>
                     </div>
-                    <pre id="log-content-text" class="log-content"></pre>
+                    <div class="log-viewer-window" id="log-viewer-window" style="display: none;">
+                        <div id="log-filename-display" class="log-filename"></div>
+                        <pre id="log-content-text" class="log-content"></pre>
+                    </div>
                 </div>
             </div>
         </section>

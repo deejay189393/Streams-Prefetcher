@@ -2751,7 +2751,7 @@ function initializeTooltips() {
 }
 
 function toggleTooltip(icon) {
-    const existingTooltip = icon.querySelector('.info-tooltip');
+    const existingTooltip = document.querySelector('.info-tooltip');
 
     if (existingTooltip) {
         // Close existing tooltip
@@ -2769,7 +2769,45 @@ function toggleTooltip(icon) {
                 <button class="tooltip-close" onclick="event.stopPropagation(); this.parentElement.remove();">×</button>
                 ${tooltipText}
             `;
-            icon.appendChild(tooltip);
+            document.body.appendChild(tooltip);
+
+            // Position the tooltip
+            const iconRect = icon.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const gap = 12;
+
+            // Calculate if there's enough space below
+            const spaceBelow = viewportHeight - iconRect.bottom;
+            const spaceAbove = iconRect.top;
+
+            let top, left;
+
+            if (spaceBelow >= tooltipRect.height + gap) {
+                // Position below
+                tooltip.classList.add('below');
+                top = iconRect.bottom + gap;
+            } else if (spaceAbove >= tooltipRect.height + gap) {
+                // Position above
+                tooltip.classList.add('above');
+                top = iconRect.top - tooltipRect.height - gap;
+            } else {
+                // Not enough space either way, position below and let it scroll
+                tooltip.classList.add('below');
+                top = iconRect.bottom + gap;
+            }
+
+            // Center horizontally relative to icon
+            left = iconRect.left + (iconRect.width / 2) - (tooltipRect.width / 2);
+
+            // Ensure tooltip doesn't go off-screen horizontally
+            if (left < 10) left = 10;
+            if (left + tooltipRect.width > window.innerWidth - 10) {
+                left = window.innerWidth - tooltipRect.width - 10;
+            }
+
+            tooltip.style.top = `${top}px`;
+            tooltip.style.left = `${left}px`;
         }
     }
 }
@@ -2965,10 +3003,12 @@ function cleanupLogViewer() {
     document.getElementById('log-list-view').style.display = 'block';
     document.getElementById('log-content-view').style.display = 'none';
 
-    // Hide loading/empty states
+    // Hide loading/empty states and window
     document.getElementById('log-loading').style.display = 'none';
     document.getElementById('log-list-empty').style.display = 'none';
     document.getElementById('log-content-loading').style.display = 'none';
+    const logWindow = document.getElementById('log-viewer-window');
+    if (logWindow) logWindow.style.display = 'none';
 }
 
 function parseLogFilename(filename) {
@@ -3051,9 +3091,11 @@ async function viewLogFile(filename) {
     const loading = document.getElementById('log-content-loading');
     const content = document.getElementById('log-content-text');
     const filenameDisplay = document.getElementById('log-filename-display');
+    const logWindow = document.getElementById('log-viewer-window');
 
-    // Show loading
+    // Show loading, hide window
     loading.style.display = 'block';
+    logWindow.style.display = 'none';
     content.textContent = '';
     filenameDisplay.textContent = filename;
 
@@ -3068,11 +3110,13 @@ async function viewLogFile(filename) {
         }
 
         content.textContent = data.content;
+        logWindow.style.display = 'block';
 
     } catch (error) {
         loading.style.display = 'none';
         console.error('Error loading log content:', error);
         content.textContent = `Error: ${error.message}`;
+        logWindow.style.display = 'block';
     }
 }
 

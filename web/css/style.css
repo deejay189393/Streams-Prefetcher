@@ -199,22 +199,19 @@ label {
 }
 
 .info-tooltip {
-    position: absolute;
+    position: fixed;
     background: rgba(10, 10, 10, 0.98);
     border: 1px solid var(--primary-color);
     border-radius: 8px;
     padding: 12px 14px;
     min-width: 250px;
     max-width: 350px;
-    z-index: 1000;
+    z-index: 10000;
     font-size: 12px;
     line-height: 1.5;
     color: var(--text-color);
     box-shadow: 0 8px 24px rgba(0,0,0,0.8),
                 0 0 20px rgba(30, 64, 175, 0.4);
-    left: 50%;
-    transform: translateX(-50%) translateY(4px);
-    top: calc(100% + 8px);
     display: none;
     white-space: normal;
     font-weight: normal;
@@ -231,23 +228,30 @@ label {
 @keyframes tooltipFadeIn {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(4px);
     }
     to {
         opacity: 1;
-        transform: translateX(-50%) translateY(0);
     }
 }
 
 .info-tooltip::before {
     content: '';
     position: absolute;
-    bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
     border: 7px solid transparent;
+}
+
+.info-tooltip.below::before {
+    bottom: 100%;
     border-bottom-color: var(--primary-color);
     filter: drop-shadow(0 -2px 4px rgba(30, 64, 175, 0.3));
+}
+
+.info-tooltip.above::before {
+    top: 100%;
+    border-top-color: var(--primary-color);
+    filter: drop-shadow(0 2px 4px rgba(30, 64, 175, 0.3));
 }
 
 /* Close button for tooltips */
@@ -2319,9 +2323,6 @@ input:checked + .toggle-slider:before {
     justify-content: flex-end;
     gap: 10px;
     margin-bottom: 15px;
-    padding: 10px;
-    background: rgba(15, 23, 42, 0.5);
-    border-radius: 6px;
 }
 
 .log-list {
@@ -2381,14 +2382,20 @@ input:checked + .toggle-slider:before {
     color: #93c5fd;
 }
 
+.log-viewer-window {
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(15, 23, 42, 0.5);
+}
+
 .log-filename {
     font-size: 14px;
-    font-weight: 600;
-    color: #64748b;
-    margin-bottom: 15px;
-    padding: 10px;
-    background: rgba(15, 23, 42, 0.5);
-    border-radius: 6px;
+    font-weight: 700;
+    color: #cbd5e1;
+    padding: 12px 15px;
+    background: rgba(30, 64, 175, 0.3);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
     font-family: 'Courier New', monospace;
 }
 
@@ -2397,8 +2404,6 @@ input:checked + .toggle-slider:before {
     overflow-y: auto;
     padding: 15px;
     background: rgba(15, 23, 42, 0.5);
-    border: 1px solid rgba(51, 65, 85, 0.5);
-    border-radius: 6px;
     font-family: 'Courier New', monospace;
     font-size: 12px;
     line-height: 1.6;
@@ -2406,6 +2411,7 @@ input:checked + .toggle-slider:before {
     white-space: pre-wrap;
     word-break: break-word;
     box-sizing: border-box;
+    margin: 0;
 }
 
 .spinner {
