@@ -2257,10 +2257,11 @@ function updateJobStatusUI(status, caller = 'unknown') {
                         catalogs.forEach((cat, idx) => {
                             const row = tbody.insertRow();
                             const total = (cat.success_count || 0) + (cat.failed_count || 0) + (cat.cached_count || 0);
+                            const typeCapitalized = cat.type ? cat.type.charAt(0).toUpperCase() + cat.type.slice(1) : '-';
                             addDebugLog(`📊 [COMPLETION STATS] Row ${idx}: ${cat.name} (${cat.type}) - ${total} items`);
                             row.innerHTML = `
                                 <td>${cat.name || '-'}</td>
-                                <td><span class="catalog-type-badge">${cat.type || '-'}</span></td>
+                                <td><span class="catalog-type-badge">${typeCapitalized}</span></td>
                                 <td>${formatDuration(cat.duration)}</td>
                                 <td>${cat.success_count || 0}</td>
                                 <td>${cat.failed_count || 0}</td>
