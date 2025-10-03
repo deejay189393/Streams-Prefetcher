@@ -574,7 +574,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSchedules();
     addDebugLog('Loading job status (AWAIT START)...');
     logStatusScreens();
-    await loadJobStatus(); // Await to prevent showing idle screen during status fetch
+    await loadJobStatus('DOMContentLoaded'); // Await to prevent showing idle screen during status fetch
     addDebugLog('Job status loaded (AWAIT COMPLETE)');
     logStatusScreens();
     addDebugLog('Connecting event source...');
@@ -1928,30 +1928,29 @@ async function saveCatalogSelection() {
 // Job Status and Control
 // ============================================================================
 
-async function loadJobStatus() {
+async function loadJobStatus(caller = 'unknown') {
     try {
-        addDebugLog('  loadJobStatus: Fetching /api/job/status...');
+        addDebugLog(`📡 [FETCH STATUS] Fetching from: ${caller}`);
         const response = await fetch('/api/job/status');
-        addDebugLog('  loadJobStatus: Response received');
         const data = await response.json();
-        addDebugLog(`  loadJobStatus: JSON parsed, success=${data.success}`);
 
         if (data.success) {
-            addDebugLog(`  loadJobStatus: Status from API: ${data.status.status}`);
-            addDebugLog(`  loadJobStatus: Calling updateJobStatusUI...`);
-            updateJobStatusUI(data.status);
-            addDebugLog(`  loadJobStatus: updateJobStatusUI returned`);
+            addDebugLog(`📡 [FETCH STATUS] Got status: ${data.status.status} (from: ${caller})`);
+            updateJobStatusUI(data.status, `loadJobStatus(${caller})`);
         } else {
-            addDebugLog(`  loadJobStatus: API returned success=false`);
+            addDebugLog(`📡 [FETCH STATUS] API returned success=false (from: ${caller})`);
         }
     } catch (error) {
-        addDebugLog(`  loadJobStatus: ERROR - ${error.message}`);
+        addDebugLog(`📡 [FETCH STATUS] ERROR from ${caller}: ${error.message}`);
         console.error('Error loading job status:', error);
     }
 }
 
-function updateJobStatusUI(status) {
-    addDebugLog(`    updateJobStatusUI: ENTRY, status=${status.status}`);
+function updateJobStatusUI(status, caller = 'unknown') {
+    addDebugLog(`🔄 [UI UPDATE] ═══════════════════════════════════════════`);
+    addDebugLog(`🔄 [UI UPDATE] Called from: ${caller}`);
+    addDebugLog(`🔄 [UI UPDATE] Status: ${status.status}`);
+    addDebugLog(`🔄 [UI UPDATE] Timestamp: ${Date.now()}`);
     logStatusScreens();
 
     // Check if this completion was already dismissed
@@ -1996,20 +1995,41 @@ function updateJobStatusUI(status) {
         status.status = 'completed';
     }
 
-    // Hide all status displays
-    addDebugLog(`    Hiding all status displays...`);
-    document.querySelectorAll('.status-display').forEach(box => {
-        box.style.display = 'none';
-    });
-    logStatusScreens();
+    // Determine which screen to show
+    const targetScreenId = `status-${status.status}`;
+    const targetScreen = document.getElementById(targetScreenId);
+
+    // Check if target screen is already visible
+    const isTargetAlreadyVisible = targetScreen && targetScreen.style.display === 'block';
+
+    if (isTargetAlreadyVisible) {
+        addDebugLog(`🔄 [UI UPDATE] Target screen '${targetScreenId}' already visible - skipping hide/show`);
+        addDebugLog(`🔄 [UI UPDATE] Updating content for already-visible screen...`);
+    } else {
+        // Hide all status displays
+        addDebugLog(`🔄 [UI UPDATE] Hiding all status displays...`);
+        const screensBeforeHide = [];
+        document.querySelectorAll('.status-display').forEach(box => {
+            if (box.style.display === 'block') {
+                screensBeforeHide.push(box.id);
+            }
+            box.style.display = 'none';
+        });
+        if (screensBeforeHide.length > 0) {
+            addDebugLog(`🔄 [UI UPDATE] Hidden screens: ${screensBeforeHide.join(', ')}`);
+        }
+        logStatusScreens();
+    }
 
     // Show appropriate status display
-    addDebugLog(`    Final status to display: ${status.status}`);
+    addDebugLog(`🔄 [UI UPDATE] Final status to display: ${status.status}`);
     if (status.status === 'idle') {
-        addDebugLog(`    Showing IDLE screen`);
-        document.getElementById('status-idle').style.display = 'block';
+        if (!isTargetAlreadyVisible) {
+            addDebugLog(`🔄 [UI UPDATE] ✅ Showing IDLE screen`);
+            document.getElementById('status-idle').style.display = 'block';
+            logStatusScreens();
+        }
         completionScreenLocked = false; // Unlock when returning to idle
-        logStatusScreens();
 
         // Re-enable Start Now button when returning to idle
         const startBtn = document.getElementById('start-now-btn');
@@ -2017,13 +2037,15 @@ function updateJobStatusUI(status) {
             startBtn.disabled = false;
         }
     } else if (status.status === 'scheduled') {
-        addDebugLog(`    Showing SCHEDULED screen`);
         const scheduledDisplay = document.getElementById('status-scheduled');
         if (scheduledDisplay) {
-            scheduledDisplay.style.display = 'block';
+            if (!isTargetAlreadyVisible) {
+                addDebugLog(`🔄 [UI UPDATE] ✅ Showing SCHEDULED screen`);
+                scheduledDisplay.style.display = 'block';
+                logStatusScreens();
+            }
             updateNextRunInfo(status);
         }
-        logStatusScreens();
 
         // Enable Start Now button for scheduled state
         const startNowBtn = document.getElementById('start-now-btn-scheduled');
@@ -2031,30 +2053,36 @@ function updateJobStatusUI(status) {
             startNowBtn.disabled = false;
         }
     } else if (status.status === 'running') {
-        addDebugLog(`    Showing RUNNING screen`);
-        document.getElementById('status-running').style.display = 'block';
-        logStatusScreens();
+        if (!isTargetAlreadyVisible) {
+            addDebugLog(`🔄 [UI UPDATE] ✅ Showing RUNNING screen`);
+            document.getElementById('status-running').style.display = 'block';
+            logStatusScreens();
 
-        // If no progress yet, but we have loaded catalogs, show first enabled catalog immediately
-        if ((!status.progress || !status.progress.catalog_name) && loadedCatalogs.length > 0) {
-            const firstEnabledCatalog = loadedCatalogs.find(cat => cat.enabled);
-            if (firstEnabledCatalog) {
-                document.getElementById('current-catalog-name').textContent = firstEnabledCatalog.name;
-                document.querySelector('.current-action').textContent = `Processing ${firstEnabledCatalog.name}`;
+            // If no progress yet, but we have loaded catalogs, show first enabled catalog immediately
+            if ((!status.progress || !status.progress.catalog_name) && loadedCatalogs.length > 0) {
+                const firstEnabledCatalog = loadedCatalogs.find(cat => cat.enabled);
+                if (firstEnabledCatalog) {
+                    document.getElementById('current-catalog-name').textContent = firstEnabledCatalog.name;
+                    document.querySelector('.current-action').textContent = `Processing ${firstEnabledCatalog.name}`;
+                }
             }
         }
 
+        // Always update progress even if screen already visible
         updateProgressInfo(status.progress);
 
         // Disable Start Now buttons when running
         const startNowBtns = document.querySelectorAll('[id^="start-now-btn"]');
         startNowBtns.forEach(btn => btn.disabled = true);
     } else if (status.status === 'completed') {
-        addDebugLog(`    Showing COMPLETED screen`);
         const completedDisplay = document.getElementById('status-completed');
 
         if (completedDisplay) {
-            completedDisplay.style.display = 'block';
+            if (!isTargetAlreadyVisible) {
+                addDebugLog(`🔄 [UI UPDATE] ✅ Showing COMPLETED screen`);
+                completedDisplay.style.display = 'block';
+                logStatusScreens();
+            }
             completionScreenLocked = true;
 
             if (status.summary) {
@@ -2123,14 +2151,15 @@ function updateJobStatusUI(status) {
                     console.error('Error populating completion stats:', error);
                 }
             }
-            logStatusScreens();
         }
     } else if (status.status === 'failed') {
-        addDebugLog(`    Showing FAILED screen`);
         const failedDisplay = document.getElementById('status-failed');
         if (failedDisplay) {
-            failedDisplay.style.display = 'block';
-            logStatusScreens();
+            if (!isTargetAlreadyVisible) {
+                addDebugLog(`🔄 [UI UPDATE] ✅ Showing FAILED screen`);
+                failedDisplay.style.display = 'block';
+                logStatusScreens();
+            }
 
             // Populate error details
             const errorMessage = document.getElementById('error-message');
@@ -2368,10 +2397,20 @@ async function runJob() {
             }
 
             // Immediately refresh job status to update UI multiple times
-            loadJobStatus();
-            setTimeout(() => loadJobStatus(), 200);
-            setTimeout(() => loadJobStatus(), 500);
-            setTimeout(() => loadJobStatus(), 1000);
+            addDebugLog(`⏰ [POLLING] Starting status polls after job start...`);
+            loadJobStatus('runJob-immediate');
+            setTimeout(() => {
+                addDebugLog(`⏰ [POLLING] 200ms poll`);
+                loadJobStatus('runJob-200ms');
+            }, 200);
+            setTimeout(() => {
+                addDebugLog(`⏰ [POLLING] 500ms poll`);
+                loadJobStatus('runJob-500ms');
+            }, 500);
+            setTimeout(() => {
+                addDebugLog(`⏰ [POLLING] 1000ms poll`);
+                loadJobStatus('runJob-1000ms');
+            }, 1000);
         } else{
             showNotification(data.error || 'Failed to start job', 'error');
         }
@@ -2402,12 +2441,13 @@ function dismissCompletion() {
     completionScreenLocked = false;
     addDebugLog(`[DISMISS] Unlocked completion screen, calling updateJobStatusUI with idle`);
     // Hide completion screen and show idle/ready state
-    updateJobStatusUI({ status: 'idle' });
+    updateJobStatusUI({ status: 'idle' }, 'dismissCompletion');
 }
 
 function dismissError() {
+    addDebugLog(`[ERROR DISMISS] dismissError() called`);
     // Hide error screen and show idle/ready state
-    updateJobStatusUI({ status: 'idle' });
+    updateJobStatusUI({ status: 'idle' }, 'dismissError');
 }
 
 // ============================================================================
@@ -2447,10 +2487,12 @@ function handleSSEEvent(event, data) {
 
         case 'status':
         case 'status_change':
-            updateJobStatusUI(data);
+            addDebugLog(`📨 [SSE] Status event: ${event}, status=${data.status}`);
+            updateJobStatusUI(data, `SSE-${event}`);
             break;
 
         case 'progress':
+            addDebugLog(`📨 [SSE] Progress event`);
             updateProgressInfo(data);
             break;
 
@@ -2461,7 +2503,8 @@ function handleSSEEvent(event, data) {
         case 'job_complete':
         case 'job_error':
         case 'job_cancelled':
-            loadJobStatus();
+            addDebugLog(`📨 [SSE] Job completion event: ${event}`);
+            loadJobStatus(`SSE-${event}`);
             break;
 
         default:
