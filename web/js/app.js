@@ -938,15 +938,32 @@ function populateConfigurationForm(config) {
     setLimitValue('items-per-mixed-catalog', config.items_per_mixed_catalog);
 
     // Populate time-based parameters
+    // Delay - use largest divisible unit
     const delayValue = config.delay !== undefined ? config.delay : 2;
     if (delayValue === 0) {
+        // No delay - show 2 seconds in UI but checkbox will be checked
         document.getElementById('delay-no-delay').checked = true;
         document.getElementById('delay-value').value = 2;
         document.getElementById('delay-unit').value = '1';
     } else {
         document.getElementById('delay-no-delay').checked = false;
-        document.getElementById('delay-value').value = delayValue;
-        document.getElementById('delay-unit').value = '1';
+        if (delayValue % 3600 === 0) {
+            // Divisible by hours
+            document.getElementById('delay-value').value = delayValue / 3600;
+            document.getElementById('delay-unit').value = '3600';
+        } else if (delayValue % 60 === 0) {
+            // Divisible by minutes
+            document.getElementById('delay-value').value = delayValue / 60;
+            document.getElementById('delay-unit').value = '60';
+        } else if (delayValue >= 1) {
+            // Whole seconds
+            document.getElementById('delay-value').value = delayValue;
+            document.getElementById('delay-unit').value = '1';
+        } else {
+            // Fractional seconds - show in milliseconds
+            document.getElementById('delay-value').value = delayValue * 1000;
+            document.getElementById('delay-unit').value = '0.001';
+        }
     }
     toggleNoDelay();
 
@@ -985,18 +1002,30 @@ function populateConfigurationForm(config) {
     }
     toggleUnlimitedTime('cache-validity');
 
-    // Max execution time - convert from seconds to minutes if >= 60 seconds
+    // Max Execution Time - use largest divisible unit
     const maxExecSeconds = config.max_execution_time !== undefined ? config.max_execution_time : 5400;
     if (maxExecSeconds === -1) {
+        // Unlimited - show 90 minutes in UI but checkbox will be checked
         document.getElementById('max-execution-time-value').value = 90;
         document.getElementById('max-execution-time-unit').value = '60';
         document.getElementById('max-execution-time-unlimited').checked = true;
-    } else if (maxExecSeconds >= 60) {
-        // Convert to minutes if 60 seconds or more
+    } else if (maxExecSeconds % 86400 === 0) {
+        // Divisible by days
+        document.getElementById('max-execution-time-value').value = maxExecSeconds / 86400;
+        document.getElementById('max-execution-time-unit').value = '86400';
+        document.getElementById('max-execution-time-unlimited').checked = false;
+    } else if (maxExecSeconds % 3600 === 0) {
+        // Divisible by hours
+        document.getElementById('max-execution-time-value').value = maxExecSeconds / 3600;
+        document.getElementById('max-execution-time-unit').value = '3600';
+        document.getElementById('max-execution-time-unlimited').checked = false;
+    } else if (maxExecSeconds % 60 === 0) {
+        // Divisible by minutes
         document.getElementById('max-execution-time-value').value = maxExecSeconds / 60;
         document.getElementById('max-execution-time-unit').value = '60';
         document.getElementById('max-execution-time-unlimited').checked = false;
     } else {
+        // Show in seconds
         document.getElementById('max-execution-time-value').value = maxExecSeconds;
         document.getElementById('max-execution-time-unit').value = '1';
         document.getElementById('max-execution-time-unlimited').checked = false;
