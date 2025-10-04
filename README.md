@@ -1,346 +1,547 @@
-# Streams Prefetcher
+# Streams Prefetcher - Web UI Version
 
-A Python script designed to work with **Stremio addons**. It warms up **self-hosted** Stremio addon caches by prefetching streams for movies and series, resulting in faster content loading when browsing in Stremio.
+A modern web-based interface for the Streams Prefetcher, designed to work with **Stremio addons**. Makes addon cache prefetching accessible to all users through an intuitive browser interface with real-time monitoring and scheduling capabilities.
 
-> **⚠️ IMPORTANT:** This tool is designed for **self-hosted addons only**. Running this against public addons will unnecessarily increase server load without any benefit, as public addons typically don't cache per-user. Only use this with addons you host yourself.
-
-## Overview
-
-This script fetches catalog data from your self-hosted Stremio addons, extracts content metadata, and makes prefetch requests to stream endpoints. By preloading your addon's cache, subsequent requests from Stremio will load much faster.
+> **⚠️ IMPORTANT:** This tool is designed for **self-hosted addons only**. Running this against public addons will unnecessarily increase server load without any benefit, as public addons typically don't cache per-user.
 
 ## Features
 
-- **Smart Catalog Processing**: Automatically detects and processes movie, series, and mixed catalogs
-- **Flexible Limiting**: Global and per-catalog limits for fine-grained control
-- **Intelligent Caching**: Built-in SQLite cache to avoid redundant requests
-- **Real-time Progress Tracking**: Live dashboard with progress bars and statistics
-- **Randomization Options**: Randomize catalog and item processing order
-- **Proxy Support**: Route requests through HTTP proxies
-- **Robust Error Handling**: Continues processing even when individual requests fail
+### 🎯 What's New in v2.0 (Web UI)
 
-## Requirements
+- **Modern Web Interface**: Clean, responsive design accessible from any device
+- **Real-Time Monitoring**: Live progress updates and output streaming during prefetch jobs
+- **Job Scheduling**: Configure recurring prefetch jobs using cron-like expressions
+- **Catalog Management**: Load, select, and reorder catalogs with drag-and-drop
+- **Completion Statistics**: Detailed post-job analytics with graphs, timelines, and processing rates
+- **Smart Addon URL Management**: Automatic manifest fetching and URL validation
+- **State Persistence**: All configurations and selections persist across sessions
+- **Docker-Based**: Easy deployment with Docker Compose
+- **Lightweight & Efficient**: Optimized for minimal resource usage
 
-- Python 3.6+
-- `requests` library
+### 🚀 Core Features
 
-```bash
-pip install requests
+- **Intuitive Configuration**: User-friendly forms for all parameters
+- **Drag-and-Drop**: Reorder addon URLs and catalogs with ease
+- **Visual Progress Tracking**: See exactly what's happening in real-time
+- **Job Control**: Start, stop, and schedule prefetch jobs
+- **Multi-Addon Support**: Separate catalog and stream addons with flexible configuration
+- **Time-Based Limits**: Set execution time limits and delays with human-readable formats
+- **Persistent State**: Jobs continue running even if you close the browser
+- **Reset Functionality**: Clear cache and reset configurations with one click
+- **Catalog Filtering**: Advanced filtering options for catalog selection
+
+## Architecture
+
+```
+┌─────────────────┐
+│   Web Browser   │
+│   (Frontend)    │
+└────────┬────────┘
+         │ HTTP/SSE
+┌────────▼────────┐
+│  Flask Backend  │
+│  (API Server)   │
+├─────────────────┤
+│ Job Scheduler   │
+│  (APScheduler)  │
+├─────────────────┤
+│ Config Manager  │
+│   (JSON/SQLite) │
+├─────────────────┤
+│    Prefetcher   │
+│  (Core Logic)   │
+└─────────────────┘
 ```
 
-## Installation
+## Quick Start
 
-1. Download the script:
+### Prerequisites
+
+- Docker and Docker Compose installed
+- A domain or subdomain pointed to your server (optional, e.g., `streams-prefetcher.yourdomain.com`)
+- Self-hosted Stremio addon(s) to prefetch from
+
+### Installation
+
+1. **Clone the repository** (or pull the latest changes):
+   ```bash
+   git clone https://github.com/yourusername/Stremio-Streams-Prefetcher.git
+   cd Stremio-Streams-Prefetcher
+   git checkout web-ui
+   ```
+
+2. **Configure environment variables** (optional):
+   ```bash
+   cp .env.example .env
+   # Edit .env to set your configuration
+   ```
+
+3. **Start the application**:
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Access the web interface**:
+   - Direct access: `http://your-server-ip:5000`
+   - With domain: Configure your reverse proxy (see below)
+
+### Environment Variables
+
+Create a `.env` file (copy from `.env.example`) to customize:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `STREAMS_PREFETCHER_HOSTNAME` | Required for Traefik | Hostname for reverse proxy routing |
+| `DOCKER_DATA_DIR` | Required | Directory for persistent data storage |
+| `PORT` | 5000 | Port the application runs on |
+| `TZ` | UTC | Timezone for logs and scheduled jobs |
+| `LOG_LEVEL` | INFO | Logging verbosity (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
+
+**Example `.env`:**
 ```bash
-curl -O https://example.com/streams_prefetcher.py
-chmod +x streams_prefetcher.py
+STREAMS_PREFETCHER_HOSTNAME=streams-prefetcher.yourdomain.com
+DOCKER_DATA_DIR=/opt/docker-data
+PORT=5000
+TZ=America/New_York
+LOG_LEVEL=INFO
 ```
 
-2. Or clone if part of a repository:
-```bash
-git clone https://github.com/username/streams-prefetcher
-cd streams-prefetcher
+### Reverse Proxy Configuration (Nginx)
+
+If you're using Nginx as a reverse proxy:
+
+```nginx
+server {
+    listen 80;
+    server_name streams-prefetcher.yourdomain.com;
+
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # For Server-Sent Events (SSE)
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_set_header Connection '';
+        proxy_http_version 1.1;
+        chunked_transfer_encoding off;
+    }
+}
 ```
 
-## Basic Usage
+### Reverse Proxy Configuration (Traefik)
 
-```bash
-python streams_prefetcher.py --addon-urls both:https://your-addon.com
+The labels in `compose.yaml` already include Traefik configuration. Ensure you set the `STREAMS_PREFETCHER_HOSTNAME` environment variable:
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.streams-prefetcher.rule=Host(`${STREAMS_PREFETCHER_HOSTNAME?}`)"
+  - "traefik.http.routers.streams-prefetcher.entrypoints=websecure"
+  - "traefik.http.routers.streams-prefetcher.tls.certresolver=letsencrypt"
+  - "traefik.http.routers.streams-prefetcher.middlewares=authelia@docker"
 ```
 
-## Command Line Arguments
+**Note:** The Authelia middleware is included for authentication. Remove this line if you're not using Authelia.
 
-### Required Arguments
+## User Guide
 
-| Argument | Description |
-|----------|-------------|
-| `--addon-urls` | Comma-separated list of addon URLs with types. Format: `type:url` |
+### 1. Configuration
 
-**Addon Types:**
-- `catalog` - Only fetch catalogs from this addon
-- `stream` - Only make stream requests to this addon  
-- `both` - Use addon for both catalogs and streams
+#### Addon URLs
+Configure your addon URLs in three categories:
+- **Both**: Addons used for both catalog and stream endpoints
+- **Catalog Only**: Addons used only to fetch catalog data
+- **Stream Only**: Addons used only to prefetch streams
 
-### Limit Arguments
+**Features**:
+- Add unlimited addon URLs
+- Drag and drop URLs between categories
+- Reorder URLs within categories
+- Automatic manifest fetching and validation
 
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `--movies-global-limit` | int | -1 | Global limit for total movies to prefetch. -1 for unlimited |
-| `--series-global-limit` | int | -1 | Global limit for total series to prefetch. -1 for unlimited |
-| `--movies-per-catalog` | int | 50 | Per-catalog limit for movie-only catalogs. -1 for unlimited |
-| `--series-per-catalog` | int | 3 | Per-catalog limit for series-only catalogs. -1 for unlimited |
-| `--items-per-mixed-catalog` | int | 20 | Per-catalog limit for mixed-type catalogs. -1 for unlimited |
-| `--max-execution-time` / `-t` | time | 90m | Execution time limit. Script stops gracefully after this duration. -1 (with any unit) for unlimited |
+#### Limits
+Set global and per-catalog limits:
+- **Movies Global Limit**: Total movies to prefetch across all catalogs (-1 for unlimited)
+- **Series Global Limit**: Total series to prefetch across all catalogs (-1 for unlimited)
+- **Movies per Catalog**: Max movies from each movie catalog (-1 for unlimited)
+- **Series per Catalog**: Max series from each series catalog (-1 for unlimited)
+- **Items per Mixed Catalog**: Max items from catalogs with both movies and series (-1 for unlimited)
 
-### Optional Arguments
+#### Time-Based Parameters
+- **Delay Between Requests**: Delay between each stream request (prevent rate limiting)
+- **Cache Validity**: How long to consider cached items valid
+- **Max Execution Time**: Maximum time for a prefetch run (-1 for unlimited)
 
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `--delay` / `-d` | time | 2s | Delay between requests. Format: 500ms, 30s, 5m, 2h, 1d |
-| `--proxy` | string | None | HTTP proxy URL (e.g., http://proxy.example.com:8080) |
-| `--randomize-catalog-processing` | flag | False | Randomize the order in which catalogs are processed |
-| `--randomize-item-prefetching` | flag | False | Randomize the order of items within a catalog |
-| `--cache-validity` | time | 3d | Validity of cached items. Format: 30s, 5m, 2h, 3d, 1w |
-| `--enable-logging` | flag | False | Enable logging. Creates timestamped log files in data/logs directory with full execution details |
+Format: Enter a number and select the unit (milliseconds, seconds, minutes, hours, days, weeks)
 
-### Time Format
+#### Advanced Options
+- **HTTP Proxy**: Route requests through a proxy (optional)
+- **Randomize Catalog Processing**: Process catalogs in random order
+- **Randomize Item Prefetching**: Process items within catalogs in random order
+- **Enable Logging**: Save detailed logs to `data/logs/` directory
 
-Time-based parameters (`--delay`, `--cache-validity`, `--max-execution-time`) accept human-readable formats:
+#### Reset Configuration
+- **Reset to Defaults**: Click the reset button to restore all settings to default values
+- **Clear Cache**: Option to clear the prefetch cache database
 
-- `ms` = milliseconds (e.g., `500ms`)
-- `s` = seconds (e.g., `30s`)
-- `m` = minutes (e.g., `5m`)
-- `h` = hours (e.g., `2h`)
-- `d` = days (e.g., `3d`)
-- `w` = weeks (e.g., `1w`)
-- `M` = months (e.g., `6M`) - Note: capital M for months
-- `y` = years (e.g., `1y`)
+### 2. Catalog Selection
 
-**For unlimited execution time**, use `-1` with any unit suffix (e.g., `-1s`, `-1m`, `-1h`).
+1. Click **Load Catalogs** to fetch all available catalogs from your configured addons
+2. Review the list of catalogs (shows catalog name, type, and source addon)
+3. Use checkboxes to enable/disable specific catalogs
+4. Drag and drop catalogs to change processing order
+5. Click **Save Catalog Selection** to persist your choices
 
-**Examples:**
-```bash
---delay 500ms        # 500 milliseconds
---delay 30s          # 30 seconds
---delay 5m           # 5 minutes
---cache-validity 7d  # 7 days
---cache-validity 2w  # 2 weeks
--t 30m               # 30 minute execution limit
--t -1s               # Unlimited execution time
--t -1m               # Unlimited execution time (any unit works)
--t -1                # Unlimited execution time (unit optional)
+**Features**:
+- Multi-addon support with source identification
+- Visual type indicators (Movie, Series, Mixed)
+- Drag-and-drop reordering
+- Enable/disable individual catalogs
+- Advanced filtering options
+
+### 3. Job Scheduling
+
+Configure recurring prefetch jobs using cron expressions:
+
+**Examples**:
+- `0 2 * * *` - Daily at 2:00 AM
+- `0 */6 * * *` - Every 6 hours
+- `0 0 * * 0` - Weekly on Sunday at midnight
+- `0 3 * * 1-5` - Weekdays at 3:00 AM
+
+**Format**: `minute hour day month weekday`
+- minute: 0-59
+- hour: 0-23
+- day: 1-31
+- month: 1-12
+- weekday: 0-7 (0 or 7 is Sunday)
+
+### 4. Running Jobs
+
+#### Manual Execution
+Click **Run Prefetch Now** to start a job immediately.
+
+#### Scheduled Execution
+Jobs will run automatically based on your configured schedule.
+
+#### Real-Time Monitoring
+When a job is running, you'll see:
+- Current catalog being processed
+- Progress bars for catalogs and items
+- Catalog-specific statistics (Movies/Series fetched per catalog)
+- Live output from the prefetcher
+- Timing information and ETA
+- Success/failure statistics
+
+#### Completion Statistics
+After a job completes, view detailed analytics:
+- **Timing Overview**: Start time, end time, total duration, processing time
+- **Statistics Summary**: Total catalogs, movies, series, pages processed, cache hits, success rate
+- **Processing Rates**: Movies per minute, series per minute, overall processing speed
+- **Catalog Timeline**: Visual timeline graph showing when each catalog was processed
+- **Catalog Details**: Detailed breakdown of each catalog with processing stats
+
+#### Job Control
+- **Cancel Job**: Stop a running job gracefully
+- Jobs continue running even if you close the browser
+- Configurations cannot be modified while a job is running
+
+### 5. Data Persistence
+
+All data is stored in the `data/` directory:
+```
+data/
+├── config/
+│   └── config.json          # Configuration and catalog selection
+├── db/
+│   └── streams_prefetcher_prefetch_cache.db  # Prefetch cache
+└── logs/                     # Log files (if logging enabled)
+    └── streams_prefetcher_logs_*.txt
 ```
 
-## Usage Examples
+This directory is mounted as a Docker volume, ensuring data persists across container restarts.
 
-### Basic Examples
+## Configuration Reference
 
-**Single addon for everything:**
-```bash
-python streams_prefetcher.py --addon-urls both:https://addon.example.com
+### Default Values
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| Movies Global Limit | -1 (Unlimited) | Total movies to prefetch |
+| Series Global Limit | -1 (Unlimited) | Total series to prefetch |
+| Movies per Catalog | 50 | Max movies per catalog |
+| Series per Catalog | 3 | Max series per catalog |
+| Items per Mixed Catalog | 20 | Max items per mixed catalog |
+| Delay | 2 seconds | Delay between requests |
+| Cache Validity | 3 days | Cache validity period |
+| Max Execution Time | 90 minutes | Max runtime for jobs |
+| Randomize Catalogs | Disabled | Randomize catalog order |
+| Randomize Items | Disabled | Randomize item order |
+| Logging | Disabled | Enable detailed logging |
+
+### Parameter Guidelines
+
+#### For Testing
+```
+Movies Global Limit: 20
+Series Global Limit: 5
+Movies per Catalog: 10
+Series per Catalog: 2
+Delay: 200ms
 ```
 
-**Separate catalog and stream addons:**
-```bash
-python streams_prefetcher.py --addon-urls catalog:https://catalog-addon.com,stream:https://stream-addon.com
+#### For Daily Maintenance
+```
+Movies Global Limit: 200
+Series Global Limit: 15
+Movies per Catalog: 50
+Series per Catalog: 5
+Delay: 100ms
+Max Execution Time: 30 minutes
 ```
 
-**Multiple addons:**
-```bash
-python streams_prefetcher.py --addon-urls both:https://addon1.com,both:https://addon2.com,stream:https://stream-only.com
+#### For Aggressive Prefetching
 ```
-
-### Limit Configuration Examples
-
-**Conservative prefetching (good for testing):**
-```bash
-python streams_prefetcher.py \
-  --addon-urls both:https://addon.com \
-  --movies-global-limit 20 \
-  --series-global-limit 5 \
-  --movies-per-catalog 10 \
-  --series-per-catalog 2 \
-  --delay 200ms
+Movies Global Limit: 1000
+Series Global Limit: 200
+Movies per Catalog: 100
+Series per Catalog: 20
+Delay: 50ms
+Cache Validity: 7 days
 ```
-
-**Aggressive prefetching (for extensive catalogs):**
-```bash
-python streams_prefetcher.py \
-  --addon-urls both:https://addon.com \
-  --movies-global-limit 1000 \
-  --series-global-limit 200 \
-  --movies-per-catalog 100 \
-  --series-per-catalog 20 \
-  --items-per-mixed-catalog 75 \
-  --cache-validity 7d
-```
-
-**Unlimited prefetching (use with caution):**
-```bash
-python streams_prefetcher.py \
-  --addon-urls both:https://addon.com \
-  --movies-global-limit -1 \
-  --series-global-limit -1 \
-  --movies-per-catalog -1 \
-  --series-per-catalog -1 \
-  --items-per-mixed-catalog -1
-```
-
-### Advanced Configuration Examples
-
-**With proxy and randomization:**
-```bash
-python streams_prefetcher.py \
-  --addon-urls both:https://addon.com \
-  --proxy http://proxy.example.com:8080 \
-  --randomize-catalog-processing \
-  --randomize-item-prefetching \
-  --delay 500ms
-```
-
-**Custom cache validity:**
-```bash
-python streams_prefetcher.py \
-  --addon-urls both:https://addon.com \
-  --cache-validity 1w  # 1 week
-```
-
-**Time-limited execution:**
-```bash
-# Run for maximum 30 minutes
-python streams_prefetcher.py \
-  --addon-urls both:https://addon.com \
-  --max-execution-time 30m
-
-# Quick 5-minute run
-python streams_prefetcher.py \
-  --addon-urls both:https://addon.com \
-  -t 5m
-```
-
-**With logging enabled:**
-```bash
-# Save detailed logs to data/logs directory
-python streams_prefetcher.py \
-  --addon-urls both:https://addon.com \
-  --enable-logging
-
-# Combined with other options
-python streams_prefetcher.py \
-  --addon-urls both:https://addon.com \
-  --movies-global-limit 200 \
-  --series-global-limit 15 \
-  --enable-logging \
-  -t 1h
-```
-
-## How Limits Work
-
-The script uses a hierarchy of limits to control prefetching:
-
-1. **Global Limits**: Maximum total items across all catalogs
-2. **Per-Catalog Limits**: Maximum items per individual catalog
-3. **Mixed Catalog Handling**: Uses `--items-per-mixed-catalog` for catalogs containing both movies and series
-
-### Limit Examples
-
-Given these settings:
-- `--movies-global-limit 100`
-- `--movies-per-catalog 25`
-
-**Scenario 1**: First catalog has 50 movies
-- Will prefetch 25 movies (limited by per-catalog limit)
-- 75 movies remain in global budget
-
-**Scenario 2**: Later, after prefetching 90 movies total
-- Next movie catalog will prefetch max 10 movies (limited by remaining global budget)
-- Even if per-catalog limit is 25
-
-## Catalog Types
-
-The script automatically detects catalog types:
-
-- **Movie**: Contains only movies
-- **Series**: Contains only TV series
-- **Mixed**: Contains both movies and series
-- **Search**: Search-only catalogs (automatically skipped)
-- **TV/Channel**: Unsupported types (automatically skipped)
-
-## Output and Progress
-
-The script provides real-time feedback with:
-
-- **Catalog Discovery Table**: Shows which catalogs will be processed/skipped
-- **Live Progress Dashboard**: Overall progress, current catalog, and prefetching status
-- **Statistics Table**: Current limits and prefetched counts
-- **Final Summary**: Comprehensive results and statistics
-
-## Cache Management
-
-The script uses SQLite for caching (`streams_prefetcher_prefetch_cache.db`):
-
-- **Purpose**: Avoid redundant prefetch requests
-- **Default Validity**: 3 days (259200 seconds)
-- **Automatic Cleanup**: Expired entries are ignored
-- **Manual Cleanup**: Delete the `.db` file to reset cache
-
-## Performance Tips
-
-**For Large Catalogs:**
-- Use per-catalog limits to prevent individual catalogs from consuming the entire budget
-- Consider using `--randomize-catalog-processing` for variety
-
-**For Rate-Limited Addons:**
-- Increase `--delay` (e.g., 500ms-2s)
-- Use conservative limits to avoid overwhelming the addon
-
-**For Multiple Addons:**
-- Use separate catalog and stream addons if available for better performance
-- Consider proxy rotation for high-volume prefetching
 
 ## Troubleshooting
 
-### Common Issues
+### Container Won't Start
 
-**Script exits immediately:**
-- Check addon URLs are accessible
-- Verify addon types are correct (`catalog`, `stream`, or `both`)
-
-**No items being prefetched:**
-- Addon may require authentication
-- Check if catalogs contain supported content types
-- Verify limits aren't too restrictive
-
-**Slow performance:**
-- Reduce delay if addon can handle faster requests
-- Check network connectivity
-- Consider using proxy if regional restrictions apply
-
-### Debug Information
-
-The script provides detailed statistics including:
-- Success rates for prefetch requests
-- Number of errors encountered
-- Cache hit rates
-- Processing times per catalog
-
-## Examples for Different Use Cases
-
-### Daily Maintenance Run
+Check logs:
 ```bash
-python streams_prefetcher.py \
-  --addon-urls both:https://your-addon.com \
-  --movies-global-limit 50 \
-  --series-global-limit 10 \
-  --delay 200ms
+docker compose logs streams-prefetcher
 ```
 
-### Weekly Deep Prefetch
+Ensure port 5000 is available:
 ```bash
-python streams_prefetcher.py \
-  --addon-urls both:https://your-addon.com \
-  --movies-global-limit 500 \
-  --series-global-limit 100 \
-  --randomize-catalog-processing \
-  --cache-validity-seconds 604800
+sudo netstat -tlnp | grep 5000
 ```
 
-### Testing New Addon
-```bash
-python streams_prefetcher.py \
-  --addon-urls both:https://new-addon.com \
-  --movies-global-limit 10 \
-  --series-global-limit 3 \
-  --movies-per-catalog 5 \
-  --series-per-catalog 2
+### Can't Access Web Interface
+
+1. Check container is running: `docker ps`
+2. Verify firewall allows port 5000
+3. Check reverse proxy configuration
+4. Review nginx/traefik logs
+
+### Job Fails to Start
+
+1. Verify addon URLs are accessible
+2. Check addon URLs have correct format
+3. Ensure at least one addon URL is configured
+4. Review logs in `data/logs/` (if logging is enabled)
+
+### Real-Time Updates Not Working
+
+1. Check browser console for errors
+2. Verify SSE connection in Network tab
+3. Ensure reverse proxy allows SSE (no buffering)
+4. Try refreshing the page
+
+### Configuration Not Saving
+
+1. Check `data/config/` directory permissions
+2. Ensure disk space is available
+3. Review container logs for errors
+4. Verify JSON format in `config.json`
+
+## Performance Optimization
+
+### Resource Limits
+
+Adjust in `compose.yaml`:
+```yaml
+deploy:
+  resources:
+    limits:
+      cpus: '2'
+      memory: 1G
+    reservations:
+      cpus: '0.5'
+      memory: 256M
 ```
+
+### Worker Configuration
+
+For high-concurrency, edit Dockerfile CMD:
+```dockerfile
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "8", ...]
+```
+
+### Delay Configuration
+
+For rate-limited addons:
+- Increase delay between requests
+- Use randomization to spread load
+- Consider running during off-peak hours
 
 ## Security Considerations
 
-- **Proxy Usage**: Only use trusted proxies
-- **Rate Limiting**: Respect addon rate limits to avoid being blocked
-- **Network Security**: Script makes HTTP requests; ensure network security
-- **Self-Hosted Only**: This tool is designed for self-hosted addons. Do not use against public addons.
+### Access Control
+
+Since this version doesn't include built-in authentication, protect access using:
+
+1. **Reverse Proxy Authentication** (Nginx):
+   ```nginx
+   auth_basic "Restricted Access";
+   auth_basic_user_file /etc/nginx/.htpasswd;
+   ```
+
+2. **Authelia** (recommended for advanced use):
+   - Integrates with Traefik/Nginx
+   - Provides 2FA, SSO, and access policies
+   - Already configured in compose.yaml Traefik labels
+
+3. **VPN/Tailscale**:
+   - Access only via private network
+   - No public exposure
+
+4. **Firewall Rules**:
+   - Restrict access to specific IPs
+   - Use fail2ban for brute force protection
+
+### HTTPS
+
+Always use HTTPS in production:
+- Configure Let's Encrypt with Traefik
+- Use Certbot with Nginx
+- Terminate SSL at reverse proxy level
+
+## Upgrading
+
+### From CLI to Web UI
+
+Your existing cache database will work with the web UI version. The configuration will need to be re-entered through the web interface on first launch.
+
+### Updating the Web UI
+
+```bash
+git pull origin web-ui
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+```
+
+Your data in the `data/` directory will be preserved.
+
+## Development
+
+### Project Structure
+
+```
+Stremio-Streams-Prefetcher/
+├── src/
+│   ├── web_app.py                      # Flask application & API server
+│   ├── job_scheduler.py                # Job scheduling with APScheduler
+│   ├── config_manager.py               # Configuration persistence
+│   ├── catalog_filter.py               # Catalog filtering logic
+│   ├── logger.py                       # Logging infrastructure
+│   ├── streams_prefetcher.py           # Core prefetcher logic
+│   ├── streams_prefetcher_filtered.py  # Filtered prefetcher variant
+│   ├── streams_prefetcher_wrapper.py   # Wrapper for programmatic use
+│   └── prefetch/
+│       ├── __init__.py                 # Prefetch module initialization
+│       └── models.py                   # Data models
+├── web/
+│   ├── index.html                      # Frontend HTML
+│   ├── css/
+│   │   └── style.css                   # Styles
+│   └── js/
+│       └── app.js                      # Frontend JavaScript
+├── data/                               # Persistent data (created at runtime)
+│   ├── config/
+│   ├── db/
+│   └── logs/
+├── Dockerfile                          # Docker build instructions
+├── compose.yaml                        # Docker Compose configuration
+├── requirements.txt                    # Python dependencies
+└── .env.example                        # Environment variables template
+```
+
+### Running Locally (Development)
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+cd src
+python web_app.py
+
+# Access at http://localhost:5000
+```
+
+### Building Custom Image
+
+```bash
+docker build -t stremio-prefetcher:custom .
+```
+
+## API Documentation
+
+The web UI uses a REST API for all operations. Full API documentation:
+
+### Endpoints
+
+#### Configuration
+- `GET /api/config` - Get current configuration
+- `POST /api/config` - Update configuration
+- `POST /api/config/reset` - Reset configuration to defaults
+
+#### Catalogs
+- `POST /api/catalogs/load` - Load catalogs from addons
+- `GET /api/catalogs/selection` - Get saved catalog selection
+- `POST /api/catalogs/selection` - Save catalog selection
+
+#### Addon Management
+- `POST /api/addon/manifest` - Fetch addon manifest from URL
+
+#### Scheduling
+- `GET /api/schedule` - Get schedule information
+- `POST /api/schedule` - Update schedule
+- `DELETE /api/schedule` - Disable schedule
+
+#### Job Control
+- `GET /api/job/status` - Get job status
+- `POST /api/job/run` - Run job manually
+- `POST /api/job/cancel` - Cancel running job
+- `GET /api/job/output` - Get job output logs
+
+#### Real-Time Updates
+- `GET /api/events` - Server-Sent Events for real-time updates
+
+#### Health
+- `GET /api/health` - Health check endpoint
+
+## Support
+
+For issues, questions, or contributions:
+- GitHub Issues: [Create an issue](https://github.com/yourusername/Stremio-Streams-Prefetcher/issues)
+- Documentation: See README.md for CLI version details
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see the LICENSE file for details.
+GNU General Public License v3.0 - See LICENSE file for details
+
+## Credits
+
+Built with:
+- Flask (Python web framework)
+- APScheduler (Job scheduling)
+- Vanilla JavaScript (No heavy frameworks)
+- Docker (Containerization)
+
+---
+
+**Made with ❤️ for the Stremio community**
