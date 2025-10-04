@@ -40,24 +40,26 @@ A modern web-based tool that warms up **self-hosted Stremio addon caches** by pr
 ## Architecture
 
 ```
-┌─────────────────┐
-│   Web Browser   │
-│   (Frontend)    │
-└────────┬────────┘
-         │ HTTP/SSE
-┌────────▼────────┐
-│  Flask Backend  │
-│  (API Server)   │
-├─────────────────┤
-│ Job Scheduler   │
-│  (APScheduler)  │
-├─────────────────┤
-│ Config Manager  │
-│   (JSON/SQLite) │
-├─────────────────┤
-│    Prefetcher   │
-│  (Core Logic)   │
-└─────────────────┘
++-------------------+
+|   Web Browser     |
+|   (Frontend)      |
++--------+----------+
+         |
+         | HTTP/SSE
+         |
++--------v----------+
+|  Flask Backend    |
+|  (API Server)     |
++-------------------+
+|  Job Scheduler    |
+|  (APScheduler)    |
++-------------------+
+|  Config Manager   |
+|  (JSON/SQLite)    |
++-------------------+
+|   Prefetcher      |
+|  (Core Logic)     |
++-------------------+
 ```
 
 ## Quick Start
