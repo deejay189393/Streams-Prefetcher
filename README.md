@@ -35,22 +35,40 @@ A modern web-based tool that warms up **self-hosted Stremio addon caches** by pr
 
 ## Screenshots
 
-<img width="1440" height="3120" alt="1" src="https://github.com/user-attachments/assets/04d17f96-ec8f-46f2-9749-cd51fac47ac9" />
-<img width="1440" height="3120" alt="2" src="https://github.com/user-attachments/assets/2cfa9bf9-abf9-4f54-b517-c5f7d2c1bb69" />
-<img width="1440" height="3120" alt="3" src="https://github.com/user-attachments/assets/bf57741f-e0fa-4e4b-be3d-32de717ef219" />
-<img width="1440" height="3120" alt="4" src="https://github.com/user-attachments/assets/dfa91cf4-d245-4843-89ba-ecefa1e2d178" />
-<img width="1440" height="3120" alt="5" src="https://github.com/user-attachments/assets/77fe0426-603d-46c6-86b4-461e36ce8f40" />
-<img width="1440" height="3120" alt="6" src="https://github.com/user-attachments/assets/471783cd-57e2-4c56-88bd-275e90b15dc7" />
-<img width="1440" height="3120" alt="7" src="https://github.com/user-attachments/assets/4480fc13-590a-4aff-9723-fcd121549d98" />
-<img width="1440" height="3120" alt="8" src="https://github.com/user-attachments/assets/acc43c62-32e8-4305-92f1-bf08987121bb" />
-<img width="1440" height="3120" alt="9" src="https://github.com/user-attachments/assets/6717454b-4f7d-4ba5-8cf3-d535cd2396bc" />
-<img width="1440" height="3120" alt="10" src="https://github.com/user-attachments/assets/5377d3dd-326c-41bf-8b9c-5b073cd044cd" />
-<img width="1440" height="3120" alt="11" src="https://github.com/user-attachments/assets/b3ea71a7-ee8a-4cb0-8efb-f575c202eb2c" />
-<img width="1440" height="3120" alt="12" src="https://github.com/user-attachments/assets/dde06088-446e-4006-b98c-c9e243c888ad" />
-<img width="1440" height="3120" alt="13" src="https://github.com/user-attachments/assets/bdf30bbe-a254-4cfb-8ced-63b7ce733594" />
-<img width="1440" height="3120" alt="14" src="https://github.com/user-attachments/assets/dfef4ffc-689c-4f46-884e-f93926538d7e" />
-<img width="1440" height="3120" alt="15" src="https://github.com/user-attachments/assets/812c0420-2bfc-4e6c-a06c-5657ee77274e" />
-<img width="1440" height="3120" alt="16" src="https://github.com/user-attachments/assets/bba69922-6907-49ba-a586-237624ae5f1e" />
+<table>
+  <tr>
+    <td width="50%"><img height="480px" alt="1" src="https://github.com/user-attachments/assets/04d17f96-ec8f-46f2-9749-cd51fac47ac9" /></td>
+    <td width="50%"><img height="480px" alt="2" src="https://github.com/user-attachments/assets/2cfa9bf9-abf9-4f54-b517-c5f7d2c1bb69" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><img height="480px" alt="3" src="https://github.com/user-attachments/assets/bf57741f-e0fa-4e4b-be3d-32de717ef219" /></td>
+    <td width="50%"><img height="480px" alt="4" src="https://github.com/user-attachments/assets/dfa91cf4-d245-4843-89ba-ecefa1e2d178" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><img height="480px" alt="5" src="https://github.com/user-attachments/assets/77fe0426-603d-46c6-86b4-461e36ce8f40" /></td>
+    <td width="50%"><img height="480px" alt="6" src="https://github.com/user-attachments/assets/471783cd-57e2-4c56-88bd-275e90b15dc7" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><img height="480px" alt="7" src="https://github.com/user-attachments/assets/4480fc13-590a-4aff-9723-fcd121549d98" /></td>
+    <td width="50%"><img height="480px" alt="8" src="https://github.com/user-attachments/assets/acc43c62-32e8-4305-92f1-bf08987121bb" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><img height="480px" alt="9" src="https://github.com/user-attachments/assets/6717454b-4f7d-4ba5-8cf3-d535cd2396bc" /></td>
+    <td width="50%"><img height="480px" alt="10" src="https://github.com/user-attachments/assets/5377d3dd-326c-41bf-8b9c-5b073cd044cd" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><img height="480px" alt="11" src="https://github.com/user-attachments/assets/b3ea71a7-ee8a-4cb0-8efb-f575c202eb2c" /></td>
+    <td width="50%"><img height="480px" alt="12" src="https://github.com/user-attachments/assets/dde06088-446e-4006-b98c-c9e243c888ad" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><img height="480px" alt="13" src="https://github.com/user-attachments/assets/bdf30bbe-a254-4cfb-8ced-63b7ce733594" /></td>
+    <td width="50%"><img height="480px" alt="14" src="https://github.com/user-attachments/assets/dfef4ffc-689c-4f46-884e-f93926538d7e" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><img height="480px" alt="15" src="https://github.com/user-attachments/assets/812c0420-2bfc-4e6c-a06c-5657ee77274e" /></td>
+    <td width="50%"><img height="480px" alt="16" src="https://github.com/user-attachments/assets/bba69922-6907-49ba-a586-237624ae5f1e" /></td>
+  </tr>
+</table>
 
 ## Architecture
 
