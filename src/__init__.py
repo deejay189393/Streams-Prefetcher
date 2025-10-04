@@ -1,5 +1,5 @@
 """
-Streams Prefetcher - Web UI
+Streams Prefetcher
 A web-based cache prefetcher for self-hosted Stremio addons.
 """
 

@@ -9,7 +9,7 @@ import sys
 import os
 
 # Import the original prefetcher
-sys.path.insert(0, '/opt/Stremio-Streams-Prefetcher/src')
+sys.path.insert(0, '/opt/Streams-Prefetcher/src')
 from streams_prefetcher import StreamsPrefetcher as OriginalStreamsPrefetcher
 from typing import List, Dict, Any, Tuple, Optional
 
@@ -19,7 +19,7 @@ class FilteredStreamsPrefetcher(OriginalStreamsPrefetcher):
     StreamsPrefetcher with catalog filtering capability.
 
     This class extends the original to add catalog filtering based on
-    user selection from the web UI.
+    user selection from the web interface.
     """
 
     def __init__(self, *args, catalog_filter: Optional[List[str]] = None, **kwargs):

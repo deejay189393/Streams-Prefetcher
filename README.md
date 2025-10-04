@@ -1,20 +1,22 @@
-# Streams Prefetcher - Web UI Version
+# Streams Prefetcher
 
-A modern web-based interface for the Streams Prefetcher, designed to work with **Stremio addons**. Makes addon cache prefetching accessible to all users through an intuitive browser interface with real-time monitoring and scheduling capabilities.
+A modern web-based tool that warms up **self-hosted Stremio addon caches** by prefetching streams. Makes addon cache prefetching accessible to all users through an intuitive browser interface with real-time monitoring and scheduling capabilities.
 
 > **⚠️ IMPORTANT:** This tool is designed for **self-hosted addons only**. Running this against public addons will unnecessarily increase server load without any benefit, as public addons typically don't cache per-user.
 
 ## Features
 
-### 🎯 What's New in v2.0 (Web UI)
+### 🎯 What's New in v0.8
 
 - **Modern Web Interface**: Clean, responsive design accessible from any device
 - **Real-Time Monitoring**: Live progress updates and output streaming during prefetch jobs
-- **Job Scheduling**: Configure recurring prefetch jobs using cron-like expressions
+- **Flexible Job Scheduling**: Configure multiple recurring schedules with day/time selectors
 - **Catalog Management**: Load, select, and reorder catalogs with drag-and-drop
 - **Completion Statistics**: Detailed post-job analytics with graphs, timelines, and processing rates
-- **Smart Addon URL Management**: Automatic manifest fetching and URL validation
+- **Smart Addon URL Management**: Automatic manifest fetching, URL validation, and name caching
 - **State Persistence**: All configurations and selections persist across sessions
+- **Log Viewer**: Built-in log file viewer with search, view, and delete capabilities
+- **Mobile Debug Panel**: Hidden debug panel for troubleshooting on mobile devices
 - **Docker-Based**: Easy deployment with Docker Compose
 - **Lightweight & Efficient**: Optimized for minimal resource usage
 
@@ -25,10 +27,15 @@ A modern web-based interface for the Streams Prefetcher, designed to work with *
 - **Visual Progress Tracking**: See exactly what's happening in real-time
 - **Job Control**: Start, stop, and schedule prefetch jobs
 - **Multi-Addon Support**: Separate catalog and stream addons with flexible configuration
-- **Time-Based Limits**: Set execution time limits and delays with human-readable formats
+- **Time-Based Limits**: Set execution time limits and delays with human-readable formats (supports unlimited values)
 - **Persistent State**: Jobs continue running even if you close the browser
-- **Reset Functionality**: Clear cache and reset configurations with one click
+- **Reset Functionality**: Clear configurations and log files with one click (preserves database)
 - **Catalog Filtering**: Advanced filtering options for catalog selection
+- **Log Management**: View, search, and delete log files directly from the UI
+
+## Screenshots
+
+(Will be added soon)
 
 ## Architecture
 
@@ -65,9 +72,8 @@ A modern web-based interface for the Streams Prefetcher, designed to work with *
 
 1. **Clone the repository** (or pull the latest changes):
    ```bash
-   git clone https://github.com/yourusername/Stremio-Streams-Prefetcher.git
-   cd Stremio-Streams-Prefetcher
-   git checkout web-ui
+   git clone https://github.com/yourusername/Streams-Prefetcher.git
+   cd Streams-Prefetcher
    ```
 
 2. **Configure environment variables** (optional):
@@ -172,11 +178,11 @@ Set global and per-catalog limits:
 - **Items per Mixed Catalog**: Max items from catalogs with both movies and series (-1 for unlimited)
 
 #### Time-Based Parameters
-- **Delay Between Requests**: Delay between each stream request (prevent rate limiting)
-- **Cache Validity**: How long to consider cached items valid
-- **Max Execution Time**: Maximum time for a prefetch run (-1 for unlimited)
+- **Delay Between Requests**: Delay between each stream request (prevent rate limiting). Can be set to 0 for no delay
+- **Cache Validity**: How long to consider cached items valid. Set to -1 for unlimited (never expire)
+- **Max Execution Time**: Maximum time for a prefetch run. Set to -1 for unlimited
 
-Format: Enter a number and select the unit (milliseconds, seconds, minutes, hours, days, weeks)
+Format: Enter a number and select the unit (milliseconds, seconds, minutes, hours, days, weeks). All time-based parameters support unlimited values (-1)
 
 #### Advanced Options
 - **HTTP Proxy**: Route requests through a proxy (optional)
@@ -186,7 +192,16 @@ Format: Enter a number and select the unit (milliseconds, seconds, minutes, hour
 
 #### Reset Configuration
 - **Reset to Defaults**: Click the reset button to restore all settings to default values
-- **Clear Cache**: Option to clear the prefetch cache database
+- **What Gets Cleared**:
+  - All configuration settings (addon URLs, limits, time parameters, etc.)
+  - All log files
+  - Addon name cache
+  - Active schedules
+- **What's Preserved**:
+  - Prefetch cache database (streams_prefetcher_prefetch_cache.db)
+  - Data directory structure
+
+**Note**: Reset is irreversible. The prefetch cache database is intentionally preserved as it contains valuable cached stream data.
 
 ### 2. Catalog Selection
 
@@ -205,20 +220,26 @@ Format: Enter a number and select the unit (milliseconds, seconds, minutes, hour
 
 ### 3. Job Scheduling
 
-Configure recurring prefetch jobs using cron expressions:
+Configure recurring prefetch jobs with a visual schedule editor:
+
+**Creating Schedules**:
+1. Enable scheduling with the toggle switch
+2. Click "Add Schedule" to create a new schedule
+3. Select a time (24-hour format)
+4. Select days of the week (Sun-Sat)
+5. Save the schedule
+
+**Managing Schedules**:
+- Create multiple schedules with different day/time combinations
+- Edit existing schedules by clicking the edit button
+- Delete individual schedules or clear all schedules at once
+- Schedules are displayed in 12-hour format with AM/PM
 
 **Examples**:
-- `0 2 * * *` - Daily at 2:00 AM
-- `0 */6 * * *` - Every 6 hours
-- `0 0 * * 0` - Weekly on Sunday at midnight
-- `0 3 * * 1-5` - Weekdays at 3:00 AM
-
-**Format**: `minute hour day month weekday`
-- minute: 0-59
-- hour: 0-23
-- day: 1-31
-- month: 1-12
-- weekday: 0-7 (0 or 7 is Sunday)
+- Daily at 2:00 AM: Select all days, time 02:00
+- Weekdays at 3:00 AM: Select Mon-Fri, time 03:00
+- Twice daily: Create two schedules (e.g., 02:00 and 14:00)
+- Weekends only: Select Sat-Sun, time 10:00
 
 ### 4. Running Jobs
 
@@ -250,7 +271,48 @@ After a job completes, view detailed analytics:
 - Jobs continue running even if you close the browser
 - Configurations cannot be modified while a job is running
 
-### 5. Data Persistence
+### 5. Log Viewer
+
+Access and manage log files directly from the web interface:
+
+**Features**:
+- **List Log Files**: View all prefetch log files sorted by date (most recent first)
+- **View Logs**: Click on any log file to view its contents in a dedicated viewer
+- **Delete Logs**: Remove individual log files or delete all logs at once
+- **File Information**: See file size and modification date for each log
+
+**Usage**:
+1. Enable logging in the Configuration section
+2. Run a prefetch job
+3. Open the Log Viewer section
+4. Click "Load Log Files" to see available logs
+5. Click on a log file name to view its contents
+6. Use the delete buttons to remove unwanted logs
+
+**Note**: Log files contain detailed execution information useful for debugging and monitoring.
+
+### 6. Mobile Debug Panel
+
+A hidden debugging tool for troubleshooting on mobile devices:
+
+**Access**:
+- Long-press the ⚡ lightning bolt in the page title for ~1 second
+- Panel toggles on/off with vibration feedback
+- State persists in browser's localStorage
+
+**Features**:
+- **Timestamped Logs**: Each entry shows time and elapsed seconds
+- **Screen State Tracking**: Monitor which status screen is currently visible
+- **API Logging**: Track requests and responses
+- **Copy Function**: One-click button to copy all logs to clipboard
+- **Auto-scroll**: Automatically scrolls to latest entries
+
+**Use Cases**:
+- Debug issues on mobile devices without access to browser console
+- Share logs easily with support/developers
+- Monitor real-time state changes during job execution
+
+### 7. Data Persistence
 
 All data is stored in the `data/` directory:
 ```
@@ -276,9 +338,9 @@ This directory is mounted as a Docker volume, ensuring data persists across cont
 | Movies per Catalog | 50 | Max movies per catalog |
 | Series per Catalog | 3 | Max series per catalog |
 | Items per Mixed Catalog | 20 | Max items per mixed catalog |
-| Delay | 2 seconds | Delay between requests |
-| Cache Validity | 3 days | Cache validity period |
-| Max Execution Time | 90 minutes | Max runtime for jobs |
+| Delay | 2 seconds | Delay between requests (0 = no delay) |
+| Cache Validity | 7 days | Cache validity period (-1 = unlimited) |
+| Max Execution Time | 90 minutes | Max runtime for jobs (-1 = unlimited) |
 | Randomize Catalogs | Disabled | Randomize catalog order |
 | Randomize Items | Disabled | Randomize item order |
 | Logging | Disabled | Enable detailed logging |
@@ -420,28 +482,25 @@ Always use HTTPS in production:
 
 ## Upgrading
 
-### From CLI to Web UI
-
-Your existing cache database will work with the web UI version. The configuration will need to be re-entered through the web interface on first launch.
-
-### Updating the Web UI
+### Updating Streams Prefetcher
 
 ```bash
-git pull origin web-ui
+git pull origin main
 docker compose down
 docker compose build --no-cache
 docker compose up -d
 ```
 
-Your data in the `data/` directory will be preserved.
+Your data in the `data/` directory will be preserved. Configuration and catalog selections will remain intact.
 
 ## Development
 
 ### Project Structure
 
 ```
-Stremio-Streams-Prefetcher/
+Streams-Prefetcher/
 ├── src/
+│   ├── __init__.py                     # Package version (v0.8)
 │   ├── web_app.py                      # Flask application & API server
 │   ├── job_scheduler.py                # Job scheduling with APScheduler
 │   ├── config_manager.py               # Configuration persistence
@@ -449,20 +508,20 @@ Stremio-Streams-Prefetcher/
 │   ├── logger.py                       # Logging infrastructure
 │   ├── streams_prefetcher.py           # Core prefetcher logic
 │   ├── streams_prefetcher_filtered.py  # Filtered prefetcher variant
-│   ├── streams_prefetcher_wrapper.py   # Wrapper for programmatic use
-│   └── prefetch/
-│       ├── __init__.py                 # Prefetch module initialization
-│       └── models.py                   # Data models
+│   └── streams_prefetcher_wrapper.py   # Wrapper for programmatic use
 ├── web/
 │   ├── index.html                      # Frontend HTML
 │   ├── css/
 │   │   └── style.css                   # Styles
 │   └── js/
-│       └── app.js                      # Frontend JavaScript
+│       └── app.js                      # Frontend JavaScript (includes debug panel)
 ├── data/                               # Persistent data (created at runtime)
 │   ├── config/
+│   │   └── config.json                 # All configurations
 │   ├── db/
+│   │   └── streams_prefetcher_prefetch_cache.db
 │   └── logs/
+│       └── streams_prefetcher_logs_*.txt
 ├── Dockerfile                          # Docker build instructions
 ├── compose.yaml                        # Docker Compose configuration
 ├── requirements.txt                    # Python dependencies
@@ -490,7 +549,7 @@ docker build -t stremio-prefetcher:custom .
 
 ## API Documentation
 
-The web UI uses a REST API for all operations. Full API documentation:
+Streams Prefetcher uses a REST API for all operations. Full API documentation:
 
 ### Endpoints
 
@@ -518,6 +577,12 @@ The web UI uses a REST API for all operations. Full API documentation:
 - `POST /api/job/cancel` - Cancel running job
 - `GET /api/job/output` - Get job output logs
 
+#### Log Management
+- `GET /api/logs` - List all log files
+- `GET /api/logs/<filename>` - Get content of a specific log file
+- `DELETE /api/logs/<filename>` - Delete a specific log file
+- `DELETE /api/logs` - Delete all log files
+
 #### Real-Time Updates
 - `GET /api/events` - Server-Sent Events for real-time updates
 
@@ -527,7 +592,7 @@ The web UI uses a REST API for all operations. Full API documentation:
 ## Support
 
 For issues, questions, or contributions:
-- GitHub Issues: [Create an issue](https://github.com/yourusername/Stremio-Streams-Prefetcher/issues)
+- GitHub Issues: [Create an issue](https://github.com/yourusername/Streams-Prefetcher/issues)
 - Documentation: See README.md for CLI version details
 
 ## License
@@ -544,4 +609,4 @@ Built with:
 
 ---
 
-**Made with ❤️ for the Stremio community**
+**Made with ❤️ for the Stremio Addons community**
