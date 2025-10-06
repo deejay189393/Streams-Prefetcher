@@ -1,5 +1,8 @@
 # Streams Prefetcher
 
+[![Latest Release](https://img.shields.io/github/v/release/deejay189393/Streams-Prefetcher?style=for-the-badge)](https://github.com/deejay189393/Streams-Prefetcher/releases/latest)
+[![Docker Pulls](https://img.shields.io/badge/docker-ghcr.io-blue?style=for-the-badge&logo=docker)](https://github.com/deejay189393/Streams-Prefetcher/pkgs/container/streams-prefetcher)
+
 A modern web-based tool that warms up **self-hosted Stremio addon caches** by prefetching streams. Makes addon cache prefetching accessible to all users through an intuitive browser interface with real-time monitoring and scheduling capabilities.
 
 > **⚠️ IMPORTANT:** This tool is designed for **self-hosted addons only**. Running this against public addons will unnecessarily increase server load without any benefit, as public addons typically don't cache per-user.
@@ -95,6 +98,43 @@ A modern web-based tool that warms up **self-hosted Stremio addon caches** by pr
 +-------------------+
 ```
 
+## Docker Images
+
+Streams Prefetcher is available as pre-built Docker images on GitHub Container Registry:
+
+### Stable Releases (Recommended for Production)
+
+```yaml
+image: ghcr.io/deejay189393/streams-prefetcher:latest
+# or pin to a specific version
+image: ghcr.io/deejay189393/streams-prefetcher:v0.9.0
+```
+
+- **`:latest`** - Always points to the latest stable release
+- **`:vX.Y.Z`** - Specific version tags (e.g., `:v0.9.0`, `:v0.8.1`)
+- Recommended for production use
+- Thoroughly tested and documented
+- Only updated when new versions are released
+
+### Nightly Builds (Cutting Edge Features)
+
+```yaml
+image: ghcr.io/deejay189393/streams-prefetcher:nightly
+# or pin to a specific nightly build
+image: ghcr.io/deejay189393/streams-prefetcher:2025.10.06.0139-nightly
+```
+
+- **`:nightly`** - Always points to the latest nightly build
+- **`:YYYY.MM.DD.HHMM-nightly`** - Specific nightly build timestamp
+- Built automatically from `main` branch every day at 2:00 AM UTC
+- Contains the latest features and bug fixes
+- May be unstable - use for testing only
+
+**Quick Install**:
+```bash
+docker pull ghcr.io/deejay189393/streams-prefetcher:latest
+```
+
 ## Quick Start
 
 ### Prerequisites
@@ -105,9 +145,39 @@ A modern web-based tool that warms up **self-hosted Stremio addon caches** by pr
 
 ### Installation
 
-1. **Clone the repository** (or pull the latest changes):
+#### Option 1: Using Pre-built Docker Images (Recommended)
+
+1. **Create a `docker-compose.yml` file**:
+   ```yaml
+   version: '3.8'
+
+   services:
+     streams-prefetcher:
+       image: ghcr.io/deejay189393/streams-prefetcher:latest  # or :nightly for bleeding edge
+       container_name: streams-prefetcher
+       ports:
+         - "5000:5000"
+       volumes:
+         - ./data:/app/data
+       environment:
+         - TZ=America/New_York  # Your timezone
+         - LOG_LEVEL=INFO
+       restart: unless-stopped
+   ```
+
+2. **Start the application**:
    ```bash
-   git clone https://github.com/yourusername/Streams-Prefetcher.git
+   docker compose up -d
+   ```
+
+3. **Access the web interface**:
+   - `http://your-server-ip:5000`
+
+#### Option 2: Build from Source
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/deejay189393/Streams-Prefetcher.git
    cd Streams-Prefetcher
    ```
 
@@ -119,7 +189,7 @@ A modern web-based tool that warms up **self-hosted Stremio addon caches** by pr
 
 3. **Start the application**:
    ```bash
-   docker compose up -d
+   docker compose up -d --build
    ```
 
 4. **Access the web interface**:
