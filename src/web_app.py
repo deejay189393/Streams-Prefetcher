@@ -444,6 +444,27 @@ def fetch_addon_manifest():
 
 
 # ============================================================================
+# TIMEZONE API
+# ============================================================================
+
+@app.route('/api/timezone', methods=['GET'])
+def get_timezone():
+    """Get server timezone from TZ environment variable"""
+    try:
+        # Get timezone from environment, default to UTC
+        tz = os.environ.get('TZ', 'UTC')
+
+        return jsonify({
+            'success': True,
+            'timezone': tz
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting timezone: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================================
 # SCHEDULE API
 # ============================================================================
 

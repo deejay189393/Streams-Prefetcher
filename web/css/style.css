@@ -2658,3 +2658,87 @@ input:checked + .toggle-slider:before {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
+
+/* Timezone Mismatch Banner - Warning Design with Urgency */
+.timezone-mismatch-banner {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.12) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-left: 4px solid #ef4444;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    animation: fadeInBannerUrgent 0.5s ease-out;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 12px rgba(239, 68, 68, 0.2);
+}
+
+.timezone-mismatch-banner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(239, 68, 68, 0.35);
+    border-color: rgba(239, 68, 68, 0.6);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(220, 38, 38, 0.15) 100%);
+}
+
+.timezone-banner-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.2) 100%);
+    border-radius: 50%;
+    animation: pulseGlowWarning 2s ease-in-out infinite;
+}
+
+.timezone-banner-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.timezone-banner-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fca5a5;
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.timezone-banner-message {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #fecaca;
+}
+
+.timezone-banner-message strong {
+    color: #fca5a5;
+    font-weight: 700;
+}
+
+@keyframes fadeInBannerUrgent {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulseGlowWarning {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.4);
+        transform: scale(1.05);
+    }
+}

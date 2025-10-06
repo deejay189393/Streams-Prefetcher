@@ -373,6 +373,17 @@
             <div class="collapsible-content" id="schedule-content">
             <p class="help-text" style="margin-top: 0;">Configure when prefetch jobs should run automatically</p>
 
+            <!-- Timezone Mismatch Banner (shown only when browser ≠ server timezone) -->
+            <div id="timezone-mismatch-banner" class="timezone-mismatch-banner" style="display: none;">
+                <div class="timezone-banner-icon">⚠️</div>
+                <div class="timezone-banner-content">
+                    <div class="timezone-banner-title">⚠️ Timezone Mismatch Warning</div>
+                    <div class="timezone-banner-message">
+                        Your browser is in <strong><span id="browser-tz"></span></strong>, but the server runs in <strong><span id="server-tz"></span></strong>. All schedules will execute in <strong>server time</strong>, not your local time!
+                    </div>
+                </div>
+            </div>
+
             <div id="scheduling-settings" class="scheduling-disabled" style="margin-top: 20px;">
                 <!-- Add Schedule Button -->
                 <button type="button" class="btn btn-primary" onclick="showAddScheduleModal()" id="add-schedule-btn" disabled>
@@ -921,7 +932,7 @@
         </section>
 
         <footer>
-            <p>Streams Prefetcher v0.9.2 | For self-hosted addons only</p>
+            <p>Streams Prefetcher v0.9.3 | For self-hosted addons only</p>
         </footer>
     </div>
 

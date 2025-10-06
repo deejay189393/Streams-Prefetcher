@@ -5,6 +5,22 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.3] - 2025-10-06
+
+### Added
+- **Smart Timezone Mismatch Detection**: Elegant banner shown in Scheduling section when browser timezone differs from server timezone
+  - Only displays when timezones don't match (no clutter when they match)
+  - Beautiful purple/blue gradient design with smooth animations
+  - Clearly shows both browser and server timezones
+  - Helps users understand schedules run in server time, not browser time
+  - New `/api/timezone` endpoint to fetch server's TZ environment variable
+  - Automatic detection using browser's `Intl.DateTimeFormat` API
+
+### Changed
+- Enhanced Scheduling section UX with conditional timezone awareness
+
+Closes #16
+
 ## [0.9.2] - 2025-10-06
 
 ### Added

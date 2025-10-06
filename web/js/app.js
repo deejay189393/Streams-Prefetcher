@@ -620,6 +620,52 @@ function toggleNoDelay() {
 }
 
 // ============================================================================
+// Timezone Mismatch Detection
+// ============================================================================
+
+async function checkTimezoneMismatch() {
+    try {
+        // Get browser timezone
+        const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        // Fetch server timezone
+        const response = await fetch('/api/timezone');
+        const data = await response.json();
+
+        if (data.success && data.timezone) {
+            const serverTimezone = data.timezone;
+
+            // Compare timezones (case-insensitive)
+            if (browserTimezone.toLowerCase() !== serverTimezone.toLowerCase()) {
+                // Timezones differ - show banner
+                const banner = document.getElementById('timezone-mismatch-banner');
+                const browserTzSpan = document.getElementById('browser-tz');
+                const serverTzSpan = document.getElementById('server-tz');
+
+                if (banner && browserTzSpan && serverTzSpan) {
+                    browserTzSpan.textContent = browserTimezone;
+                    serverTzSpan.textContent = serverTimezone;
+                    banner.style.display = 'flex';
+
+                    addDebugLog(`Timezone mismatch: Browser=${browserTimezone}, Server=${serverTimezone}`);
+                }
+            } else {
+                // Timezones match - hide banner
+                const banner = document.getElementById('timezone-mismatch-banner');
+                if (banner) {
+                    banner.style.display = 'none';
+                }
+
+                addDebugLog(`Timezones match: ${browserTimezone}`);
+            }
+        }
+    } catch (error) {
+        console.error('Error checking timezone mismatch:', error);
+        addDebugLog(`Error checking timezone: ${error.message}`);
+    }
+}
+
+// ============================================================================
 // Initialization
 // ============================================================================
 
@@ -650,6 +696,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadConfiguration();
     addDebugLog('Loading schedules...');
     loadSchedules();
+    addDebugLog('Checking timezone mismatch...');
+    checkTimezoneMismatch();
     addDebugLog('Loading job status (AWAIT START)...');
     logStatusScreens();
     await loadJobStatus('DOMContentLoaded'); // Await to prevent showing idle screen during status fetch
