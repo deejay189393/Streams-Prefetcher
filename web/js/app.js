@@ -907,6 +907,80 @@ function updateSaveNotificationPositions() {
     });
 }
 
+// Error Notification (red, 5 second auto-dismiss)
+function showErrorNotification(title, message) {
+    const notification = document.createElement('div');
+    notification.className = 'error-notification';
+
+    // Top accent line (red)
+    const accent = document.createElement('div');
+    accent.className = 'error-notification-accent';
+    notification.appendChild(accent);
+
+    // Content container
+    const content = document.createElement('div');
+    content.className = 'error-notification-content';
+
+    // Icon
+    const icon = document.createElement('div');
+    icon.className = 'error-notification-icon';
+    icon.textContent = '⚠';
+    content.appendChild(icon);
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'error-notification-body';
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'error-notification-title';
+    titleDiv.textContent = title;
+    body.appendChild(titleDiv);
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'error-notification-message';
+    messageDiv.textContent = message;
+    body.appendChild(messageDiv);
+
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'error-notification-actions';
+
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'error-notification-btn';
+    dismissBtn.textContent = 'Dismiss';
+    dismissBtn.onclick = () => dismissErrorNotification(notification);
+    actions.appendChild(dismissBtn);
+
+    body.appendChild(actions);
+    content.appendChild(body);
+    notification.appendChild(content);
+
+    // Progress bar
+    const progress = document.createElement('div');
+    progress.className = 'error-notification-progress';
+    notification.appendChild(progress);
+
+    document.body.appendChild(notification);
+
+    // Auto-dismiss after 5 seconds
+    const timeout = setTimeout(() => {
+        dismissErrorNotification(notification);
+    }, 5000);
+
+    notification._dismissTimeout = timeout;
+}
+
+function dismissErrorNotification(notification) {
+    if (notification._dismissTimeout) {
+        clearTimeout(notification._dismissTimeout);
+    }
+
+    notification.style.animation = 'slideOutSave 0.3s cubic-bezier(0.4, 0, 1, 1)';
+    setTimeout(() => {
+        notification.remove();
+    }, 300);
+}
+
 // ============================================================================
 // Configuration Management
 // ============================================================================
@@ -1170,6 +1244,16 @@ function editAddonUrl(btn) {
 
 async function fetchAddonManifest(url, addonDiv) {
     try {
+        // Check for duplicates before fetching manifest
+        const currentType = addonDiv.dataset.type;
+        const isDuplicate = checkDuplicateAddonUrl(url, currentType, addonDiv);
+
+        if (isDuplicate) {
+            // Remove the duplicate item
+            addonDiv.remove();
+            return;
+        }
+
         const response = await fetch('/api/addon/manifest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1195,6 +1279,48 @@ async function fetchAddonManifest(url, addonDiv) {
     } catch (error) {
         console.error('Error fetching addon manifest:', error);
     }
+}
+
+function checkDuplicateAddonUrl(url, currentType, currentDiv) {
+    const normalizedUrl = url.trim().toLowerCase();
+    let foundIn = null;
+
+    // Check all three sections
+    ['both', 'catalog', 'stream'].forEach(type => {
+        const container = document.getElementById(`addon-list-${type}`);
+        const items = container.querySelectorAll('.addon-item');
+
+        items.forEach(item => {
+            // Skip the current item being added
+            if (item === currentDiv) return;
+
+            const itemUrl = (item.dataset.url || '').trim().toLowerCase();
+            if (itemUrl === normalizedUrl) {
+                foundIn = type;
+            }
+        });
+    });
+
+    if (foundIn) {
+        // Show error notification
+        const sectionNames = {
+            'both': 'Both (Catalog & Stream)',
+            'catalog': 'Catalog Only',
+            'stream': 'Stream Only'
+        };
+
+        let message = `This addon URL is already added in the "${sectionNames[foundIn]}" section.`;
+
+        // If they're trying to add to a different section, suggest using "both"
+        if (foundIn !== 'both' && currentType !== 'both' && foundIn !== currentType) {
+            message += ` If you want this addon to serve as both catalog and stream, move it to the "Both" section instead.`;
+        }
+
+        showErrorNotification('Duplicate Addon URL', message);
+        return true;
+    }
+
+    return false;
 }
 
 function updateAddonUrlsConfig() {

@@ -5,6 +5,36 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2025-10-06
+
+### Added
+- **Collapsible Timezone Warning**: Added informative timezone configuration notice in Scheduling section
+  - Explains TZ environment variable usage
+  - Defaults to UTC if not set
+  - Provides configuration guidance and examples
+  - Collapsed by default to reduce clutter
+  - Smooth expand/collapse animation with arrow on left
+- **Collapsible Watchtower Warning**: Added compatibility warning for Watchtower users
+  - Alerts about container restarts interrupting prefetch sessions
+  - Provides three actionable solutions
+  - Professional orange warning design
+  - Positioned at bottom of Scheduling section
+- **Duplicate Addon URL Prevention**: System now prevents adding the same addon URL more than once
+  - Case-insensitive URL comparison across all sections (Both, Catalog, Stream)
+  - Removes duplicate item immediately
+  - Shows red error notification with section location
+  - Suggests using "Both" section if dual functionality is desired
+- **Error Notification System**: New red-themed notification for errors
+  - Auto-dismisses after 5 seconds (with progress bar animation)
+  - Manual dismiss button
+  - Professional design matching save notification style
+  - Clear warning icon and informative messages
+
+### Fixed
+- Users can no longer accidentally add duplicate addon URLs
+
+Closes #5, #9, #11
+
 ## [0.9.0] - 2025-10-06
 
 ### Fixed

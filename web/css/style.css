@@ -925,6 +925,127 @@ footer {
     }
 }
 
+@keyframes progressBarError {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}
+
+/* Error Notification (Red version of save notification) */
+.error-notification {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    background: rgba(20, 25, 35, 0.98);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    padding: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(239, 68, 68, 0.1);
+    z-index: 1001;
+    min-width: 320px;
+    max-width: 380px;
+    animation: slideInSave 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+.error-notification-accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #b91c1c, #ef4444);
+}
+
+.error-notification-content {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.error-notification-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.error-notification-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.error-notification-title {
+    color: #fca5a5;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    line-height: 1.3;
+}
+
+.error-notification-message {
+    color: #e5e7eb;
+    font-size: 12px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.error-notification-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.error-notification-btn {
+    flex: 1;
+    background: rgba(185, 28, 28, 0.15);
+    border: 1px solid rgba(185, 28, 28, 0.3);
+    color: #ef4444;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    box-shadow: 0 0 8px rgba(185, 28, 28, 0.2);
+}
+
+.error-notification-btn:hover {
+    background: rgba(185, 28, 28, 0.25);
+    border-color: rgba(185, 28, 28, 0.5);
+    color: #fca5a5;
+    transform: translateY(-1px);
+    box-shadow: 0 0 12px rgba(185, 28, 28, 0.3);
+}
+
+.error-notification-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 0 6px rgba(185, 28, 28, 0.2);
+}
+
+.error-notification-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #b91c1c, #ef4444);
+    animation: progressBarError 5s linear;
+    transform-origin: left;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     body {
