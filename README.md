@@ -244,7 +244,7 @@ Format: Enter a number and select the unit (milliseconds, seconds, minutes, hour
 2. Review the list of catalogs (shows catalog name, type, and source addon)
 3. Use checkboxes to enable/disable specific catalogs
 4. Drag and drop catalogs to change processing order
-5. Click **Save Catalog Selection** to persist your choices
+5. Selections are auto-saved after 2 seconds
 
 **Features**:
 - Multi-addon support with source identification
@@ -252,6 +252,15 @@ Format: Enter a number and select the unit (milliseconds, seconds, minutes, hour
 - Drag-and-drop reordering
 - Enable/disable individual catalogs
 - Advanced filtering options
+- Auto-save functionality (no manual save needed)
+
+**Reset Catalog Selections**:
+- **🔄 Reset button** in the top-right corner of the Catalog Selection section
+- **Long-press for 3 seconds** to reset all catalog selections
+- Shows progress (0-100%) during long-press
+- Clears all saved catalog selections from configuration
+- Automatically reloads catalogs after reset
+- Provides visual and haptic feedback (vibration on supported devices)
 
 ### 3. Job Scheduling
 
@@ -597,6 +606,7 @@ Streams Prefetcher uses a REST API for all operations. Full API documentation:
 - `POST /api/catalogs/load` - Load catalogs from addons
 - `GET /api/catalogs/selection` - Get saved catalog selection
 - `POST /api/catalogs/selection` - Save catalog selection
+- `POST /api/catalogs/reset` - Reset catalog selections (clears saved catalogs)
 
 #### Addon Management
 - `POST /api/addon/manifest` - Fetch addon manifest from URL
@@ -628,7 +638,7 @@ Streams Prefetcher uses a REST API for all operations. Full API documentation:
 
 For issues, questions, or contributions:
 - GitHub Issues: [Create an issue](https://github.com/yourusername/Streams-Prefetcher/issues)
-- Documentation: See README.md for CLI version details
+- Changelog: See [CHANGELOG.md](CHANGELOG.md) for version history and updates
 
 ## License
 

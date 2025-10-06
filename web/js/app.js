@@ -1795,6 +1795,8 @@ async function loadSavedCatalogSelection() {
             loadedCatalogs = data.catalogs;
             renderCatalogList(data.catalogs);
             document.getElementById('catalog-list-container').style.display = 'block';
+            document.getElementById('select-all-btn').style.display = 'block';
+            document.getElementById('deselect-all-btn').style.display = 'block';
             catalogsLoaded = true;
             updateLoadCatalogsButtonText();
             updateStartNowButtonState();
@@ -1820,7 +1822,7 @@ async function loadCatalogs(silent = false) {
     const btn = document.getElementById('load-catalogs-btn');
     if (!silent) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span>Loading Catalogs...';
+        btn.textContent = 'Loading Catalogs...';
     }
 
     try {
@@ -1865,6 +1867,8 @@ async function loadCatalogs(silent = false) {
             loadedCatalogs = mergedCatalogs;
             renderCatalogList(loadedCatalogs);
             document.getElementById('catalog-list-container').style.display = 'block';
+            document.getElementById('select-all-btn').style.display = 'block';
+            document.getElementById('deselect-all-btn').style.display = 'block';
             catalogsLoaded = true;
             updateLoadCatalogsButtonText();
             updateStartNowButtonState();
@@ -2002,6 +2006,130 @@ function getDragAfterElement(container, y) {
             return closest;
         }
     }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+// ============================================================================
+// Reset Catalog Selection with Hold-Down Countdown
+// ============================================================================
+
+let resetCatalogsCountdownInterval = null;
+let resetCatalogsStartTime = null;
+const RESET_CATALOGS_HOLD_DURATION = 3000; // 3 seconds in milliseconds
+
+function startResetCatalogsCountdown() {
+    const btn = document.getElementById('reset-catalogs-btn');
+
+    // Prevent multiple countdowns
+    if (resetCatalogsCountdownInterval) {
+        return;
+    }
+
+    resetCatalogsStartTime = Date.now();
+    btn.classList.add('terminating', 'pulsating');
+
+    // Update button text and animation every 100ms
+    resetCatalogsCountdownInterval = setInterval(() => {
+        const elapsed = Date.now() - resetCatalogsStartTime;
+        const remaining = RESET_CATALOGS_HOLD_DURATION - elapsed;
+        const secondsRemaining = Math.ceil(remaining / 1000);
+
+        if (remaining <= 0) {
+            // Countdown complete - perform reset
+            clearInterval(resetCatalogsCountdownInterval);
+            resetCatalogsCountdownInterval = null;
+            performResetCatalogs();
+        } else {
+            // Update button text
+            btn.textContent = `Resetting in ${secondsRemaining}...`;
+
+            // Update animation based on progress
+            const progress = elapsed / RESET_CATALOGS_HOLD_DURATION;
+            updateResetCatalogsAnimation(btn, progress);
+        }
+    }, 100);
+}
+
+function cancelResetCatalogsCountdown() {
+    if (resetCatalogsCountdownInterval) {
+        clearInterval(resetCatalogsCountdownInterval);
+        resetCatalogsCountdownInterval = null;
+        resetCatalogsStartTime = null;
+
+        const btn = document.getElementById('reset-catalogs-btn');
+        btn.textContent = 'Reset Catalogs';
+        btn.classList.remove('terminating', 'pulsating');
+        btn.style.removeProperty('--pulse-duration');
+    }
+}
+
+function updateResetCatalogsAnimation(btn, progress) {
+    // Smoothly transition animation speed from 2s (slow) to 0.25s (very fast)
+    // Using an exponential curve for more dramatic acceleration
+    const minDuration = 0.25; // seconds (very fast)
+    const maxDuration = 2.0;  // seconds (slow)
+
+    // Exponential easing: starts slow, accelerates dramatically near the end
+    const easedProgress = Math.pow(progress, 2);
+    const duration = maxDuration - (easedProgress * (maxDuration - minDuration));
+
+    // Set CSS variable for smooth animation speed transition
+    btn.style.setProperty('--pulse-duration', `${duration}s`);
+}
+
+async function performResetCatalogs() {
+    const btn = document.getElementById('reset-catalogs-btn');
+    btn.textContent = 'Resetting...';
+    btn.classList.remove('pulsating');
+    btn.disabled = true;
+
+    await resetCatalogSelections();
+
+    // Reset button state
+    btn.textContent = 'Reset Catalogs';
+    btn.disabled = false;
+    btn.classList.remove('terminating');
+    btn.style.removeProperty('--pulse-duration');
+}
+
+async function resetCatalogSelections() {
+    try {
+        showNotification('Resetting catalog selections...', 'info');
+
+        // Call API to reset catalog selections
+        const response = await fetch('/api/catalogs/reset', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Clear ALL frontend state FIRST
+            loadedCatalogs = [];
+            catalogsLoaded = false;
+
+            // Clear the catalog list UI
+            document.getElementById('catalog-list').innerHTML = '';
+            document.getElementById('catalog-list-container').style.display = 'none';
+            document.getElementById('select-all-btn').style.display = 'none';
+            document.getElementById('deselect-all-btn').style.display = 'none';
+
+            // Update button text back to "Load Catalogs"
+            updateLoadCatalogsButtonText();
+
+            showNotification('Catalog selections reset successfully!', 'success');
+
+            // Now reload catalogs fresh from the API with default order and all enabled
+            await loadCatalogs();
+        } else {
+            showNotification(data.error || 'Failed to reset catalog selections', 'error');
+        }
+    } catch (error) {
+        console.error('Error resetting catalog selections:', error);
+        showNotification('Error resetting catalog selections', 'error');
+    }
 }
 
 // ============================================================================

@@ -379,6 +379,22 @@ def save_catalog_selection():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/catalogs/reset', methods=['POST'])
+def reset_catalog_selections():
+    """Reset catalog selections and clear saved catalogs from config"""
+    try:
+        # Clear saved catalogs from config
+        config_manager.set('saved_catalogs', [])
+
+        logger.info("Catalog selections reset - cleared all saved catalogs")
+
+        return jsonify({'success': True, 'message': 'Catalog selections reset successfully'})
+
+    except Exception as e:
+        logger.error(f"Error resetting catalog selections: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/addon/manifest', methods=['POST'])
 def fetch_addon_manifest():
     """Fetch addon manifest and extract name"""

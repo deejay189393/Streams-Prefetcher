@@ -324,19 +324,33 @@
             <div class="collapsible-content" id="catalog-selection-content">
             <p class="help-text">Load catalogs from your configured addons, then select and order which ones to prefetch</p>
 
-            <button type="button" class="btn btn-secondary" onclick="loadCatalogs()" id="load-catalogs-btn" style="min-width: 150px;">
-                Load Catalogs
-            </button>
+            <div class="catalog-button-grid" style="margin-bottom: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="loadCatalogs()" id="load-catalogs-btn" style="min-width: 170px; min-height: 49px; height: 49px; box-sizing: border-box; white-space: nowrap;">
+                    Load Catalogs
+                </button>
+
+                <button type="button" class="btn-modern btn-terminate" id="reset-catalogs-btn"
+                        onmousedown="startResetCatalogsCountdown()"
+                        onmouseup="cancelResetCatalogsCountdown()"
+                        onmouseleave="cancelResetCatalogsCountdown()"
+                        ontouchstart="startResetCatalogsCountdown()"
+                        ontouchend="cancelResetCatalogsCountdown()"
+                        ontouchcancel="cancelResetCatalogsCountdown()"
+                        style="border-radius: 5px;"
+                        title="Hold for 3 seconds to reset catalog selections">
+                    Reset Catalogs
+                </button>
+
+                <button type="button" class="btn btn-success" onclick="selectAllCatalogs()" id="select-all-btn" style="display: none; min-height: 49px; height: 49px; box-sizing: border-box;">
+                    Select All
+                </button>
+
+                <button type="button" class="btn btn-secondary" onclick="deselectAllCatalogs()" id="deselect-all-btn" style="display: none; min-height: 49px; height: 49px; box-sizing: border-box;">
+                    Deselect All
+                </button>
+            </div>
 
             <div id="catalog-list-container" style="display: none; margin-top: 20px;">
-                <div class="form-row" style="margin-bottom: 15px;">
-                    <button type="button" class="btn btn-success" onclick="selectAllCatalogs()">
-                        Select All
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="deselectAllCatalogs()">
-                        Deselect All
-                    </button>
-                </div>
                 <div id="catalog-list" class="catalog-list"></div>
                 <p style="margin-top: 15px; font-size: 13px; color: var(--text-muted); text-align: center;">
                     <em>Catalog selections are auto-saved after 2 seconds</em>
@@ -866,7 +880,7 @@
         </section>
 
         <footer>
-            <p>Streams Prefetcher v0.8 | For self-hosted addons only</p>
+            <p>Streams Prefetcher v0.8.1 | For self-hosted addons only</p>
         </footer>
     </div>
 
