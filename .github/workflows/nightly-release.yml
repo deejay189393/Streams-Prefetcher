@@ -1,0 +1,87 @@
+name: Nightly Release
+
+on:
+  schedule:
+    # Run every day at 2:00 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual triggers
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  nightly-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate nightly tag
+        id: tag
+        run: |
+          TAG=$(date -u +'%Y.%m.%d.%H%M')-nightly
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Nightly tag: $TAG"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nightly
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create GitHub pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+
+          # Create release notes
+          cat > release_notes.md << 'EOF'
+          ## Nightly Build
+
+          This is an automated nightly build from the `main` branch.
+
+          **⚠️ Warning**: Nightly builds are unstable and may contain bugs. Use stable releases for production.
+
+          ### Docker Images
+
+          ```bash
+          # Specific nightly version
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+
+          # Latest nightly (always updated)
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nightly
+          ```
+
+          ### Recent Commits
+
+          EOF
+
+          # Add recent commits to release notes
+          git log --pretty=format:"- %s (%h)" -10 >> release_notes.md
+
+          # Create pre-release
+          gh release create "$TAG" \
+            --title "Nightly Build - $(date -u +'%Y-%m-%d %H:%M UTC')" \
+            --notes-file release_notes.md \
+            --prerelease
