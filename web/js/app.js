@@ -308,6 +308,17 @@ function toggleSection(sectionId) {
     }
 }
 
+function toggleWarningBox(warningId) {
+    const content = document.getElementById(warningId);
+    const icon = document.getElementById(`${warningId}-icon`);
+
+    if (content && icon) {
+        const isHidden = content.style.display === 'none';
+        content.style.display = isHidden ? 'block' : 'none';
+        icon.classList.toggle('expanded');
+    }
+}
+
 // ============================================================================
 // Scheduling Functions
 // ============================================================================

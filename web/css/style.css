@@ -11,7 +11,9 @@
     --success-color: #10b981;
     --danger-color: #ef4444;
     --warning-color: #f59e0b;
+    --warning-bg: #7c2d0c;
     --info-color: #1e40af;
+    --info-bg: #0c2d5e;
     --dark-bg: #000000;
     --card-bg: #0a0a0a;
     --card-hover-bg: #0f1419;
@@ -2436,4 +2438,102 @@ input:checked + .toggle-slider:before {
 .btn-sm {
     padding: 6px 12px;
     font-size: 13px;
+}
+
+/* Collapsible Warning Boxes */
+.collapsible-warning-box {
+    border-radius: 8px;
+    margin: 12px 0;
+    border-left: 4px solid;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.info-box-collapsible {
+    background: linear-gradient(135deg, var(--info-bg) 0%, rgba(12, 45, 94, 0.4) 100%);
+    border-left-color: var(--info-color);
+}
+
+.warning-box-collapsible {
+    background: linear-gradient(135deg, var(--warning-bg) 0%, rgba(124, 45, 12, 0.4) 100%);
+    border-left-color: var(--warning-color);
+}
+
+.warning-box-header {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition);
+}
+
+.warning-box-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.info-box-collapsible .warning-box-header strong {
+    color: #bfdbfe;
+    font-size: 14px;
+}
+
+.warning-box-collapsible .warning-box-header strong {
+    color: #fed7aa;
+    font-size: 14px;
+}
+
+.warning-box-icon-small {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.warning-collapse-icon {
+    font-size: 12px;
+    transition: transform 0.3s ease;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.warning-collapse-icon.expanded {
+    transform: rotate(90deg);
+}
+
+.warning-box-collapsible-content {
+    padding: 0 18px 16px 18px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.info-box-collapsible .warning-box-collapsible-content {
+    color: #bfdbfe;
+}
+
+.warning-box-collapsible .warning-box-collapsible-content {
+    color: #fed7aa;
+}
+
+.warning-box-collapsible-content p {
+    margin: 0 0 12px 0;
+}
+
+.warning-box-collapsible-content ul {
+    margin: 8px 0 0 0;
+    padding-left: 20px;
+}
+
+.warning-box-collapsible-content li {
+    margin: 6px 0;
+}
+
+.warning-box-collapsible-content code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.collapsible-warning-box:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }

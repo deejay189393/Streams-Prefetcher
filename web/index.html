@@ -389,6 +389,47 @@
                     Delete All Schedules
                 </button>
             </div>
+
+            <!-- Collapsible Warnings -->
+            <div style="margin-top: 24px;">
+                <!-- Timezone Warning -->
+                <div class="collapsible-warning-box info-box-collapsible">
+                    <div class="warning-box-header" onclick="toggleWarningBox('timezone-warning')">
+                        <span class="warning-collapse-icon" id="timezone-warning-icon">▶</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="warning-box-icon-small">🌍</span>
+                            <strong>Timezone Configuration</strong>
+                        </div>
+                    </div>
+                    <div class="warning-box-collapsible-content" id="timezone-warning" style="display: none;">
+                        <p>Scheduled jobs use the timezone specified in your <code>TZ</code> environment variable. If not set, schedules default to <strong>UTC time</strong>.</p>
+                        <ul>
+                            <li><strong>Current Container Timezone:</strong> The timezone is configured in your <code>.env</code> file or Docker Compose configuration</li>
+                            <li><strong>Verify Your Setup:</strong> Ensure the <code>TZ</code> variable matches your desired timezone (e.g., <code>America/New_York</code>, <code>Europe/London</code>)</li>
+                            <li><strong>Changes Require Restart:</strong> Timezone changes only take effect after rebuilding/restarting the container</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Watchtower Warning -->
+                <div class="collapsible-warning-box warning-box-collapsible">
+                    <div class="warning-box-header" onclick="toggleWarningBox('watchtower-warning')">
+                        <span class="warning-collapse-icon" id="watchtower-warning-icon">▶</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="warning-box-icon-small">⚠️</span>
+                            <strong>Watchtower Compatibility Warning</strong>
+                        </div>
+                    </div>
+                    <div class="warning-box-collapsible-content" id="watchtower-warning" style="display: none;">
+                        <p>If you're using <strong>Watchtower</strong> or similar auto-update tools, they may restart this container during updates, which will <strong>interrupt running prefetch sessions</strong>.</p>
+                        <ul>
+                            <li><strong>Recommended:</strong> Exclude this container from Watchtower using labels or configure Watchtower to run outside your scheduled prefetch windows</li>
+                            <li><strong>Alternative:</strong> Schedule Watchtower updates for times when no prefetch jobs are running</li>
+                            <li><strong>Manual Updates:</strong> Consider disabling auto-updates for this container and updating manually during maintenance windows</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
             </div>
         </section>
 
