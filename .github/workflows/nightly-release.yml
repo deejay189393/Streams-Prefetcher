@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/streams-prefetcher
+  IMAGE_NAME: deejay189393/streams-prefetcher
 
 jobs:
   nightly-release:
