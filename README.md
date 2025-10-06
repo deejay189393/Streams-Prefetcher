@@ -273,6 +273,26 @@ Configure your addon URLs in three categories:
 - Drag and drop URLs between categories
 - Reorder URLs within categories
 - Automatic manifest fetching and validation
+- Smart URL normalization (automatically strips Stremio endpoints)
+
+**Supported URL Formats**:
+
+The system automatically normalizes addon URLs by stripping common Stremio addon endpoints. You can paste URLs in any of these formats:
+
+- Base addon URL: `https://addon.example.com/stremio/v1`
+- With `/manifest.json`: `https://addon.example.com/stremio/v1/manifest.json`
+- With `/configure`: `https://addon.example.com/stremio/v1/configure`
+- With resource endpoints: `https://addon.example.com/stremio/v1/catalog/movie/top`
+
+All formats above will be normalized to the base URL (`https://addon.example.com/stremio/v1`) automatically.
+
+**Examples**:
+```
+https://aiostreams.example.com/stremio/some-text-here
+https://aiostreams.example.com/stremio/some-text-here/configure
+https://aiostreams.example.com/stremio/some-text-here/manifest.json
+https://myaddon.example.com/v1/stream/movie/tt1234567
+```
 
 #### Limits
 Set global and per-catalog limits:

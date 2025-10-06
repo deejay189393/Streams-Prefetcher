@@ -5,6 +5,22 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2025-10-06
+
+### Added
+- **Smart Addon URL Normalization**: Automatically strips common Stremio addon endpoints
+  - Removes `/manifest.json` from URLs
+  - Removes `/configure` from URLs
+  - Removes resource endpoints like `/catalog/*`, `/meta/*`, `/stream/*`, `/subtitles/*`, `/addon_catalog/*`
+  - Users can now paste URLs copied from Stremio app or Stremio Web directly
+  - All variations automatically normalize to the base addon URL
+
+### Changed
+- Updated README with supported URL formats and examples
+- Documented all accepted URL patterns (base URL, with manifest.json, with configure, with resource endpoints)
+
+Closes #8
+
 ## [0.9.1] - 2025-10-06
 
 ### Added

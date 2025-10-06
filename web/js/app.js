@@ -1242,11 +1242,42 @@ function editAddonUrl(btn) {
     div.replaceWith(newDiv);
 }
 
+function normalizeAddonUrl(url) {
+    // Normalize Stremio addon URL by stripping common endpoints
+    // Supports URLs ending with:
+    // - /manifest.json
+    // - /configure
+    // - /catalog/... /meta/... /stream/... /subtitles/... /addon_catalog/...
+
+    let normalized = url.trim();
+
+    // Remove trailing slash
+    normalized = normalized.replace(/\/$/, '');
+
+    // Strip /manifest.json
+    if (normalized.endsWith('/manifest.json')) {
+        normalized = normalized.slice(0, -14);
+    }
+
+    // Strip /configure
+    if (normalized.endsWith('/configure')) {
+        normalized = normalized.slice(0, -10);
+    }
+
+    // Strip resource endpoints: /catalog/*, /meta/*, /stream/*, /subtitles/*, /addon_catalog/*
+    normalized = normalized.replace(/\/(catalog|meta|stream|subtitles|addon_catalog)\/.*$/, '');
+
+    return normalized;
+}
+
 async function fetchAddonManifest(url, addonDiv) {
     try {
+        // Normalize the URL to strip Stremio addon endpoints
+        const normalizedUrl = normalizeAddonUrl(url);
+
         // Check for duplicates before fetching manifest
         const currentType = addonDiv.dataset.type;
-        const isDuplicate = checkDuplicateAddonUrl(url, currentType, addonDiv);
+        const isDuplicate = checkDuplicateAddonUrl(normalizedUrl, currentType, addonDiv);
 
         if (isDuplicate) {
             // Remove the duplicate item
@@ -1257,7 +1288,7 @@ async function fetchAddonManifest(url, addonDiv) {
         const response = await fetch('/api/addon/manifest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url })
+            body: JSON.stringify({ url: normalizedUrl })
         });
 
         const data = await response.json();
