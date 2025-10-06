@@ -5,6 +5,14 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2025-10-06
+
+### Fixed
+- **Critical Timezone Bug**: Scheduler now correctly uses the `TZ` environment variable for scheduling jobs
+  - Previously hardcoded to UTC, causing all scheduled jobs to run at incorrect times
+  - Now reads `TZ` from environment and falls back to UTC if not set
+  - Logs the timezone being used at startup for verification
+
 ## [0.8.1] - 2025-10-06
 
 ### Added

@@ -8,6 +8,7 @@ import time
 import sys
 import io
 import ctypes
+import os
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, Callable
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -37,7 +38,17 @@ class JobScheduler:
 
     def __init__(self, config_manager: ConfigManager):
         self.config_manager = config_manager
-        self.scheduler = BackgroundScheduler(timezone=pytz.UTC)
+
+        # Get timezone from environment variable, default to UTC
+        tz_name = os.environ.get('TZ', 'UTC')
+        try:
+            self.timezone = pytz.timezone(tz_name)
+            logger.info(f"Using timezone from TZ environment variable: {tz_name}")
+        except pytz.UnknownTimeZoneError:
+            logger.warning(f"Unknown timezone '{tz_name}', falling back to UTC")
+            self.timezone = pytz.UTC
+
+        self.scheduler = BackgroundScheduler(timezone=self.timezone)
         self.scheduler.start()
 
         # Job state - Always start fresh on initialization
@@ -166,7 +177,7 @@ class JobScheduler:
                         day_of_week=days_str,
                         hour=hour,
                         minute=minute,
-                        timezone=pytz.UTC
+                        timezone=self.timezone
                     )
 
                     # Add job
