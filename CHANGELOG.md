@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Previously hardcoded to UTC, causing all scheduled jobs to run at incorrect times
   - Now reads `TZ` from environment and falls back to UTC if not set
   - Logs the timezone being used at startup for verification
+  - `.env.example` properly configured to read from existing `TZ` environment variable (Closes #3, #7)
 
 ## [0.8.1] - 2025-10-06
 
