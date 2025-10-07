@@ -1491,7 +1491,7 @@ function initializeAddonUrlDragDrop() {
             const data = e.dataTransfer.getData('text/plain');
             if (!data) return;
 
-            const { url, oldType } = JSON.parse(data);
+            const { url, name, logo, oldType } = JSON.parse(data);
             const newType = section.dataset.type;
 
             // Remove the dragging element from old location
@@ -1502,11 +1502,11 @@ function initializeAddonUrlDragDrop() {
 
             // Update type and add to new location
             const container = section.querySelector('.addon-list');
-            const itemDiv = createAddonUrlItem(url, newType, container.children.length);
+            const itemDiv = createAddonUrlItem(url, newType, container.children.length, name, false, logo);
             container.appendChild(itemDiv);
 
             // Trigger auto-save
-            autoSaveConfiguration();
+            updateAddonUrlsConfig();
         });
     });
 }
@@ -1514,9 +1514,11 @@ function initializeAddonUrlDragDrop() {
 function setupAddonDragDrop(element) {
     element.addEventListener('dragstart', (e) => {
         element.classList.add('dragging');
-        const url = element.querySelector('input').value;
+        const url = element.dataset.url;
+        const name = element.dataset.name;
+        const logo = element.dataset.logo;
         const type = element.dataset.type;
-        e.dataTransfer.setData('text/plain', JSON.stringify({ url, oldType: type }));
+        e.dataTransfer.setData('text/plain', JSON.stringify({ url, name, logo, oldType: type }));
     });
 
     element.addEventListener('dragend', (e) => {
