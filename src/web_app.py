@@ -240,8 +240,9 @@ def reset_config():
         if not success:
             return jsonify({'success': False, 'error': 'Failed to reset configuration'}), 500
 
-        # Clear addon name cache
+        # Clear addon name and logo cache
         config_manager.set('addon_name_cache', {})
+        config_manager.set('addon_logo_cache', {})
 
         # Clear all log files (they contain addon URLs and could be a privacy issue)
         log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'logs')
