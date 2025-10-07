@@ -1513,8 +1513,8 @@ footer {
 
 .poster-container {
     position: relative;
-    width: 150px;
-    height: 225px; /* 2:3 aspect ratio */
+    width: 180px;
+    height: 270px; /* 2:3 aspect ratio */
     border-radius: 8px;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.3);
@@ -2190,14 +2190,6 @@ input:checked + .toggle-slider:before {
     .currently-prefetching {
         margin: 20px auto;
         padding: 16px;
-    }
-
-    .poster-container {
-        /* Mobile: ~1/5th display height with 2:3 aspect ratio */
-        height: 20vh;
-        width: calc(20vh * 2 / 3); /* Maintain 2:3 aspect ratio */
-        min-height: 150px;
-        min-width: 100px;
     }
 
     .item-title-year {
