@@ -1228,8 +1228,18 @@ function createAddonUrlItem(url, type, index, name = null, forceEdit = false) {
         // Editing mode - show input field
         div.innerHTML = `
             <span class="drag-handle">⋮⋮</span>
-            <input type="url" class="addon-url-input" value="${url}" placeholder="https://addon.example.com">
-            <button class="remove-btn" onclick="removeAddonUrl(this)">×</button>
+            <div class="addon-content">
+                <input type="url" class="addon-url-input" value="${url}" placeholder="https://addon.example.com">
+                <div class="addon-actions">
+                    <button class="remove-btn" onclick="removeAddonUrl(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        Delete
+                    </button>
+                </div>
+            </div>
         `;
 
         // Add input listener for auto-fetch manifest
@@ -1256,15 +1266,25 @@ function createAddonUrlItem(url, type, index, name = null, forceEdit = false) {
         // Display mode - show name/URL as read-only
         div.innerHTML = `
             <span class="drag-handle">⋮⋮</span>
-            <span class="addon-display-name" title="${url}">${displayName}</span>
-            <button class="edit-btn" onclick="editAddonUrl(this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 20h9"></path>
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                </svg>
-                Edit
-            </button>
-            <button class="remove-btn" onclick="removeAddonUrl(this)">×</button>
+            <div class="addon-content">
+                <span class="addon-display-name" title="${url}">${displayName}</span>
+                <div class="addon-actions">
+                    <button class="edit-btn" onclick="editAddonUrl(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                        Edit
+                    </button>
+                    <button class="remove-btn" onclick="removeAddonUrl(this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        Delete
+                    </button>
+                </div>
+            </div>
         `;
     }
 
