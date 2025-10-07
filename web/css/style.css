@@ -551,6 +551,20 @@ input:disabled {
     z-index: 1;
 }
 
+.addon-item .addon-name-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.addon-item .addon-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
 .addon-item .addon-display-name {
     color: var(--text-color);
     font-weight: 600;
@@ -560,6 +574,7 @@ input:disabled {
     white-space: nowrap;
     position: relative;
     z-index: 1;
+    flex: 1;
 }
 
 .addon-item .addon-actions {
@@ -644,6 +659,15 @@ input:disabled {
 
     .addon-item .addon-content {
         gap: 10px;
+    }
+
+    .addon-item .addon-name-row {
+        gap: 10px;
+    }
+
+    .addon-item .addon-logo {
+        width: 36px;
+        height: 36px;
     }
 
     .addon-item .addon-display-name {

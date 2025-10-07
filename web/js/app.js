@@ -1204,15 +1204,15 @@ function renderAddonUrls(addonUrls) {
         document.getElementById(`addon-list-${type}`).innerHTML = '';
     });
 
-    // Render each URL with cached name - no fetching on page load
+    // Render each URL with cached name and logo - no fetching on page load
     addonUrls.forEach((item, index) => {
         const container = document.getElementById(`addon-list-${item.type}`);
-        const itemDiv = createAddonUrlItem(item.url, item.type, index, item.name);
+        const itemDiv = createAddonUrlItem(item.url, item.type, index, item.name, false, item.logo);
         container.appendChild(itemDiv);
     });
 }
 
-function createAddonUrlItem(url, type, index, name = null, forceEdit = false) {
+function createAddonUrlItem(url, type, index, name = null, forceEdit = false, logo = null) {
     const div = document.createElement('div');
     div.className = 'addon-item';
     div.draggable = true;
@@ -1220,6 +1220,7 @@ function createAddonUrlItem(url, type, index, name = null, forceEdit = false) {
     div.dataset.index = index;
     div.dataset.url = url;
     div.dataset.name = name || '';
+    div.dataset.logo = logo || '';
 
     const isEditing = forceEdit || !url || url === '';
     const displayName = name || url;
@@ -1264,10 +1265,14 @@ function createAddonUrlItem(url, type, index, name = null, forceEdit = false) {
         });
     } else {
         // Display mode - show name/URL as read-only
+        const logoHtml = logo ? `<img src="${logo}" alt="" class="addon-logo" onerror="this.style.display='none'">` : '';
         div.innerHTML = `
             <span class="drag-handle">⋮⋮</span>
             <div class="addon-content">
-                <span class="addon-display-name" title="${url}">${displayName}</span>
+                <div class="addon-name-row">
+                    ${logoHtml}
+                    <span class="addon-display-name" title="${url}">${displayName}</span>
+                </div>
                 <div class="addon-actions">
                     <button class="edit-btn" onclick="editAddonUrl(this)">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1370,17 +1375,18 @@ async function fetchAddonManifest(url, addonDiv) {
         const data = await response.json();
 
         if (data.success && data.name) {
-            // Update the addon item with the fetched name
+            // Update the addon item with the fetched name and logo
             addonDiv.dataset.name = data.name;
+            addonDiv.dataset.logo = data.logo || '';
             addonDiv.dataset.url = data.url;
 
             // Convert to display mode
             const type = addonDiv.dataset.type;
             const index = addonDiv.dataset.index;
-            const newDiv = createAddonUrlItem(data.url, type, index, data.name);
+            const newDiv = createAddonUrlItem(data.url, type, index, data.name, false, data.logo);
             addonDiv.replaceWith(newDiv);
 
-            // Update config with the name
+            // Update config with the name and logo
             updateAddonUrlsConfig();
         }
     } catch (error) {
@@ -1443,11 +1449,13 @@ function updateAddonUrlsConfig() {
             if (displayName) {
                 const url = item.dataset.url;
                 const name = item.dataset.name || null;
+                const logo = item.dataset.logo || null;
                 if (url && url.trim()) {
                     addonUrls.push({
                         url: url.trim(),
                         type: type,
-                        name: name
+                        name: name,
+                        logo: logo
                     });
                 }
             }

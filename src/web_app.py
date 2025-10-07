@@ -419,15 +419,21 @@ def fetch_addon_manifest():
             manifest = response.json()
 
             addon_name = manifest.get('name', 'Unknown Addon')
+            addon_logo = manifest.get('logo', '')
 
-            # Cache the addon name in config
+            # Cache the addon name and logo in config
             addon_name_cache = config_manager.get('addon_name_cache', {})
             addon_name_cache[addon_url] = addon_name
             config_manager.set('addon_name_cache', addon_name_cache)
 
+            addon_logo_cache = config_manager.get('addon_logo_cache', {})
+            addon_logo_cache[addon_url] = addon_logo
+            config_manager.set('addon_logo_cache', addon_logo_cache)
+
             return jsonify({
                 'success': True,
                 'name': addon_name,
+                'logo': addon_logo,
                 'url': addon_url
             })
 
