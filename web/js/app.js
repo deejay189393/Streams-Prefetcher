@@ -2888,29 +2888,24 @@ function updateProgressInfo(progress) {
 
     document.getElementById('stat-cached').textContent = cachedCount;
 
-    // Update current action text
-    const catalogName = progress.catalog_name || 'Unknown';
-    const catalogMode = progress.catalog_mode || '';
+    // Update RPDB poster if IMDb ID is available
     const currentTitle = progress.current_title || '';
-
-    let actionText = `Processing ${catalogName}`;
-    if (catalogMode) {
-        actionText += ` (${catalogMode})`;
-    }
-    if (currentTitle) {
-        // Parse format: "Prefetching streams for Movie: The Whale (2022)"
-        // or "Prefetching streams for Series: Breaking Bad S01E01"
-        const match = currentTitle.match(/Prefetching streams for (Movie|Series): (.+)/);
-        if (match) {
-            const itemType = match[1];
-            const titleText = match[2];
-            // Format: Title in bold, type on new line in small text
-            document.querySelector('.current-action').innerHTML = `<strong>${titleText}</strong><br><small style="font-size: 0.85em; color: var(--text-muted);">${itemType}</small>`;
-        } else {
-            actionText = `Prefetching: ${currentTitle}`;
-            document.querySelector('.current-action').textContent = actionText;
-        }
+    const imdbId = progress.current_imdb_id;
+    const itemType = progress.current_item_type;
+    if (imdbId && (itemType === 'movie' || itemType === 'series' || itemType === 'episode')) {
+        updateRPDBPoster(imdbId, currentTitle);
+        // Hide the current action text when showing poster
+        document.querySelector('.current-action').style.display = 'none';
     } else {
+        hideRPDBPoster();
+        // Show catalog processing info when not showing poster
+        document.querySelector('.current-action').style.display = 'block';
+        const catalogName = progress.catalog_name || 'Unknown';
+        const catalogMode = progress.catalog_mode || '';
+        let actionText = `Processing ${catalogName}`;
+        if (catalogMode) {
+            actionText += ` (${catalogMode})`;
+        }
         document.querySelector('.current-action').textContent = actionText;
     }
 
@@ -2980,6 +2975,106 @@ function updateProgressInfo(progress) {
     document.getElementById('catalog-progress-fill').style.width = `${catalogPercent}%`;
     document.getElementById('catalog-progress-percent').textContent = `${catalogPercent}%`;
     document.getElementById('catalog-progress-label').textContent = catalogLabel;
+}
+
+/**
+ * Update RPDB poster for currently prefetching item
+ */
+function updateRPDBPoster(imdbId, fullTitle) {
+    addDebugLog(`[RPDB] updateRPDBPoster called - IMDb ID: ${imdbId}, Title: ${fullTitle}`);
+
+    const container = document.getElementById('currently-prefetching');
+    const posterImg = document.getElementById('current-poster');
+    const titleYearEl = document.getElementById('current-item-title-year');
+    const episodeEl = document.getElementById('current-item-episode');
+    const typeBadgeEl = document.getElementById('current-item-type');
+
+    // Parse title and year from fullTitle
+    // Formats:
+    // Movie: "Prefetching streams for Movie: The Whale (2022)"
+    // Series: "Prefetching streams for Series: Breaking Bad (2008-2013)"
+    // Episode: "Prefetching streams for Series: Breaking Bad (2008) S01E01"
+
+    let displayTitleYear = '';
+    let displayEpisode = '';
+    let itemType = 'Movie'; // Default
+
+    // Try to match episode format first (has S##E## at the end)
+    const episodeMatch = fullTitle.match(/Prefetching streams for Series: (.+?)\s+(S\d+E\d+)$/);
+    if (episodeMatch) {
+        // Episode format: "Breaking Bad (2008) S01E01"
+        const seriesWithYear = episodeMatch[1]; // "Breaking Bad (2008)"
+        displayEpisode = episodeMatch[2]; // "S01E01"
+        displayTitleYear = seriesWithYear;
+        itemType = 'Series';
+
+        // Show episode line
+        episodeEl.textContent = displayEpisode;
+        episodeEl.style.display = 'block';
+    } else {
+        // Movie or series format: "The Whale (2022)" or "Breaking Bad (2008-2013)"
+        const match = fullTitle.match(/Prefetching streams for (Movie|Series): (.+)$/);
+        if (match) {
+            itemType = match[1]; // "Movie" or "Series"
+            displayTitleYear = match[2];
+        } else {
+            displayTitleYear = fullTitle;
+        }
+
+        // Hide episode line
+        episodeEl.style.display = 'none';
+    }
+
+    // Update text immediately
+    titleYearEl.textContent = displayTitleYear;
+    typeBadgeEl.textContent = itemType;
+
+    // Show container
+    container.style.display = 'flex';
+
+    // Extract base IMDb ID (remove :season:episode suffix for episodes)
+    // e.g., "tt26915338:1:1" -> "tt26915338"
+    const baseImdbId = imdbId.split(':')[0];
+
+    // Build RPDB URL
+    const rpdbApiKey = 't0-free-rpdb';
+    const posterUrl = `https://api.ratingposterdb.com/${rpdbApiKey}/imdb/poster-default/${baseImdbId}.jpg`;
+
+    addDebugLog(`[RPDB] Original ID: ${imdbId}, Base ID: ${baseImdbId}`);
+    addDebugLog(`[RPDB] Fetching poster: ${posterUrl}`);
+
+    // Hide poster until it loads
+    posterImg.style.display = 'none';
+
+    // Load poster (don't cache - add timestamp to prevent browser caching)
+    posterImg.onload = function() {
+        addDebugLog(`[RPDB] ✅ Poster loaded successfully (${posterImg.naturalWidth}x${posterImg.naturalHeight})`);
+        posterImg.style.display = 'block';
+    };
+
+    posterImg.onerror = function(e) {
+        addDebugLog(`[RPDB] ❌ Poster failed to load: ${posterUrl}`);
+        addDebugLog(`[RPDB] Error type: ${e.type}, target: ${e.target.tagName}`);
+        // Try without cache-busting to see if that helps
+        if (posterImg.src.includes('?t=')) {
+            addDebugLog('[RPDB] Retrying without cache-busting parameter...');
+            posterImg.src = posterUrl;
+        } else {
+            // Hide poster if load fails
+            posterImg.style.display = 'none';
+        }
+    };
+
+    // Set source with cache-busting parameter
+    posterImg.src = posterUrl + '?t=' + Date.now();
+}
+
+/**
+ * Hide RPDB poster section
+ */
+function hideRPDBPoster() {
+    const container = document.getElementById('currently-prefetching');
+    container.style.display = 'none';
 }
 
 function updateStartNowButtonState() {

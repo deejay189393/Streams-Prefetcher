@@ -155,6 +155,8 @@ class StreamsPrefetcherWrapper:
                     'catalog_series_count': kwargs.get('catalog_series_count', 0),
                     'mode': mode,
                     'current_title': kwargs.get('current_title', ''),
+                    'current_imdb_id': kwargs.get('current_imdb_id', ''),
+                    'current_item_type': kwargs.get('current_item_type', ''),
                     'current_catalog_items': kwargs.get('prefetched_in_this_catalog', 0),
                     'current_catalog_limit': kwargs.get('per_catalog_limit', -1),
                 }

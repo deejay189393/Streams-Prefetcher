@@ -1070,7 +1070,12 @@ class StreamsPrefetcher:
 
                     if item_type == 'movie':
                         imdb_id, title = self.extract_imdb_id(item), self.get_title_from_item(item)
-                        self.progress_tracker.redraw_dashboard(current_title=f"Prefetching streams for Movie: {title}", **dashboard_args)
+                        self.progress_tracker.redraw_dashboard(
+                            current_title=f"Prefetching streams for Movie: {title}",
+                            current_imdb_id=imdb_id,
+                            current_item_type='movie',
+                            **dashboard_args
+                        )
                         if not imdb_id: failed_count += 1; item_statuses_on_page.append('failed'); continue
                         if self.is_cache_valid(imdb_id): cached_count += 1; self.prefetched_cached_count += 1; item_statuses_on_page.append('cached'); continue
 
@@ -1086,7 +1091,12 @@ class StreamsPrefetcher:
 
                     elif item_type == 'series':
                         series_imdb_id, title = self.extract_imdb_id(item), self.get_title_from_item(item)
-                        self.progress_tracker.redraw_dashboard(current_title=f"Prefetching streams for Series: {title}", **dashboard_args)
+                        self.progress_tracker.redraw_dashboard(
+                            current_title=f"Prefetching streams for Series: {title}",
+                            current_imdb_id=series_imdb_id,
+                            current_item_type='series',
+                            **dashboard_args
+                        )
                         if not series_imdb_id: failed_count += 1; item_statuses_on_page.append('failed'); continue
                         episodes = self.get_series_episodes(series_imdb_id, cat_addon_url)
                         if not episodes: failed_count += 1; item_statuses_on_page.append('failed'); continue
@@ -1103,7 +1113,12 @@ class StreamsPrefetcher:
 
                             ep_title = self.get_formatted_episode_title(item, ep['season'], ep['episode'])
                             dashboard_args['item_statuses'] = item_statuses_on_page # Ensure dashboard has latest statuses
-                            self.progress_tracker.redraw_dashboard(current_title=f"Prefetching streams for Series: {ep_title}", **dashboard_args)
+                            self.progress_tracker.redraw_dashboard(
+                                current_title=f"Prefetching streams for Series: {ep_title}",
+                                current_imdb_id=ep['id'],
+                                current_item_type='episode',
+                                **dashboard_args
+                            )
                             if self.prefetch_streams(ep['id'], 'series'):
                                self.update_cache(ep['id'], ep_title); series_had_success = True; self.prefetched_episodes_count += 1
 
