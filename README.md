@@ -9,22 +9,6 @@ A modern web-based tool that warms up **self-hosted Stremio addon caches** by pr
 
 ## Features
 
-### 🎯 What's New in v0.8
-
-- **Modern Web Interface**: Clean, responsive design accessible from any device
-- **Real-Time Monitoring**: Live progress updates and output streaming during prefetch jobs
-- **Flexible Job Scheduling**: Configure multiple recurring schedules with day/time selectors
-- **Catalog Management**: Load, select, and reorder catalogs with drag-and-drop
-- **Completion Statistics**: Detailed post-job analytics with graphs, timelines, and processing rates
-- **Smart Addon URL Management**: Automatic manifest fetching, URL validation, and name caching
-- **State Persistence**: All configurations and selections persist across sessions
-- **Log Viewer**: Built-in log file viewer with search, view, and delete capabilities
-- **Mobile Debug Panel**: Hidden debug panel for troubleshooting on mobile devices
-- **Docker-Based**: Easy deployment with Docker Compose
-- **Lightweight & Efficient**: Optimized for minimal resource usage
-
-### 🚀 Core Features
-
 - **Intuitive Configuration**: User-friendly forms for all parameters
 - **Drag-and-Drop**: Reorder addon URLs and catalogs with ease
 - **Visual Progress Tracking**: See exactly what's happening in real-time

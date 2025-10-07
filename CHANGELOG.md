@@ -5,6 +5,26 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.4] - 2025-10-07
+
+### Added
+- Addon logo display next to addon names in rows
+- Modern redesigned addon rows matching schedule row styling (gradient backgrounds, glowing borders)
+- Plus icon to Add URL buttons with matching Edit button styling
+
+### Fixed
+- Drag and drop between addon sections (Both/Catalog/Stream) now preserves name and logo
+- Empty space in Addons section after title removal
+
+### Changed
+- Addon name font size increased (18px desktop, 17px mobile)
+- Edit and Delete buttons moved below addon name in vertical layout
+- Removed "🔗 Addon URLs" subsection title
+- Removed catalog selection help text
+- Add URL buttons redesigned to match Edit button style
+
+Closes #21, #22, #23
+
 ## [0.9.3] - 2025-10-06
 
 ### Added
