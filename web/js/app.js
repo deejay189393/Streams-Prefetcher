@@ -1215,7 +1215,6 @@ function renderAddonUrls(addonUrls) {
 function createAddonUrlItem(url, type, index, name = null, forceEdit = false, logo = null) {
     const div = document.createElement('div');
     div.className = 'addon-item';
-    div.draggable = true;
     div.dataset.type = type;
     div.dataset.index = index;
     div.dataset.url = url;
@@ -1226,9 +1225,11 @@ function createAddonUrlItem(url, type, index, name = null, forceEdit = false, lo
     const displayName = name || url;
 
     if (isEditing) {
-        // Editing mode - show input field
+        // Editing mode - show input field, disable dragging
+        div.draggable = false;
+        div.classList.add('addon-item-editing');
         div.innerHTML = `
-            <span class="drag-handle">⋮⋮</span>
+            <span class="drag-handle drag-handle-disabled">⋮⋮</span>
             <div class="addon-content">
                 <input type="url" class="addon-url-input" value="${url}" placeholder="https://addon.example.com">
                 <div class="addon-actions">
@@ -1264,7 +1265,8 @@ function createAddonUrlItem(url, type, index, name = null, forceEdit = false, lo
             }
         });
     } else {
-        // Display mode - show name/URL as read-only
+        // Display mode - show name/URL as read-only, enable dragging
+        div.draggable = true;
         const logoHtml = logo ? `<img src="${logo}" alt="" class="addon-logo" onerror="this.style.display='none'">` : '';
         div.innerHTML = `
             <span class="drag-handle">⋮⋮</span>
@@ -1317,9 +1319,11 @@ function editAddonUrl(btn) {
     const url = div.dataset.url;
     const type = div.dataset.type;
     const index = div.dataset.index;
+    const name = div.dataset.name || null;
+    const logo = div.dataset.logo || null;
 
-    // Recreate item in editing mode (forceEdit = true)
-    const newDiv = createAddonUrlItem(url, type, index, null, true);
+    // Recreate item in editing mode (forceEdit = true), preserve name and logo
+    const newDiv = createAddonUrlItem(url, type, index, name, true, logo);
     div.replaceWith(newDiv);
 }
 
@@ -1513,6 +1517,11 @@ function initializeAddonUrlDragDrop() {
 
 function setupAddonDragDrop(element) {
     element.addEventListener('dragstart', (e) => {
+        // Prevent dragging if element is in edit mode
+        if (element.classList.contains('addon-item-editing') || !element.draggable) {
+            e.preventDefault();
+            return;
+        }
         element.classList.add('dragging');
         const url = element.dataset.url;
         const name = element.dataset.name;
@@ -1669,8 +1678,9 @@ async function saveConfigurationSilent() {
                     // Display mode - get from dataset
                     const url = item.dataset.url;
                     const name = item.dataset.name || null;
+                    const logo = item.dataset.logo || null;
                     if (url && url.trim()) {
-                        addonUrls.push({ url: url.trim(), type, name });
+                        addonUrls.push({ url: url.trim(), type, name, logo });
                     }
                 } else {
                     // Edit mode - skip, don't save incomplete URLs

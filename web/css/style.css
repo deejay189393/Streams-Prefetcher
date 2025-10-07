@@ -536,6 +536,16 @@ input:disabled {
     color: #c7d2fe;
 }
 
+.addon-item-editing {
+    cursor: default !important;
+}
+
+.addon-item-editing .drag-handle-disabled {
+    cursor: not-allowed !important;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
 .addon-item .addon-content {
     flex: 1;
     display: flex;
