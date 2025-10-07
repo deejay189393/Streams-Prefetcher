@@ -458,26 +458,34 @@ function renderSchedulesList() {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     container.innerHTML = currentSchedules.map((schedule, index) => {
-        const daysText = schedule.days.length === 7
-            ? 'Every day'
-            : schedule.days.map(d => dayNames[d]).join(', ');
+        const daysDisplay = schedule.days.length === 7
+            ? '<span class="schedule-day-badge all-days">Every Day</span>'
+            : schedule.days.map(d => `<span class="schedule-day-badge">${dayNames[d]}</span>`).join('');
 
         return `
             <div class="schedule-item">
-                <div class="schedule-info">
-                    <div class="schedule-time">${formatTime(schedule.time)}</div>
-                    <div class="schedule-days">${daysText}</div>
+                <div class="schedule-left">
+                    <div class="schedule-time-display">
+                        <svg class="schedule-clock-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span class="schedule-time">${formatTime(schedule.time)}</span>
+                    </div>
+                    <div class="schedule-days-container">
+                        ${daysDisplay}
+                    </div>
                 </div>
                 <div class="schedule-actions">
-                    <button class="btn-icon edit" onclick="editSchedule(${index})" title="Edit">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button class="btn-schedule-action edit" onclick="editSchedule(${index})" title="Edit">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 20h9"></path>
                             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                         </svg>
                         Edit
                     </button>
-                    <button class="btn-icon delete" onclick="deleteSchedule(${index})" title="Delete">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button class="btn-schedule-action delete" onclick="deleteSchedule(${index})" title="Delete">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="3 6 5 6 21 6"></polyline>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                         </svg>
