@@ -3036,6 +3036,13 @@ function updateRPDBPoster(imdbId, fullTitle) {
     // e.g., "tt26915338:1:1" -> "tt26915338"
     const baseImdbId = imdbId.split(':')[0];
 
+    // Check if this is the same poster as currently displayed
+    const currentBaseImdbId = posterImg.dataset.currentImdbId;
+    if (currentBaseImdbId === baseImdbId) {
+        addDebugLog(`[RPDB] Same series/movie - skipping poster reload (${baseImdbId})`);
+        return; // Don't reload the same poster
+    }
+
     // Build RPDB URL
     const rpdbApiKey = 't0-free-rpdb';
     const posterUrl = `https://api.ratingposterdb.com/${rpdbApiKey}/imdb/poster-default/${baseImdbId}.jpg`;
@@ -3043,30 +3050,56 @@ function updateRPDBPoster(imdbId, fullTitle) {
     addDebugLog(`[RPDB] Original ID: ${imdbId}, Base ID: ${baseImdbId}`);
     addDebugLog(`[RPDB] Fetching poster: ${posterUrl}`);
 
-    // Hide poster until it loads
-    posterImg.style.display = 'none';
+    // Function to load the new poster
+    const loadNewPoster = () => {
+        // Load poster (don't cache - add timestamp to prevent browser caching)
+        posterImg.onload = function() {
+            addDebugLog(`[RPDB] ✅ Poster loaded successfully (${posterImg.naturalWidth}x${posterImg.naturalHeight})`);
+            posterImg.style.display = 'block';
+            // Store the current base IMDb ID to prevent reloading same poster
+            posterImg.dataset.currentImdbId = baseImdbId;
+            // Trigger fade in after display is set
+            setTimeout(() => {
+                posterImg.classList.add('visible');
+            }, 10);
+        };
 
-    // Load poster (don't cache - add timestamp to prevent browser caching)
-    posterImg.onload = function() {
-        addDebugLog(`[RPDB] ✅ Poster loaded successfully (${posterImg.naturalWidth}x${posterImg.naturalHeight})`);
-        posterImg.style.display = 'block';
+        posterImg.onerror = function(e) {
+            addDebugLog(`[RPDB] ❌ Poster failed to load: ${posterUrl}`);
+            addDebugLog(`[RPDB] Error type: ${e.type}, target: ${e.target.tagName}`);
+            // Try without cache-busting to see if that helps
+            if (posterImg.src.includes('?t=')) {
+                addDebugLog('[RPDB] Retrying without cache-busting parameter...');
+                posterImg.src = posterUrl;
+            } else {
+                // Hide poster if load fails
+                posterImg.classList.remove('visible');
+                setTimeout(() => {
+                    posterImg.style.display = 'none';
+                }, 500);
+            }
+        };
+
+        // Set source with cache-busting parameter
+        posterImg.src = posterUrl + '?t=' + Date.now();
     };
 
-    posterImg.onerror = function(e) {
-        addDebugLog(`[RPDB] ❌ Poster failed to load: ${posterUrl}`);
-        addDebugLog(`[RPDB] Error type: ${e.type}, target: ${e.target.tagName}`);
-        // Try without cache-busting to see if that helps
-        if (posterImg.src.includes('?t=')) {
-            addDebugLog('[RPDB] Retrying without cache-busting parameter...');
-            posterImg.src = posterUrl;
-        } else {
-            // Hide poster if load fails
+    // Check if there's a currently visible poster
+    const isCurrentlyVisible = posterImg.classList.contains('visible');
+
+    if (isCurrentlyVisible) {
+        // Fade out existing poster first
+        addDebugLog('[RPDB] Fading out existing poster...');
+        posterImg.classList.remove('visible');
+        // Wait for fade out to complete, then load new poster
+        setTimeout(() => {
             posterImg.style.display = 'none';
-        }
-    };
-
-    // Set source with cache-busting parameter
-    posterImg.src = posterUrl + '?t=' + Date.now();
+            loadNewPoster();
+        }, 500);
+    } else {
+        // No existing poster, load immediately
+        loadNewPoster();
+    }
 }
 
 /**
@@ -3074,6 +3107,12 @@ function updateRPDBPoster(imdbId, fullTitle) {
  */
 function hideRPDBPoster() {
     const container = document.getElementById('currently-prefetching');
+    const posterImg = document.getElementById('current-poster');
+
+    // Remove visible class and hide container
+    posterImg.classList.remove('visible');
+    // Clear the stored IMDb ID
+    delete posterImg.dataset.currentImdbId;
     container.style.display = 'none';
 }
 
