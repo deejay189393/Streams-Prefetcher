@@ -1934,16 +1934,31 @@ function startTerminateCountdown() {
     }, 100);
 }
 
-function cancelTerminateCountdown() {
+function resetTerminateButton(force = false) {
+    // Only reset if countdown is active (user released early) OR if forced (new job starting)
+    if (!force && !terminateCountdownInterval) {
+        return;
+    }
+
     if (terminateCountdownInterval) {
         clearInterval(terminateCountdownInterval);
         terminateCountdownInterval = null;
         terminateStartTime = null;
+    }
 
-        const btn = document.getElementById('terminate-btn');
-        btn.textContent = 'Terminate';
+    const btn = document.getElementById('terminate-btn');
+    if (btn) {
+        btn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+            Terminate
+        `;
         btn.classList.remove('terminating', 'pulsating');
         btn.style.removeProperty('--pulse-duration');
+        btn.disabled = false;
     }
 }
 
@@ -2474,6 +2489,9 @@ function updateJobStatusUI(status, caller = 'unknown') {
         // Continue to show completion screen with partial results
     }
 
+    // Save termination status before normalizing (for completion screen title)
+    const wasTerminated = status.status === 'cancelled';
+
     // Normalize cancelled to completed for display
     if (status.status === 'cancelled') {
         addDebugLog(`    ═══════════════════════════════════════════════════════════`);
@@ -2565,6 +2583,9 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     document.querySelector('.current-action').textContent = `Processing ${firstEnabledCatalog.name}`;
                 }
             }
+
+            // Reset terminate button to original state (force reset for new job)
+            resetTerminateButton(true);
         }
 
         // Always update progress even if screen already visible
@@ -2588,6 +2609,18 @@ function updateJobStatusUI(status, caller = 'unknown') {
                 try {
                     addDebugLog(`📊 [COMPLETION STATS] ═══════════════════════════════════════`);
                     addDebugLog(`📊 [COMPLETION STATS] Starting to populate completion screen...`);
+
+                    // Set title and subtitle based on termination status
+                    const titleElement = document.getElementById('completion-title');
+                    const subtitleElement = document.getElementById('completion-subtitle');
+
+                    if (wasTerminated) {
+                        titleElement.textContent = 'Prefetch Terminated';
+                        subtitleElement.textContent = 'Job was terminated by user';
+                    } else {
+                        titleElement.textContent = 'Prefetch Complete!';
+                        subtitleElement.textContent = 'All operations completed successfully';
+                    }
 
                     // WORKAROUND: Backend doesn't populate timing on cancellation, construct it ourselves
                     let timing = status.summary.timing || {};
