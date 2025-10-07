@@ -16,10 +16,12 @@ class StreamsPrefetcherWrapper:
     def __init__(
         self,
         config_manager: ConfigManager,
+        scheduler = None,
         progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
         output_callback: Optional[Callable[[str], None]] = None
     ):
         self.config_manager = config_manager
+        self.scheduler = scheduler
         self.progress_callback = progress_callback
         self.output_callback = output_callback
         self.prefetcher = None
@@ -86,7 +88,7 @@ class StreamsPrefetcherWrapper:
             args = self._parse_config_to_args()
 
             # Create prefetcher instance with filtering support
-            self.prefetcher = FilteredStreamsPrefetcher(**args)
+            self.prefetcher = FilteredStreamsPrefetcher(scheduler=self.scheduler, **args)
 
             # Optionally wrap progress tracker methods to provide callbacks
             if self.progress_callback:

@@ -641,6 +641,40 @@ def cancel_job():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/job/pause', methods=['POST'])
+def pause_job():
+    """Pause running job"""
+    try:
+        success, message = job_scheduler.pause_job()
+
+        if success:
+            logger.info("Job paused via API")
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'error': message}), 400
+
+    except Exception as e:
+        logger.error(f"Error pausing job: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/job/resume', methods=['POST'])
+def resume_job():
+    """Resume paused job"""
+    try:
+        success, message = job_scheduler.resume_job()
+
+        if success:
+            logger.info("Job resumed via API")
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'error': message}), 400
+
+    except Exception as e:
+        logger.error(f"Error resuming job: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/job/output', methods=['GET'])
 def get_job_output():
     """Get job output (paginated)"""

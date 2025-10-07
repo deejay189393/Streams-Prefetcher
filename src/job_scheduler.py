@@ -28,6 +28,7 @@ class JobStatus:
     IDLE = "idle"
     SCHEDULED = "scheduled"
     RUNNING = "running"
+    PAUSED = "paused"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -60,6 +61,9 @@ class JobScheduler:
         self.job_end_time = None
         self.job_error = None
         self.job_summary = None  # Store completion summary
+        self.is_paused = False  # Pause state flag
+        self.pause_event = threading.Event()  # Efficient pause/resume signaling
+        self.pause_event.set()  # Start unpaused (set = not paused)
 
         # Log startup state
         logger.info("JobScheduler initialized - job status reset to IDLE")
@@ -256,6 +260,8 @@ class JobScheduler:
         self.job_end_time = None
         self.job_error = None
         self.job_summary = None
+        self.is_paused = False  # Reset pause state
+        self.pause_event.set()  # Ensure not paused (set = not paused)
 
         logger.info("=" * 60)
         logger.info("PREFETCH JOB STARTING")
@@ -287,6 +293,7 @@ class JobScheduler:
             # Create wrapper BEFORE capturing stdout to see any errors
             self.wrapper = StreamsPrefetcherWrapper(
                 self.config_manager,
+                scheduler=self,
                 progress_callback=self._update_progress,
                 output_callback=self._append_output
             )
@@ -429,8 +436,8 @@ class JobScheduler:
         return status_data
 
     def cancel_job(self):
-        """Cancel running job by injecting KeyboardInterrupt into the thread"""
-        if self.job_status == JobStatus.RUNNING and self.job_thread and self.job_thread.is_alive():
+        """Cancel running or paused job by injecting KeyboardInterrupt into the thread"""
+        if (self.job_status == JobStatus.RUNNING or self.job_status == JobStatus.PAUSED) and self.job_thread and self.job_thread.is_alive():
             # Inject KeyboardInterrupt into the running thread
             # This allows the wrapper to catch it and return partial results
             try:
@@ -465,6 +472,42 @@ class JobScheduler:
                 logger.error(f"Error cancelling job: {e}")
                 return False
         return False
+
+    def pause_job(self):
+        """Pause running job"""
+        if self.job_status == JobStatus.RUNNING:
+            self.is_paused = True
+            self.pause_event.clear()  # Signal to pause (clear = paused)
+            self.job_status = JobStatus.PAUSED
+
+            logger.info("Job paused")
+
+            # Notify callbacks
+            self._notify_callbacks('status_change', {
+                'status': self.job_status,
+                'start_time': self.job_start_time
+            })
+
+            return True, "Job paused"
+        return False, "No running job to pause"
+
+    def resume_job(self):
+        """Resume paused job"""
+        if self.job_status == JobStatus.PAUSED:
+            self.is_paused = False
+            self.pause_event.set()  # Signal to resume (set = not paused)
+            self.job_status = JobStatus.RUNNING
+
+            logger.info("Job resumed")
+
+            # Notify callbacks
+            self._notify_callbacks('status_change', {
+                'status': self.job_status,
+                'start_time': self.job_start_time
+            })
+
+            return True, "Job resumed"
+        return False, "No paused job to resume"
 
     def shutdown(self):
         """Shutdown scheduler"""

@@ -569,8 +569,9 @@ def format_time_string(seconds: float) -> str:
         return " ".join(parts)
 
 class StreamsPrefetcher:
-    def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False):
+    def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False, scheduler=None):
         self.addon_urls = addon_urls
+        self.scheduler = scheduler
         self.movies_global_limit = movies_global_limit
         self.series_global_limit = series_global_limit
         self.movies_per_catalog = movies_per_catalog
@@ -1039,6 +1040,10 @@ class StreamsPrefetcher:
                 
                 item_statuses_on_page = []
                 for item in metas:
+                    # Efficient pause check using Event.wait() - blocks without busy-waiting
+                    if self.scheduler:
+                        self.scheduler.pause_event.wait()  # Blocks if paused, returns immediately if not
+
                     if per_catalog_limit != -1 and prefetched_in_this_catalog >= per_catalog_limit: break
                     item_type = item.get('type')
                     if item_type == 'movie' and self.movies_global_limit != -1 and self.prefetched_movies_count >= self.movies_global_limit: continue
