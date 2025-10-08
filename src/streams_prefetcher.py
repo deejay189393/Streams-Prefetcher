@@ -1127,11 +1127,11 @@ class StreamsPrefetcher:
                         if (cached_episodes / len(episodes)) >= 0.75: cached_count += 1; self.prefetched_cached_count += 1; item_statuses_on_page.append('cached'); continue
                         series_had_success = False
                         for ep in episodes:
-                            if self.is_cache_valid(ep['id']): continue
+                            # Check if paused BEFORE starting new episode (wait if paused)
+                            if self.scheduler:
+                                self.scheduler.pause_event.wait()  # Blocks if paused, returns immediately if not
 
-                            # Check time limit before starting HTTP request
-                            if self._check_time_limit():
-                                break
+                            if self.is_cache_valid(ep['id']): continue
 
                             ep_title = self.get_formatted_episode_title(item, ep['season'], ep['episode'])
                             dashboard_args['item_statuses'] = item_statuses_on_page # Ensure dashboard has latest statuses
@@ -1141,6 +1141,19 @@ class StreamsPrefetcher:
                                 current_item_type='episode',
                                 **dashboard_args
                             )
+
+                            # Check if pause was requested BEFORE prefetching (after showing UI)
+                            if self.scheduler and self.scheduler.pause_requested:
+                                # UI already shows this episode (poster, name, etc.)
+                                # Now pause before prefetching it
+                                self.scheduler.complete_pause()
+                                # This will block here until resumed
+                                self.scheduler.pause_event.wait()
+
+                            # Check time limit before starting HTTP request
+                            if self._check_time_limit():
+                                break
+
                             if self.prefetch_streams(ep['id'], 'series'):
                                self.update_cache(ep['id'], ep_title); series_had_success = True; self.prefetched_episodes_count += 1
 
