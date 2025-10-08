@@ -5,6 +5,14 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1] - 2025-10-07
+
+### Fixed
+- Job status getting permanently stuck in CANCELLED state when termination thread hangs on blocking network operations
+- "Failed to start prefetch job: Job is being cancelled" error preventing new jobs from starting
+- Added 30-second timeout to auto-reset stuck CANCELLED jobs to IDLE state
+- Improved cancellation cleanup to prevent indefinite job blocking
+
 ## [0.10.0] - 2025-10-07
 
 ### Added
