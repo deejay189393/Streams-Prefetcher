@@ -1040,7 +1040,7 @@ class StreamsPrefetcher:
                 
                 item_statuses_on_page = []
                 for item in metas:
-                    # Efficient pause check using Event.wait() - blocks without busy-waiting
+                    # Check if paused BEFORE starting new item (wait if paused)
                     if self.scheduler:
                         self.scheduler.pause_event.wait()  # Blocks if paused, returns immediately if not
 
@@ -1084,6 +1084,14 @@ class StreamsPrefetcher:
                         if not imdb_id: failed_count += 1; item_statuses_on_page.append('failed'); continue
                         if self.is_cache_valid(imdb_id): cached_count += 1; self.prefetched_cached_count += 1; item_statuses_on_page.append('cached'); continue
 
+                        # Check if pause was requested BEFORE prefetching (after showing UI)
+                        if self.scheduler and self.scheduler.pause_requested:
+                            # UI already shows this item (poster, name, etc.)
+                            # Now pause before prefetching it
+                            self.scheduler.complete_pause()
+                            # This will block here until resumed
+                            self.scheduler.pause_event.wait()
+
                         # Check time limit before starting HTTP request
                         if self._check_time_limit():
                             break
@@ -1103,6 +1111,15 @@ class StreamsPrefetcher:
                             **dashboard_args
                         )
                         if not series_imdb_id: failed_count += 1; item_statuses_on_page.append('failed'); continue
+
+                        # Check if pause was requested BEFORE prefetching (after showing UI)
+                        if self.scheduler and self.scheduler.pause_requested:
+                            # UI already shows this series (poster, name, etc.)
+                            # Now pause before prefetching it
+                            self.scheduler.complete_pause()
+                            # This will block here until resumed
+                            self.scheduler.pause_event.wait()
+
                         episodes = self.get_series_episodes(series_imdb_id, cat_addon_url)
                         if not episodes: failed_count += 1; item_statuses_on_page.append('failed'); continue
                         self.results['statistics']['episodes_found'] += len(episodes)

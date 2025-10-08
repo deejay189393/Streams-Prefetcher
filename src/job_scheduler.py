@@ -28,7 +28,9 @@ class JobStatus:
     IDLE = "idle"
     SCHEDULED = "scheduled"
     RUNNING = "running"
+    PAUSING = "pausing"
     PAUSED = "paused"
+    RESUMING = "resuming"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -61,7 +63,8 @@ class JobScheduler:
         self.job_end_time = None
         self.job_error = None
         self.job_summary = None  # Store completion summary
-        self.is_paused = False  # Pause state flag
+        self.pause_requested = False  # Flag to request pause after current item
+        self.is_paused = False  # Actual pause state flag
         self.pause_event = threading.Event()  # Efficient pause/resume signaling
         self.pause_event.set()  # Start unpaused (set = not paused)
 
@@ -253,13 +256,30 @@ class JobScheduler:
             self.output_lines = []
 
         with self.progress_lock:
-            self.progress_data = {}
+            # Initialize progress with known config values so frontend has data immediately
+            config = self.config_manager.get_all()
+            self.progress_data = {
+                'movies_prefetched': 0,
+                'movies_limit': config.get('movies_global_limit', -1),
+                'series_prefetched': 0,
+                'series_limit': config.get('series_global_limit', -1),
+                'episodes_prefetched': 0,
+                'cached_count': 0,
+                'mode': 'starting',
+                'catalog_name': '',
+                'catalog_mode': '',
+                'completed_catalogs': 0,
+                'total_catalogs': 0,
+                'current_catalog_items': 0,
+                'current_catalog_limit': -1
+            }
 
         self.job_status = JobStatus.RUNNING
         self.job_start_time = time.time()
         self.job_end_time = None
         self.job_error = None
         self.job_summary = None
+        self.pause_requested = False  # Reset pause request
         self.is_paused = False  # Reset pause state
         self.pause_event.set()  # Ensure not paused (set = not paused)
 
@@ -436,8 +456,8 @@ class JobScheduler:
         return status_data
 
     def cancel_job(self):
-        """Cancel running or paused job by injecting KeyboardInterrupt into the thread"""
-        if (self.job_status == JobStatus.RUNNING or self.job_status == JobStatus.PAUSED) and self.job_thread and self.job_thread.is_alive():
+        """Cancel running, pausing, or paused job by injecting KeyboardInterrupt into the thread"""
+        if (self.job_status in [JobStatus.RUNNING, JobStatus.PAUSING, JobStatus.PAUSED, JobStatus.RESUMING]) and self.job_thread and self.job_thread.is_alive():
             # Inject KeyboardInterrupt into the running thread
             # This allows the wrapper to catch it and return partial results
             try:
@@ -474,36 +494,70 @@ class JobScheduler:
         return False
 
     def pause_job(self):
-        """Pause running job"""
+        """Request pause for running job - will pause after current item finishes"""
         if self.job_status == JobStatus.RUNNING:
-            self.is_paused = True
-            self.pause_event.clear()  # Signal to pause (clear = paused)
-            self.job_status = JobStatus.PAUSED
+            # Signal pause requested - will pause after current item
+            self.pause_requested = True
+            self.job_status = JobStatus.PAUSING
 
-            logger.info("Job paused")
+            logger.info("Pause requested - will pause after current item finishes")
 
-            # Notify callbacks
+            # Notify callbacks with PAUSING status and current progress
             self._notify_callbacks('status_change', {
                 'status': self.job_status,
-                'start_time': self.job_start_time
+                'start_time': self.job_start_time,
+                'progress': self.get_progress()
             })
 
-            return True, "Job paused"
+            return True, "Pause requested"
         return False, "No running job to pause"
+
+    def complete_pause(self):
+        """Complete the pause transition (called by prefetcher after current item finishes)"""
+        if self.job_status == JobStatus.PAUSING:
+            self.is_paused = True
+            self.pause_requested = False
+            self.pause_event.clear()  # Actually pause (clear = paused)
+            self.job_status = JobStatus.PAUSED
+
+            logger.info("Job paused - current item completed")
+
+            # Notify callbacks with PAUSED status and current progress
+            self._notify_callbacks('status_change', {
+                'status': self.job_status,
+                'start_time': self.job_start_time,
+                'progress': self.get_progress()
+            })
+
+            return True
 
     def resume_job(self):
         """Resume paused job"""
         if self.job_status == JobStatus.PAUSED:
+            # Transition through RESUMING state
+            self.job_status = JobStatus.RESUMING
+
+            logger.info("Resuming job...")
+
+            # Notify callbacks with RESUMING status and current progress
+            self._notify_callbacks('status_change', {
+                'status': self.job_status,
+                'start_time': self.job_start_time,
+                'progress': self.get_progress()
+            })
+
+            # Actually resume
             self.is_paused = False
             self.pause_event.set()  # Signal to resume (set = not paused)
             self.job_status = JobStatus.RUNNING
 
             logger.info("Job resumed")
 
-            # Notify callbacks
+            # Notify callbacks with RUNNING status and current progress
             self._notify_callbacks('status_change', {
                 'status': self.job_status,
-                'start_time': self.job_start_time
+                'start_time': self.job_start_time,
+                'progress': self.get_progress()
             })
 
             return True, "Job resumed"

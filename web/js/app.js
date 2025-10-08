@@ -2004,7 +2004,7 @@ function resetTerminateButton(force = false) {
     const btn = document.getElementById('terminate-btn');
     if (btn) {
         btn.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="18" height="18" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="15" y1="9" x2="9" y2="15"></line>
                 <line x1="9" y1="9" x2="15" y2="15"></line>
@@ -2078,7 +2078,7 @@ async function pauseJob() {
     // Disable button and show "Pausing..." (keep pause icon)
     btn.disabled = true;
     btn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <svg width="18" height="18" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="4" width="4" height="16" rx="1"/>
             <rect x="14" y="4" width="4" height="16" rx="1"/>
         </svg>
@@ -2094,7 +2094,7 @@ async function pauseJob() {
             showNotification(data.error || 'Failed to pause', 'error');
             btn.disabled = false;
             btn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="18" height="18" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
                     <rect x="6" y="4" width="4" height="16" rx="1"/>
                     <rect x="14" y="4" width="4" height="16" rx="1"/>
                 </svg>
@@ -2107,7 +2107,7 @@ async function pauseJob() {
         showNotification('Error pausing job', 'error');
         btn.disabled = false;
         btn.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="18" height="18" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
                 <rect x="6" y="4" width="4" height="16" rx="1"/>
                 <rect x="14" y="4" width="4" height="16" rx="1"/>
             </svg>
@@ -2123,7 +2123,7 @@ async function resumeJob() {
     // Disable button and show "Resuming..." (keep play icon)
     btn.disabled = true;
     btn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <svg width="18" height="18" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8 5v14l11-7z"/>
         </svg>
         Resuming...
@@ -2138,7 +2138,7 @@ async function resumeJob() {
             showNotification(data.error || 'Failed to resume', 'error');
             btn.disabled = false;
             btn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="18" height="18" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8 5v14l11-7z"/>
                 </svg>
                 Resume
@@ -2150,7 +2150,7 @@ async function resumeJob() {
         showNotification('Error resuming job', 'error');
         btn.disabled = false;
         btn.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="18" height="18" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8 5v14l11-7z"/>
             </svg>
             Resume
@@ -2655,8 +2655,8 @@ function updateJobStatusUI(status, caller = 'unknown') {
         status.status = 'completed';
     }
 
-    // Determine which screen to show (paused uses running screen)
-    const displayStatus = status.status === 'paused' ? 'running' : status.status;
+    // Determine which screen to show (paused/pausing/resuming all use running screen)
+    const displayStatus = ['paused', 'pausing', 'resuming'].includes(status.status) ? 'running' : status.status;
     const targetScreenId = `status-${displayStatus}`;
     const targetScreen = document.getElementById(targetScreenId);
 
@@ -2737,18 +2737,21 @@ function updateJobStatusUI(status, caller = 'unknown') {
             resetTerminateButton(true);
         }
 
-        // Restore running icon (in case we came from paused)
+        // Restore running icon with smooth transition (in case we came from paused)
         const runningIcon = document.querySelector('#status-running .status-icon');
         if (runningIcon && runningIcon.classList.contains('paused-icon')) {
-            runningIcon.className = 'status-icon running-icon';
-            runningIcon.innerHTML = `
-                <div class="spinner-ring"></div>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-            `;
+            runningIcon.classList.add('icon-transitioning');
+            setTimeout(() => {
+                runningIcon.className = 'status-icon running-icon';
+                runningIcon.innerHTML = `
+                    <div class="spinner-ring"></div>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                `;
+            }, 200);
         }
 
         // Restore "Prefetch in Progress" text (in case we came from paused)
@@ -2766,7 +2769,7 @@ function updateJobStatusUI(status, caller = 'unknown') {
             resumeBtn.className = 'btn-modern btn-pause';
             resumeBtn.onclick = pauseJob;
             resumeBtn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="18" height="18" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
                     <rect x="6" y="4" width="4" height="16" rx="1"/>
                     <rect x="14" y="4" width="4" height="16" rx="1"/>
                 </svg>
@@ -2781,6 +2784,24 @@ function updateJobStatusUI(status, caller = 'unknown') {
         // Disable Start Now buttons when running
         const startNowBtns = document.querySelectorAll('[id^="start-now-btn"]');
         startNowBtns.forEach(btn => btn.disabled = true);
+    } else if (status.status === 'pausing') {
+        // PAUSING: Show running screen, keep pause button disabled with "Pausing..." text
+        if (!isTargetAlreadyVisible) {
+            addDebugLog(`🔄 [UI UPDATE] ✅ Showing RUNNING screen (pausing state)`);
+            document.getElementById('status-running').style.display = 'block';
+            logStatusScreens();
+        }
+
+        // Keep pause button showing "Pausing..." (already set by pauseJob function)
+        // Button remains disabled until backend confirms paused state
+
+        // Update progress to keep bars and current item visible
+        // Backend sends progress with next item info before transitioning to paused
+        updateProgressInfo(status.progress);
+
+        // Disable Start Now buttons when pausing
+        const startNowBtnsPausing = document.querySelectorAll('[id^="start-now-btn"]');
+        startNowBtnsPausing.forEach(btn => btn.disabled = true);
     } else if (status.status === 'paused') {
         // PAUSED: Only change 3 things, LEAVE EVERYTHING ELSE ALONE
         if (!isTargetAlreadyVisible) {
@@ -2789,16 +2810,24 @@ function updateJobStatusUI(status, caller = 'unknown') {
             logStatusScreens();
         }
 
-        // 1. Change big icon to paused icon
+        // DEBUG: Log progress data
+        addDebugLog(`[PAUSED] Progress data: ${JSON.stringify(status.progress)}`);
+        addDebugLog(`[PAUSED] Progress keys: ${Object.keys(status.progress || {}).join(', ')}`);
+        addDebugLog(`[PAUSED] Progress has data: ${status.progress && Object.keys(status.progress).length > 0}`);
+
+        // 1. Change big icon to paused icon with smooth transition
         const runningIcon = document.querySelector('#status-running .status-icon');
         if (runningIcon && !runningIcon.classList.contains('paused-icon')) {
-            runningIcon.className = 'status-icon paused-icon';
-            runningIcon.innerHTML = `
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="6" y="4" width="4" height="16" rx="1"/>
-                    <rect x="14" y="4" width="4" height="16" rx="1"/>
-                </svg>
-            `;
+            runningIcon.classList.add('icon-transitioning');
+            setTimeout(() => {
+                runningIcon.className = 'status-icon paused-icon';
+                runningIcon.innerHTML = `
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="4" width="4" height="16" rx="1"/>
+                        <rect x="14" y="4" width="4" height="16" rx="1"/>
+                    </svg>
+                `;
+            }, 200);
         }
 
         // 2. Change "Prefetch in Progress" to "Prefetch Paused"
@@ -2814,7 +2843,7 @@ function updateJobStatusUI(status, caller = 'unknown') {
             pauseBtn.className = 'btn-modern btn-resume';
             pauseBtn.onclick = resumeJob;
             pauseBtn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="18" height="18" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8 5v14l11-7z"/>
                 </svg>
                 Resume
@@ -2822,11 +2851,31 @@ function updateJobStatusUI(status, caller = 'unknown') {
             pauseBtn.disabled = false;
         }
 
-        // DON'T TOUCH ANYTHING ELSE - LEAVE PROGRESS FROZEN AS-IS
+        // Keep progress bars and current item info visible with frozen values
+        // (Backend sent final progress before transitioning to paused)
+        // Pass preserveActionText=true to keep "Prefetch Paused" text
+        updateProgressInfo(status.progress, true);
 
         // Disable Start Now buttons when paused
         const startNowBtns2 = document.querySelectorAll('[id^="start-now-btn"]');
         startNowBtns2.forEach(btn => btn.disabled = true);
+    } else if (status.status === 'resuming') {
+        // RESUMING: Show running screen, keep resume button disabled with "Resuming..." text
+        if (!isTargetAlreadyVisible) {
+            addDebugLog(`🔄 [UI UPDATE] ✅ Showing RUNNING screen (resuming state)`);
+            document.getElementById('status-running').style.display = 'block';
+            logStatusScreens();
+        }
+
+        // Keep resume button showing "Resuming..." (already set by resumeJob function)
+        // Button remains disabled until backend confirms running state
+
+        // Keep progress info visible
+        updateProgressInfo(status.progress);
+
+        // Disable Start Now buttons when resuming
+        const startNowBtnsResuming = document.querySelectorAll('[id^="start-now-btn"]');
+        startNowBtnsResuming.forEach(btn => btn.disabled = true);
     } else if (status.status === 'completed') {
         const completedDisplay = document.getElementById('status-completed');
 
@@ -3008,8 +3057,8 @@ function updateJobStatusUI(status, caller = 'unknown') {
         }
     }
 
-    // Disable config changes if running or paused
-    const isRunning = status.status === 'running' || status.status === 'paused';
+    // Disable config changes if running, pausing, paused, or resuming
+    const isRunning = ['running', 'pausing', 'paused', 'resuming'].includes(status.status);
     const saveConfigBtn = document.getElementById('save-config-btn');
     if (saveConfigBtn) {
         saveConfigBtn.disabled = isRunning;
@@ -3039,8 +3088,13 @@ function updateNextRunInfo(status) {
     }
 }
 
-function updateProgressInfo(progress) {
+function updateProgressInfo(progress, preserveActionText = false) {
+    addDebugLog(`[updateProgressInfo] Called with preserveActionText=${preserveActionText}`);
+    addDebugLog(`[updateProgressInfo] Progress is null/undefined: ${!progress}`);
+    addDebugLog(`[updateProgressInfo] Progress keys count: ${progress ? Object.keys(progress).length : 0}`);
+
     if (!progress || Object.keys(progress).length === 0) {
+        addDebugLog(`[updateProgressInfo] ❌ Progress is empty! Resetting to defaults.`);
         // Reset to starting state
         document.getElementById('stat-movies').textContent = '0';
         document.getElementById('stat-movies-limit').textContent = 'of ∞';
@@ -3058,12 +3112,16 @@ function updateProgressInfo(progress) {
         document.getElementById('catalog-progress-label').textContent = '0 of 0 items';
 
         document.getElementById('current-catalog-name').textContent = '-';
-        document.querySelector('.current-action').textContent = 'Starting...';
+        if (!preserveActionText) {
+            document.querySelector('.current-action').textContent = 'Starting...';
+        }
 
         // Hide page fetch status
         document.getElementById('page-fetch-status').style.display = 'none';
         return;
     }
+
+    addDebugLog(`[updateProgressInfo] ✅ Progress has data! Updating UI...`);
 
     // Update stat cards
     const moviesPrefetched = progress.movies_prefetched || 0;
@@ -3087,21 +3145,28 @@ function updateProgressInfo(progress) {
     const currentTitle = progress.current_title || '';
     const imdbId = progress.current_imdb_id;
     const itemType = progress.current_item_type;
+
+    // Define catalog variables outside conditional blocks (needed later)
+    const catalogName = progress.catalog_name || 'Unknown';
+    const catalogMode = progress.catalog_mode || '';
+
     if (imdbId && (itemType === 'movie' || itemType === 'series' || itemType === 'episode')) {
         updateRPDBPoster(imdbId, currentTitle);
-        // Hide the current action text when showing poster
-        document.querySelector('.current-action').style.display = 'none';
+        // Hide the current action text when showing poster (unless preserving it for paused state)
+        if (!preserveActionText) {
+            document.querySelector('.current-action').style.display = 'none';
+        }
     } else {
         hideRPDBPoster();
-        // Show catalog processing info when not showing poster
-        document.querySelector('.current-action').style.display = 'block';
-        const catalogName = progress.catalog_name || 'Unknown';
-        const catalogMode = progress.catalog_mode || '';
-        let actionText = `Processing ${catalogName}`;
-        if (catalogMode) {
-            actionText += ` (${catalogMode})`;
+        // Show catalog processing info when not showing poster (unless preserving text for paused state)
+        if (!preserveActionText) {
+            document.querySelector('.current-action').style.display = 'block';
+            let actionText = `Processing ${catalogName}`;
+            if (catalogMode) {
+                actionText += ` (${catalogMode})`;
+            }
+            document.querySelector('.current-action').textContent = actionText;
         }
-        document.querySelector('.current-action').textContent = actionText;
     }
 
     // Update current catalog name with type
@@ -3145,6 +3210,8 @@ function updateProgressInfo(progress) {
     const totalCatalogs = progress.total_catalogs || 1;
     const overallPercent = Math.round((completedCatalogs / totalCatalogs) * 100);
 
+    addDebugLog(`[updateProgressInfo] Overall Progress: ${completedCatalogs} of ${totalCatalogs} catalogs (${overallPercent}%)`);
+
     document.getElementById('overall-progress-fill').style.width = `${overallPercent}%`;
     document.getElementById('overall-progress-percent').textContent = `${overallPercent}%`;
     document.getElementById('overall-progress-label').textContent = `${completedCatalogs} of ${totalCatalogs} catalogs`;
@@ -3166,6 +3233,8 @@ function updateProgressInfo(progress) {
     } else {
         catalogLabel = '0 of 0 items';
     }
+
+    addDebugLog(`[updateProgressInfo] Current Catalog: ${catalogLabel} (${catalogPercent}%)`);
 
     document.getElementById('catalog-progress-fill').style.width = `${catalogPercent}%`;
     document.getElementById('catalog-progress-percent').textContent = `${catalogPercent}%`;
