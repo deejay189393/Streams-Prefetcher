@@ -5,6 +5,35 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2025-10-07
+
+### Added
+- **Pause/Resume Functionality**: Full support for pausing and resuming prefetch sessions
+  - New Pause button in running screen to pause job after current item completes
+  - Smooth state transitions: Pause → Pausing... → Paused, Resume → Resuming... → Running
+  - Visual pause indicator (yellow pause icon replaces download spinner)
+  - "Prefetch Paused" status text while paused
+  - Progress bars and current item info remain visible when paused
+  - Individual episode pause support - pauses after current episode, not entire series
+  - Next item shown in UI before pausing for clear resume context
+  - New job states: PAUSING, PAUSED, RESUMING
+  - Backend pause_event signaling for efficient thread coordination
+
+### Fixed
+- Progress bars showing "0 of 0" due to catalogMode variable scope issue
+- Button icon sizes shrinking during state transitions (added explicit flex-shrink prevention)
+- Empty progress_data on job start causing missing progress bar updates
+- Series prefetching waiting for entire series instead of individual episodes when paused
+- Time limit check order now matches between movies and episodes
+
+### Changed
+- Progress data initialized with config values immediately on job start
+- Terminate button works during all pause/resume states
+- Configuration changes disabled during pausing/paused/resuming states
+- Added preserveActionText parameter to maintain "Prefetch Paused" text
+
+Closes #15
+
 ## [0.9.5] - 2025-10-07
 
 ### Added
