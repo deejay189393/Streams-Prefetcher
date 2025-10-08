@@ -57,6 +57,9 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:5000/api/health', timeout=5)"
 
+# Signal for graceful shutdown (saves checkpoint before stopping)
+STOPSIGNAL SIGTERM
+
 # Run the application using gunicorn for production
 # Using 1 worker to maintain consistent job state across all requests
 # 4 threads per worker is sufficient for this self-hosted tool

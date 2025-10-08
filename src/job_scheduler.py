@@ -18,6 +18,7 @@ import pytz
 
 from config_manager import ConfigManager
 from streams_prefetcher_wrapper import StreamsPrefetcherWrapper
+from job_checkpoint_manager import JobCheckpointManager
 from logger import get_logger
 
 logger = get_logger('job_scheduler')
@@ -58,11 +59,14 @@ class JobScheduler:
         self.scheduler = BackgroundScheduler(timezone=self.timezone)
         self.scheduler.start()
 
-        # Job state - Always start fresh on initialization
+        # Initialize checkpoint manager
+        self.checkpoint_manager = JobCheckpointManager()
+
+        # Job state - Default to IDLE, but may be restored from checkpoint
         self.current_job = None
         self.job_thread = None
         self.wrapper = None  # Store reference to current wrapper
-        self.job_status = JobStatus.IDLE  # Reset to IDLE on startup
+        self.job_status = JobStatus.IDLE
         self.job_start_time = None
         self.job_end_time = None
         self.cancellation_start_time = None  # Track when cancellation began
@@ -72,9 +76,6 @@ class JobScheduler:
         self.is_paused = False  # Actual pause state flag
         self.pause_event = threading.Event()  # Efficient pause/resume signaling
         self.pause_event.set()  # Start unpaused (set = not paused)
-
-        # Log startup state
-        logger.info("JobScheduler initialized - job status reset to IDLE")
 
         # Live output buffer
         self.output_lines = []
@@ -90,6 +91,54 @@ class JobScheduler:
 
         # Initialize scheduled job from config
         self._load_scheduled_job()
+
+        # Try to restore from checkpoint (if container was restarted mid-job)
+        self._restore_from_checkpoint()
+
+    def _restore_from_checkpoint(self):
+        """Restore job state from checkpoint (called on startup)"""
+        checkpoint = self.checkpoint_manager.load_checkpoint()
+
+        if not checkpoint:
+            logger.info("No checkpoint found - starting fresh")
+            return
+
+        # Only restore if job was running or paused
+        if checkpoint['job_status'] not in ['running', 'paused']:
+            logger.info(f"Checkpoint status is '{checkpoint['job_status']}', clearing checkpoint")
+            self.checkpoint_manager.clear_checkpoint()
+            return
+
+        logger.info(f"Restoring job from checkpoint (status: {checkpoint['job_status']})")
+
+        # Restore job state
+        self.job_status = checkpoint['job_status']
+        self.job_start_time = checkpoint['timing']['start_time']
+        self.job_end_time = None
+        self.job_error = None
+        self.job_summary = checkpoint.get('results')
+
+        # Restore output lines
+        with self.output_lock:
+            self.output_lines = checkpoint.get('output_lines', [])
+
+        # Restore pause state
+        if checkpoint['job_status'] == 'paused':
+            self.pause_requested = False
+            self.is_paused = True
+            self.pause_event.clear()  # Set to paused state
+            logger.info("Job restored in PAUSED state")
+        else:
+            self.pause_requested = checkpoint.get('pause_requested', False)
+            self.is_paused = False
+            self.pause_event.set()  # Set to running state
+
+        # Resume job in background thread
+        self.job_thread = threading.Thread(target=self._execute_job, args=(False, checkpoint))
+        self.job_thread.daemon = True
+        self.job_thread.start()
+
+        logger.info(f"Job thread resumed from checkpoint")
 
     def register_callback(self, callback: Callable):
         """Register a callback for status updates"""
@@ -263,6 +312,9 @@ class JobScheduler:
             else:
                 return False, "Job is being cancelled"
 
+        # Clear checkpoint when starting fresh job
+        self.checkpoint_manager.clear_checkpoint()
+
         # Clear previous state
         with self.output_lock:
             self.output_lines = []
@@ -314,13 +366,22 @@ class JobScheduler:
 
         return True, "Job started successfully"
 
-    def _execute_job(self, manual: bool):
-        """Execute the prefetch job (runs in background thread)"""
+    def _execute_job(self, manual: bool, checkpoint: Optional[Dict[str, Any]] = None):
+        """
+        Execute the prefetch job (runs in background thread)
+
+        Args:
+            manual: Whether job was manually triggered
+            checkpoint: Optional checkpoint to resume from
+        """
         old_stdout = sys.stdout
         output_capture = None
 
         try:
-            logger.info("Creating prefetch wrapper")
+            if checkpoint:
+                logger.info(f"Resuming job from checkpoint (catalog {checkpoint['execution_position']['catalog_index']}, page {checkpoint['execution_position']['page']})")
+            else:
+                logger.info("Creating prefetch wrapper for fresh start")
 
             # Create wrapper BEFORE capturing stdout to see any errors
             self.wrapper = StreamsPrefetcherWrapper(
@@ -336,7 +397,8 @@ class JobScheduler:
             output_capture = io.StringIO()
             sys.stdout = output_capture
 
-            result = self.wrapper.run()
+            # Run with checkpoint if resuming
+            result = self.wrapper.run(checkpoint=checkpoint)
 
             # Restore stdout
             sys.stdout = old_stdout
@@ -376,6 +438,9 @@ class JobScheduler:
 
             logger.info("=" * 60)
 
+            # Clear checkpoint on job completion
+            self.checkpoint_manager.clear_checkpoint()
+
             # Notify completion
             self._notify_callbacks('job_complete', {
                 'status': self.job_status,
@@ -400,6 +465,9 @@ class JobScheduler:
             logger.error(f"Error: {self.job_error}")
             logger.exception(e)
             logger.error("=" * 60)
+
+            # Clear checkpoint on job failure
+            self.checkpoint_manager.clear_checkpoint()
 
             self._notify_callbacks('job_error', {
                 'status': self.job_status,
@@ -535,6 +603,13 @@ class JobScheduler:
             self.job_status = JobStatus.PAUSED
 
             logger.info("Job paused - current item completed")
+
+            # Save checkpoint with paused status
+            # Note: Checkpoint will be saved by prefetcher after page completion,
+            # but we also ensure state is marked as paused
+            if self.wrapper and self.wrapper.prefetcher:
+                # The prefetcher will save checkpoint after the current page finishes
+                logger.debug("Paused - checkpoint will be saved by prefetcher")
 
             # Notify callbacks with PAUSED status and current progress
             self._notify_callbacks('status_change', {

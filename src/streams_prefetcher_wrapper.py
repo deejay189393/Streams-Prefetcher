@@ -81,8 +81,16 @@ class StreamsPrefetcherWrapper:
             'enable_logging': config.get('enable_logging', False)
         }
 
-    def run(self) -> Dict[str, Any]:
-        """Run the prefetcher and return results"""
+    def run(self, checkpoint=None) -> Dict[str, Any]:
+        """
+        Run the prefetcher and return results
+
+        Args:
+            checkpoint: Optional checkpoint to resume from
+
+        Returns:
+            Dictionary with success status and results
+        """
         try:
             # Parse configuration
             args = self._parse_config_to_args()
@@ -94,8 +102,8 @@ class StreamsPrefetcherWrapper:
             if self.progress_callback:
                 self._wrap_progress_tracker()
 
-            # Run the prefetcher
-            results = self.prefetcher.process_all()
+            # Run the prefetcher (pass checkpoint if resuming)
+            results = self.prefetcher.process_all(checkpoint=checkpoint)
 
             # Print summary
             self.prefetcher.print_summary(interrupted=False)

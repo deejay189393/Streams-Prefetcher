@@ -751,6 +751,123 @@ class StreamsPrefetcher:
             }
         }
 
+    def create_checkpoint(self, catalog_index: int, page: int, cat_info: Dict[str, Any],
+                         cat_addon_url: str, cat_mode: str, all_included_catalogs: List[Tuple],
+                         all_skipped_catalogs: List[Tuple], total_manifest_catalogs: int,
+                         initial_movies_count: int, initial_series_count: int,
+                         success_count: int, failed_count: int, cached_count: int,
+                         prefetched_in_this_catalog: int, per_catalog_limit: int,
+                         catalog_start_time: float, was_randomized: bool,
+                         job_status: str = 'running') -> Dict[str, Any]:
+        """
+        Create checkpoint of current job state
+
+        Returns:
+            Dictionary containing complete job state for persistence
+        """
+        from job_scheduler import JobScheduler
+        from logger import get_logger
+
+        logger = get_logger('streams_prefetcher')
+
+        checkpoint = {
+            'job_status': job_status,
+            'timing': {
+                'start_time': self.start_time,
+                'catalog_discovery_start': self.catalog_discovery_start,
+                'catalog_discovery_end': self.catalog_discovery_end,
+                'processing_start': self.processing_start,
+                'current_catalog_start_time': catalog_start_time
+            },
+            'config_snapshot': {
+                'addon_urls': self.addon_urls,
+                'movies_global_limit': self.movies_global_limit,
+                'series_global_limit': self.series_global_limit,
+                'movies_per_catalog': self.movies_per_catalog,
+                'series_per_catalog': self.series_per_catalog,
+                'items_per_mixed_catalog': self.items_per_mixed_catalog,
+                'delay': self.delay,
+                'proxy_url': self.proxy_url,
+                'randomize_catalogs': self.randomize_catalogs,
+                'randomize_items': self.randomize_items,
+                'cache_validity_seconds': self.cache_validity_seconds,
+                'max_execution_time': self.max_execution_time,
+                'enable_logging': self.enable_logging
+            },
+            'catalog_data': {
+                'all_included_catalogs': all_included_catalogs,
+                'all_skipped_catalogs': all_skipped_catalogs,
+                'total_manifest_catalogs': total_manifest_catalogs,
+                'was_randomized': was_randomized
+            },
+            'execution_position': {
+                'catalog_index': catalog_index,
+                'page': page,
+                'catalog_id': cat_info.get('id', 'N/A'),
+                'catalog_name': cat_info.get('name', 'N/A'),
+                'catalog_mode': cat_mode,
+                'catalog_addon_url': cat_addon_url
+            },
+            'global_counters': {
+                'prefetched_movies_count': self.prefetched_movies_count,
+                'prefetched_series_count': self.prefetched_series_count,
+                'prefetched_episodes_count': self.prefetched_episodes_count,
+                'prefetched_cached_count': self.prefetched_cached_count
+            },
+            'catalog_counters': {
+                'initial_movies_count': initial_movies_count,
+                'initial_series_count': initial_series_count,
+                'success_count': success_count,
+                'failed_count': failed_count,
+                'cached_count': cached_count,
+                'prefetched_in_this_catalog': prefetched_in_this_catalog,
+                'per_catalog_limit': per_catalog_limit
+            },
+            'progress_tracker_state': {
+                'overall_catalogs': self.progress_tracker.overall_catalogs,
+                'current_catalog_index': self.progress_tracker.current_catalog_index
+            },
+            'results': self.results,
+            'output_lines': self.scheduler.output_lines if self.scheduler else []
+        }
+
+        logger.debug(f"Checkpoint created: catalog {catalog_index}, page {page}")
+        return checkpoint
+
+    def restore_from_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
+        """
+        Restore job state from checkpoint
+
+        Args:
+            checkpoint: Previously saved checkpoint dictionary
+        """
+        from logger import get_logger
+
+        logger = get_logger('streams_prefetcher')
+
+        # Restore timing
+        self.start_time = checkpoint['timing']['start_time']
+        self.catalog_discovery_start = checkpoint['timing']['catalog_discovery_start']
+        self.catalog_discovery_end = checkpoint['timing']['catalog_discovery_end']
+        self.processing_start = checkpoint['timing']['processing_start']
+
+        # Restore global counters
+        self.prefetched_movies_count = checkpoint['global_counters']['prefetched_movies_count']
+        self.prefetched_series_count = checkpoint['global_counters']['prefetched_series_count']
+        self.prefetched_episodes_count = checkpoint['global_counters']['prefetched_episodes_count']
+        self.prefetched_cached_count = checkpoint['global_counters']['prefetched_cached_count']
+
+        # Restore results
+        self.results = checkpoint['results']
+
+        # Restore progress tracker state
+        self.progress_tracker.overall_catalogs = checkpoint['progress_tracker_state']['overall_catalogs']
+        self.progress_tracker.current_catalog_index = checkpoint['progress_tracker_state']['current_catalog_index']
+
+        logger.info(f"Restored from checkpoint: catalog_index={checkpoint['execution_position']['catalog_index']}, "
+                   f"page={checkpoint['execution_position']['page']}, "
+                   f"movies={self.prefetched_movies_count}, series={self.prefetched_series_count}")
+
     def make_request(self, url: str) -> Optional[Dict[Any, Any]]:
         try:
             response = self.session.get(url, timeout=30)
@@ -912,19 +1029,30 @@ class StreamsPrefetcher:
         if cat_type == 'series': return 'series'
         return 'mixed'
 
-    def process_all(self) -> Dict[str, Any]:
-        self.start_time = time.time()
+    def process_all(self, checkpoint: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        # Check if resuming from checkpoint
+        resuming_from_checkpoint = checkpoint is not None
+
+        if resuming_from_checkpoint:
+            # Restore state from checkpoint
+            self.restore_from_checkpoint(checkpoint)
+            resume_msg = f"Resuming from checkpoint: catalog {checkpoint['execution_position']['catalog_index']}, page {checkpoint['execution_position']['page']}"
+            print(resume_msg)
+            self._log(resume_msg)
+        else:
+            # Fresh start
+            self.start_time = time.time()
+
+            header = "=" * 60 + "\nStarting Streams Prefetcher\n" + "=" * 60
+            print(header)
+            self._log(header)
+
+            start_msg = f"Started at: {self.format_timestamp(self.start_time)}"
+            print(start_msg)
+            self._log(start_msg)
         
-        header = "=" * 60 + "\nStarting Streams Prefetcher\n" + "=" * 60
-        print(header)
-        self._log(header)
-        
-        start_msg = f"Started at: {self.format_timestamp(self.start_time)}"
-        print(start_msg)
-        self._log(start_msg)
-        
-        # Log configuration
-        if self.log_file:
+        # Log configuration (only for fresh start)
+        if not resuming_from_checkpoint and self.log_file:
             self._log("\n" + "=" * 60)
             self._log("SCRIPT CONFIGURATION")
             self._log("=" * 60)
@@ -941,67 +1069,96 @@ class StreamsPrefetcher:
             self._log(f"Randomize Catalogs: {'Yes' if self.randomize_catalogs else 'No'}")
             self._log(f"Randomize Items: {'Yes' if self.randomize_items else 'No'}")
             self._log(f"Logging: Enabled (data/logs)")
-        
-        fetch_msg = "\nFetching valid catalogs from catalog addons..."
-        print(fetch_msg)
-        self._log("\n" + fetch_msg)
-        
-        self.catalog_discovery_start = time.time()
-        
-        all_included_catalogs, all_skipped_catalogs, total_manifest_catalogs = [], [], 0
-        for url in self.catalog_urls:
-            included, skipped, total = self.get_catalogs(url)
-            all_included_catalogs.extend([(c, url) for c in included])
-            all_skipped_catalogs.extend([(s['catalog'], url, s['reason']) for s in skipped])
-            total_manifest_catalogs += total
 
-        self.catalog_discovery_end = time.time()
-        discovery_duration = self.catalog_discovery_end - self.catalog_discovery_start
+        # Catalog discovery - skip if resuming from checkpoint
+        if resuming_from_checkpoint:
+            # Restore catalog data from checkpoint
+            all_included_catalogs = checkpoint['catalog_data']['all_included_catalogs']
+            all_skipped_catalogs = checkpoint['catalog_data']['all_skipped_catalogs']
+            total_manifest_catalogs = checkpoint['catalog_data']['total_manifest_catalogs']
+            was_randomized = checkpoint['catalog_data']['was_randomized']
+        else:
+            fetch_msg = "\nFetching valid catalogs from catalog addons..."
+            print(fetch_msg)
+            self._log("\n" + fetch_msg)
 
-        found_msg = f"\nFound {total_manifest_catalogs} catalogs in {self.format_duration(self.catalog_discovery_start, self.catalog_discovery_end)}."
-        print(found_msg)
-        self._log(found_msg)
-        
-        # Log catalog table to file
-        if self.log_file:
-            self._log("\n" + "=" * 60)
-            self._log("DETECTED CATALOGS")
-            self._log("=" * 60)
-            for cat, _ in all_included_catalogs:
-                self._log(f"✅ Included | {cat.get('name', 'N/A')} | {self.get_catalog_type_display(cat)}")
-            for cat, _, reason in all_skipped_catalogs:
-                self._log(f"❌ Skipped  | {cat.get('name', 'N/A')} | {self.get_catalog_type_display(cat)} | Reason: {reason}")
-        
-        self.print_catalog_table(all_included_catalogs, all_skipped_catalogs)
-        
-        if self.randomize_catalogs: random.shuffle(all_included_catalogs)
+            self.catalog_discovery_start = time.time()
+
+            all_included_catalogs, all_skipped_catalogs, total_manifest_catalogs = [], [], 0
+            for url in self.catalog_urls:
+                included, skipped, total = self.get_catalogs(url)
+                all_included_catalogs.extend([(c, url) for c in included])
+                all_skipped_catalogs.extend([(s['catalog'], url, s['reason']) for s in skipped])
+                total_manifest_catalogs += total
+
+            self.catalog_discovery_end = time.time()
+            discovery_duration = self.catalog_discovery_end - self.catalog_discovery_start
+
+            found_msg = f"\nFound {total_manifest_catalogs} catalogs in {self.format_duration(self.catalog_discovery_start, self.catalog_discovery_end)}."
+            print(found_msg)
+            self._log(found_msg)
+
+            # Log catalog table to file
+            if self.log_file:
+                self._log("\n" + "=" * 60)
+                self._log("DETECTED CATALOGS")
+                self._log("=" * 60)
+                for cat, _ in all_included_catalogs:
+                    self._log(f"✅ Included | {cat.get('name', 'N/A')} | {self.get_catalog_type_display(cat)}")
+                for cat, _, reason in all_skipped_catalogs:
+                    self._log(f"❌ Skipped  | {cat.get('name', 'N/A')} | {self.get_catalog_type_display(cat)} | Reason: {reason}")
+
+            self.print_catalog_table(all_included_catalogs, all_skipped_catalogs)
+
+            # Randomize catalogs (track if we did this)
+            was_randomized = self.randomize_catalogs
+            if self.randomize_catalogs:
+                random.shuffle(all_included_catalogs)
 
         total_to_process = len(all_included_catalogs)
-        self.results['statistics']['total_catalogs_in_manifest'] = total_manifest_catalogs
-        self.results['statistics']['filtered_catalogs'] = total_to_process
-        
-        processing_msg = f"\nStarting processing of {total_to_process} catalogs"
-        print(processing_msg)
-        self._log(processing_msg)
-        
-        self.processing_start = time.time()
-        self.progress_tracker.init_overall_progress([c[0].get('name', 'N/A') for c in all_included_catalogs])
-        
+        if not resuming_from_checkpoint:
+            self.results['statistics']['total_catalogs_in_manifest'] = total_manifest_catalogs
+            self.results['statistics']['filtered_catalogs'] = total_to_process
+
+        processing_msg = f"\n{'Resuming' if resuming_from_checkpoint else 'Starting'} processing of {total_to_process} catalogs"
+        if not resuming_from_checkpoint:
+            print(processing_msg)
+            self._log(processing_msg)
+
+        if not resuming_from_checkpoint:
+            self.processing_start = time.time()
+            self.progress_tracker.init_overall_progress([c[0].get('name', 'N/A') for c in all_included_catalogs])
+
         for i, (cat_info, cat_addon_url) in enumerate(all_included_catalogs):
-            catalog_start_time = time.time()
+            # Skip completed catalogs when resuming
+            if resuming_from_checkpoint and i < checkpoint['execution_position']['catalog_index']:
+                continue
+
+            # Restore per-catalog counters if resuming the current catalog
+            if resuming_from_checkpoint and i == checkpoint['execution_position']['catalog_index']:
+                catalog_start_time = checkpoint['timing']['current_catalog_start_time']
+                initial_movies_count = checkpoint['catalog_counters']['initial_movies_count']
+                initial_series_count = checkpoint['catalog_counters']['initial_series_count']
+                success_count = checkpoint['catalog_counters']['success_count']
+                failed_count = checkpoint['catalog_counters']['failed_count']
+                cached_count = checkpoint['catalog_counters']['cached_count']
+                prefetched_in_this_catalog = checkpoint['catalog_counters']['prefetched_in_this_catalog']
+                start_page = checkpoint['execution_position']['page'] + 1  # Resume from next page
+            else:
+                catalog_start_time = time.time()
+                initial_movies_count = self.prefetched_movies_count
+                initial_series_count = self.prefetched_series_count
+                success_count, failed_count, cached_count, prefetched_in_this_catalog = 0, 0, 0, 0
+                start_page = 1
+
             cat_id, cat_name = cat_info.get('id', 'N/A'), cat_info.get('name', 'N/A')
             cat_mode = self.get_catalog_mode(cat_info)
             if cat_mode == 'movie': per_catalog_limit = self.movies_per_catalog
             elif cat_mode == 'series': per_catalog_limit = self.series_per_catalog
             else: per_catalog_limit = self.items_per_mixed_catalog
-            
-            # Store initial counts at the start of processing this catalog
-            initial_movies_count = self.prefetched_movies_count
-            initial_series_count = self.prefetched_series_count
-            
-            page = 0
-            success_count, failed_count, cached_count, prefetched_in_this_catalog = 0, 0, 0, 0
-            
+
+            page = start_page - 1  # Will be incremented to start_page in loop
+
             while True:
                 # Check execution time limit before fetching new page (optimization to avoid unnecessary API call)
                 if self._check_time_limit():
@@ -1161,6 +1318,32 @@ class StreamsPrefetcher:
                             success_count += 1; prefetched_in_this_catalog += 1; self.prefetched_series_count += 1
                             item_statuses_on_page.append('successful')
                         else: failed_count += 1; item_statuses_on_page.append('failed')
+
+                # Page processing complete - save checkpoint
+                if self.scheduler and self.scheduler.checkpoint_manager:
+                    # Get current job status from scheduler (may be 'paused')
+                    current_job_status = self.scheduler.job_status
+                    checkpoint_data = self.create_checkpoint(
+                        catalog_index=i,
+                        page=page,
+                        cat_info=cat_info,
+                        cat_addon_url=cat_addon_url,
+                        cat_mode=cat_mode,
+                        all_included_catalogs=all_included_catalogs,
+                        all_skipped_catalogs=all_skipped_catalogs,
+                        total_manifest_catalogs=total_manifest_catalogs,
+                        initial_movies_count=initial_movies_count,
+                        initial_series_count=initial_series_count,
+                        success_count=success_count,
+                        failed_count=failed_count,
+                        cached_count=cached_count,
+                        prefetched_in_this_catalog=prefetched_in_this_catalog,
+                        per_catalog_limit=per_catalog_limit,
+                        catalog_start_time=catalog_start_time,
+                        was_randomized=was_randomized,
+                        job_status=current_job_status
+                    )
+                    self.scheduler.checkpoint_manager.save_checkpoint(checkpoint_data)
 
             catalog_end_time = time.time()
             catalog_duration = catalog_end_time - catalog_start_time

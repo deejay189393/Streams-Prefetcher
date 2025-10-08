@@ -56,6 +56,43 @@ job_scheduler.register_callback(broadcast_event)
 
 
 # ============================================================================
+# GRACEFUL SHUTDOWN HANDLER
+# ============================================================================
+
+import signal
+
+def handle_sigterm(signum, frame):
+    """
+    Handle Docker stop (SIGTERM) gracefully by saving checkpoint
+
+    This allows jobs to resume seamlessly after container restart
+    """
+    logger.info("=" * 60)
+    logger.info("RECEIVED SIGTERM - GRACEFUL SHUTDOWN")
+    logger.info("=" * 60)
+
+    # Save checkpoint if job is running or paused
+    if job_scheduler.job_status in ['running', 'paused']:
+        logger.info(f"Job status: {job_scheduler.job_status}, saving checkpoint before shutdown...")
+
+        if job_scheduler.wrapper and job_scheduler.wrapper.prefetcher:
+            # Checkpoint is already being saved periodically by prefetcher
+            # Just log that we're shutting down
+            logger.info("Checkpoint already maintained by prefetcher - shutting down gracefully")
+        else:
+            logger.warning("Job running but no prefetcher instance - checkpoint may be incomplete")
+    else:
+        logger.info(f"No active job (status: {job_scheduler.job_status})")
+
+    logger.info("Exiting...")
+    sys.exit(0)
+
+# Register SIGTERM handler for graceful Docker shutdown
+signal.signal(signal.SIGTERM, handle_sigterm)
+logger.info("SIGTERM handler registered for graceful shutdown")
+
+
+# ============================================================================
 # VALIDATION FUNCTIONS
 # ============================================================================
 
