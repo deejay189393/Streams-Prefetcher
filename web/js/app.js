@@ -2759,11 +2759,15 @@ function updateJobStatusUI(status, caller = 'unknown') {
         if (runningStatusH3 && runningStatusH3.textContent === 'Prefetch Paused') {
             runningStatusH3.textContent = 'Prefetch in Progress';
         }
+        // Show the small text again (in case it was hidden during pause)
         const currentAction = document.querySelector('.current-action');
-        if (currentAction && currentAction.textContent === 'Prefetch Paused') {
-            // Restore to processing text based on current catalog
-            const catalogName = status.progress?.catalog_name || 'catalog';
-            currentAction.textContent = `Processing ${catalogName}`;
+        if (currentAction) {
+            currentAction.style.display = 'block';
+            if (currentAction.textContent === 'Prefetch Paused') {
+                // Restore to processing text based on current catalog
+                const catalogName = status.progress?.catalog_name || 'catalog';
+                currentAction.textContent = `Processing ${catalogName}`;
+            }
         }
 
         // Restore pause button (in case we came from paused/resume)
@@ -2839,9 +2843,10 @@ function updateJobStatusUI(status, caller = 'unknown') {
         if (runningStatusH3 && runningStatusH3.textContent !== 'Prefetch Paused') {
             runningStatusH3.textContent = 'Prefetch Paused';
         }
+        // Hide the small text (to avoid duplicate "Prefetch Paused" text)
         const currentAction = document.querySelector('.current-action');
-        if (currentAction && !currentAction.textContent.includes('Paused')) {
-            currentAction.textContent = 'Prefetch Paused';
+        if (currentAction) {
+            currentAction.style.display = 'none';
         }
 
         // 3. Change pause button to resume button
