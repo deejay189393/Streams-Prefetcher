@@ -1863,8 +1863,8 @@ function startResetCountdown() {
             resetCountdownInterval = null;
             performReset();
         } else {
-            // Update button text
-            btn.textContent = `Keep pressing for ${secondsRemaining} second${secondsRemaining !== 1 ? 's' : ''}...`;
+            // Update button text with countdown
+            btn.textContent = `Resetting in ${secondsRemaining}...`;
 
             // Update animation based on progress
             const progress = elapsed / RESET_HOLD_DURATION;
@@ -1979,8 +1979,8 @@ function startTerminateCountdown() {
             terminateCountdownInterval = null;
             performTerminate();
         } else {
-            // Update button text
-            btn.textContent = `Keep pressing for ${secondsRemaining} second${secondsRemaining !== 1 ? 's' : ''}...`;
+            // Update button text with countdown
+            btn.textContent = `Terminating in ${secondsRemaining}...`;
 
             // Update animation based on progress
             const progress = elapsed / TERMINATE_HOLD_DURATION;
