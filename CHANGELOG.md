@@ -5,6 +5,15 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.2] - 2025-10-08
+
+### Fixed
+- SQLite threading error on ARM64 that prevented prefetch jobs from running
+- `sqlite3.ProgrammingError: SQLite objects created in a thread can only be used in that same thread`
+- Added `check_same_thread=False` to SQLite connection (safe as only one job runs at a time)
+
+Closes #25
+
 ## [0.10.1] - 2025-10-07
 
 ### Fixed
