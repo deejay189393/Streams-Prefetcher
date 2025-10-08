@@ -22,6 +22,10 @@ from logger import get_logger
 
 logger = get_logger('job_scheduler')
 
+# Timeout for stuck cancellation (seconds)
+# If a job stays in CANCELLED status longer than this, force reset to IDLE
+CANCELLATION_TIMEOUT = 30
+
 
 class JobStatus:
     """Job status constants"""
@@ -61,6 +65,7 @@ class JobScheduler:
         self.job_status = JobStatus.IDLE  # Reset to IDLE on startup
         self.job_start_time = None
         self.job_end_time = None
+        self.cancellation_start_time = None  # Track when cancellation began
         self.job_error = None
         self.job_summary = None  # Store completion summary
         self.pause_requested = False  # Flag to request pause after current item
@@ -240,14 +245,21 @@ class JobScheduler:
             if not self.job_thread or not self.job_thread.is_alive():
                 logger.warning("Job status was RUNNING but thread is dead - resetting status")
                 self.job_status = JobStatus.IDLE
+                self.cancellation_start_time = None
             else:
                 return False, "Job is already running"
 
-        # Also reset if status is CANCELLED but thread is dead
+        # Also reset if status is CANCELLED but thread is dead or timed out
         if self.job_status == JobStatus.CANCELLED:
             if not self.job_thread or not self.job_thread.is_alive():
                 logger.warning("Job status was CANCELLED but thread is dead - resetting status")
                 self.job_status = JobStatus.IDLE
+                self.cancellation_start_time = None
+            elif self.cancellation_start_time and (time.time() - self.cancellation_start_time) > CANCELLATION_TIMEOUT:
+                # Force reset if cancellation has been stuck too long
+                logger.warning(f"Job cancellation stuck for >{CANCELLATION_TIMEOUT}s - force resetting to IDLE")
+                self.job_status = JobStatus.IDLE
+                self.cancellation_start_time = None
             else:
                 return False, "Job is being cancelled"
 
@@ -346,6 +358,7 @@ class JobScheduler:
                 self.job_status = JobStatus.COMPLETED if success else JobStatus.FAILED
 
             self.job_end_time = time.time()
+            self.cancellation_start_time = None  # Clear cancellation timer
             duration = self.job_end_time - self.job_start_time
 
             logger.info("=" * 60)
@@ -481,6 +494,7 @@ class JobScheduler:
 
                 # Mark as cancelled (will be confirmed when thread finishes)
                 self.job_status = JobStatus.CANCELLED
+                self.cancellation_start_time = time.time()
 
                 # Don't set end_time yet - wait for thread to finish
                 # The thread will capture results and call job_complete
