@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .env
 **/[Cc][Ll][Aa][Uu][Dd][Ee]**
+screenshots*/
