@@ -699,7 +699,7 @@ class StreamsPrefetcher:
         """Sets up the SQLite database for caching, adding new columns if needed."""
         try:
             os.makedirs(os.path.dirname(self.db_name), exist_ok=True)
-            self.db_conn = sqlite3.connect(self.db_name)
+            self.db_conn = sqlite3.connect(self.db_name, check_same_thread=False)
             cursor = self.db_conn.cursor()
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS cache (
