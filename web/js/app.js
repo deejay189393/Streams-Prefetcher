@@ -2755,6 +2755,10 @@ function updateJobStatusUI(status, caller = 'unknown') {
         }
 
         // Restore "Prefetch in Progress" text (in case we came from paused)
+        const runningStatusH3 = document.querySelector('#status-running .running-status-text h3');
+        if (runningStatusH3 && runningStatusH3.textContent === 'Prefetch Paused') {
+            runningStatusH3.textContent = 'Prefetch in Progress';
+        }
         const currentAction = document.querySelector('.current-action');
         if (currentAction && currentAction.textContent === 'Prefetch Paused') {
             // Restore to processing text based on current catalog
@@ -2831,6 +2835,10 @@ function updateJobStatusUI(status, caller = 'unknown') {
         }
 
         // 2. Change "Prefetch in Progress" to "Prefetch Paused"
+        const runningStatusH3 = document.querySelector('#status-running .running-status-text h3');
+        if (runningStatusH3 && runningStatusH3.textContent !== 'Prefetch Paused') {
+            runningStatusH3.textContent = 'Prefetch Paused';
+        }
         const currentAction = document.querySelector('.current-action');
         if (currentAction && !currentAction.textContent.includes('Paused')) {
             currentAction.textContent = 'Prefetch Paused';
