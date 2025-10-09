@@ -189,13 +189,15 @@ class JobScheduler:
             )
 
             # Update config
-            self.config_manager.update({
+            success, error_msg = self.config_manager.update({
                 'schedule': {
                     'enabled': True,
                     'cron_expression': cron_expression,
                     'timezone': timezone_str
                 }
             })
+            if not success:
+                logger.warning(f"Failed to update schedule config: {error_msg}")
 
             return True
         except Exception as e:
@@ -251,12 +253,14 @@ class JobScheduler:
                     )
 
             # Update config
-            self.config_manager.update({
+            success, error_msg = self.config_manager.update({
                 'schedule': {
                     'enabled': enabled,
                     'schedules': schedules
                 }
             })
+            if not success:
+                logger.warning(f"Failed to update schedules config: {error_msg}")
 
             return True
         except Exception as e:
@@ -270,12 +274,14 @@ class JobScheduler:
             if job.id.startswith('prefetch_job'):
                 self.scheduler.remove_job(job.id)
 
-        self.config_manager.update({
+        success, error_msg = self.config_manager.update({
             'schedule': {
                 'enabled': False,
                 'schedules': []
             }
         })
+        if not success:
+            logger.warning(f"Failed to disable schedule config: {error_msg}")
 
     def get_next_run_time(self) -> Optional[datetime]:
         """Get next scheduled run time (earliest among all scheduled jobs)"""
@@ -408,10 +414,50 @@ class JobScheduler:
             if captured:
                 self._append_output(captured)
 
-            # Extract success and summary
-            success = result.get('success', False) if isinstance(result, dict) else result
-            interrupted = result.get('interrupted', False) if isinstance(result, dict) else False
-            self.job_summary = result.get('results') if isinstance(result, dict) else None
+            # Extract success and summary with protective error handling
+            logger.debug(f"Job result type: {type(result)}")
+            logger.debug(f"Job result: {result if isinstance(result, dict) else 'Non-dict result'}")
+
+            try:
+                # Extract flags
+                success = result.get('success', False) if isinstance(result, dict) else result
+                interrupted = result.get('interrupted', False) if isinstance(result, dict) else False
+
+                # CRITICAL: Preserve summary data - never set to None if we have partial data
+                if isinstance(result, dict) and 'results' in result:
+                    self.job_summary = result['results']
+                    logger.info(f"Summary extracted successfully")
+                elif isinstance(result, dict) and 'error' in result:
+                    # Result has error but no results - log it but keep any existing summary
+                    logger.warning(f"Result contains error: {result.get('error')}")
+                    if not self.job_summary:
+                        # If no existing summary, create minimal one with error info
+                        self.job_summary = {
+                            'statistics': {},
+                            'processed_catalogs': [],
+                            'error': result.get('error')
+                        }
+                else:
+                    # Unexpected result format - log detailed info
+                    logger.error(f"Unexpected result format - missing 'results' key")
+                    logger.error(f"Result keys: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
+                    # Keep existing summary if available
+                    if not self.job_summary:
+                        logger.warning("No summary data available - creating empty summary")
+                        self.job_summary = {
+                            'statistics': {},
+                            'processed_catalogs': []
+                        }
+
+            except Exception as extract_error:
+                logger.error(f"Error extracting summary: {extract_error}", exc_info=True)
+                # Preserve any existing summary on exception
+                if not self.job_summary:
+                    self.job_summary = {
+                        'statistics': {},
+                        'processed_catalogs': [],
+                        'extraction_error': str(extract_error)
+                    }
 
             # Update status - if interrupted, mark as CANCELLED but keep summary
             if interrupted or self.job_status == JobStatus.CANCELLED:

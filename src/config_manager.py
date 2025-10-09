@@ -84,10 +84,49 @@ class ConfigManager:
         self.config[key] = value
         return self.save()
 
-    def update(self, updates: Dict[str, Any]) -> bool:
-        """Update multiple configuration values and save"""
+    def validate(self, config: Dict[str, Any]) -> Tuple[bool, str]:
+        """
+        Validate configuration values
+        Returns: (is_valid, error_message)
+        """
+        # Validate limit fields - must be -1 (unlimited) or > 0 (actual limit)
+        # Zero is not valid (would cause immediate limit-reached state)
+        limit_fields = {
+            'movies_global_limit': 'Movies Global Limit',
+            'series_global_limit': 'Series Global Limit',
+            'movies_per_catalog': 'Movies Per Catalog',
+            'series_per_catalog': 'Series Per Catalog',
+            'items_per_mixed_catalog': 'Items Per Mixed Catalog'
+        }
+
+        for field, display_name in limit_fields.items():
+            if field in config:
+                value = config[field]
+                if isinstance(value, int) and value == 0:
+                    return False, f"{display_name} cannot be 0. Use -1 for unlimited or a positive number for a specific limit."
+                if isinstance(value, int) and value < -1:
+                    return False, f"{display_name} must be -1 (unlimited) or a positive number, got {value}."
+
+        return True, ""
+
+    def update(self, updates: Dict[str, Any]) -> Tuple[bool, str]:
+        """
+        Update multiple configuration values and save
+        Returns: (success, error_message)
+        """
+        # Create merged config for validation
+        test_config = self.config.copy()
+        test_config.update(updates)
+
+        # Validate before saving
+        is_valid, error_msg = self.validate(test_config)
+        if not is_valid:
+            return False, error_msg
+
+        # If valid, apply updates and save
         self.config.update(updates)
-        return self.save()
+        save_success = self.save()
+        return save_success, "" if save_success else "Failed to save configuration"
 
     def get_all(self) -> Dict[str, Any]:
         """Get all configuration"""

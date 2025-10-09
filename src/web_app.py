@@ -249,12 +249,13 @@ def update_config():
             }), 400
 
         # Update configuration
-        success = config_manager.update(data)
+        success, error_msg = config_manager.update(data)
 
         if success:
             return jsonify({'success': True, 'config': config_manager.get_all()})
         else:
-            return jsonify({'success': False, 'error': 'Failed to save configuration'}), 500
+            error_message = error_msg if error_msg else 'Failed to save configuration'
+            return jsonify({'success': False, 'error': error_message}), 400
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
