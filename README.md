@@ -192,6 +192,14 @@ Create a `.env` file (copy from `.env.example`) to customize:
 | `TZ` | UTC | Timezone for logs and scheduled jobs |
 | `LOG_LEVEL` | INFO | Logging verbosity (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
 
+#### Experimental Features
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EXPERIMENTAL__RESTORE_PREFETCH_PROGRESS_AFTER_CONTAINER_RESTART` | false | ⚠️ **EXPERIMENTAL**: When `true`, jobs resume from last checkpoint after container restart. Disabled by default for stability. |
+
+**⚠️ IMPORTANT**: Experimental features may have unexpected behavior. Only enable if you understand the implications.
+
 **Example `.env`:**
 ```bash
 STREAMS_PREFETCHER_HOSTNAME=streams-prefetcher.yourdomain.com

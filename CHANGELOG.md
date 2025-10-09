@@ -5,6 +5,30 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2025-10-09
+
+### Added
+- **Experimental Feature**: Job persistence across container restarts (disabled by default)
+  - Jobs can now resume from last checkpoint after container restart when enabled
+  - Controlled by `EXPERIMENTAL__RESTORE_PREFETCH_PROGRESS_AFTER_CONTAINER_RESTART` environment variable
+  - Checkpoints saved every ~20 items during processing
+  - Stored in `data/job_checkpoint/checkpoint.json`
+  - See README and CLAUDE.md for details on enabling this experimental feature
+
+### Fixed
+- Job summary data loss at completion (Error #1 from TEST_RESULTS.md)
+  - Added comprehensive error handling and logging for summary extraction
+  - Summary data now always preserved, even if result format is unexpected
+  - Partial results maintained even on job failures
+- Config validation now rejects invalid zero values (Error #2 from TEST_RESULTS.md)
+  - Validates all limit fields: `movies_global_limit`, `series_global_limit`, etc.
+  - Clear error messages when invalid values detected
+  - Valid values: `-1` (unlimited) or positive numbers only
+
+### Changed
+- Job state preservation logic improved with defensive error handling
+- Config update methods now return (success, error_message) tuples for better error reporting
+
 ## [0.10.2] - 2025-10-08
 
 ### Fixed

@@ -5,3 +5,4 @@ __pycache__/
 .env
 **/[Cc][Ll][Aa][Uu][Dd][Ee]**
 screenshots*/
+testresults/

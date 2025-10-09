@@ -59,8 +59,15 @@ class JobScheduler:
         self.scheduler = BackgroundScheduler(timezone=self.timezone)
         self.scheduler.start()
 
-        # Initialize checkpoint manager
-        self.checkpoint_manager = JobCheckpointManager()
+        # Initialize checkpoint manager (experimental feature - disabled by default)
+        # Set EXPERIMENTAL__RESTORE_PREFETCH_PROGRESS_AFTER_CONTAINER_RESTART=true to enable
+        restore_enabled = os.getenv('EXPERIMENTAL__RESTORE_PREFETCH_PROGRESS_AFTER_CONTAINER_RESTART', 'false').lower() == 'true'
+        self.checkpoint_manager = JobCheckpointManager() if restore_enabled else None
+
+        if restore_enabled:
+            logger.info("Experimental persistence feature ENABLED - jobs will resume after container restart")
+        else:
+            logger.debug("Experimental persistence feature disabled (default)")
 
         # Job state - Default to IDLE, but may be restored from checkpoint
         self.current_job = None
@@ -92,11 +99,16 @@ class JobScheduler:
         # Initialize scheduled job from config
         self._load_scheduled_job()
 
-        # Try to restore from checkpoint (if container was restarted mid-job)
-        self._restore_from_checkpoint()
+        # Try to restore from checkpoint (if feature enabled and container was restarted mid-job)
+        if self.checkpoint_manager:
+            self._restore_from_checkpoint()
 
     def _restore_from_checkpoint(self):
         """Restore job state from checkpoint (called on startup)"""
+        # Safety check (should already be checked by caller)
+        if not self.checkpoint_manager:
+            return
+
         checkpoint = self.checkpoint_manager.load_checkpoint()
 
         if not checkpoint:
@@ -318,8 +330,9 @@ class JobScheduler:
             else:
                 return False, "Job is being cancelled"
 
-        # Clear checkpoint when starting fresh job
-        self.checkpoint_manager.clear_checkpoint()
+        # Clear checkpoint when starting fresh job (if feature enabled)
+        if self.checkpoint_manager:
+            self.checkpoint_manager.clear_checkpoint()
 
         # Clear previous state
         with self.output_lock:
@@ -484,8 +497,9 @@ class JobScheduler:
 
             logger.info("=" * 60)
 
-            # Clear checkpoint on job completion
-            self.checkpoint_manager.clear_checkpoint()
+            # Clear checkpoint on job completion (if feature enabled)
+            if self.checkpoint_manager:
+                self.checkpoint_manager.clear_checkpoint()
 
             # Notify completion
             self._notify_callbacks('job_complete', {
@@ -512,8 +526,9 @@ class JobScheduler:
             logger.exception(e)
             logger.error("=" * 60)
 
-            # Clear checkpoint on job failure
-            self.checkpoint_manager.clear_checkpoint()
+            # Clear checkpoint on job failure (if feature enabled)
+            if self.checkpoint_manager:
+                self.checkpoint_manager.clear_checkpoint()
 
             self._notify_callbacks('job_error', {
                 'status': self.job_status,
