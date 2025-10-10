@@ -1833,6 +1833,9 @@ footer {
     color: #fff;
     margin-top: 4px;
     display: inline-block;
+    padding: 4px;
+    border-radius: 6px;
+    background: rgba(59, 130, 246, 0.1);
 }
 
 .countdown-pulsing {
