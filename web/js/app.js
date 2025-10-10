@@ -2635,13 +2635,19 @@ function updateJobStatusUI(status, caller = 'unknown') {
     const isCompleted = status.status === 'completed' || status.status === 'cancelled';
     addDebugLog(`    isCompleted=${isCompleted}`);
 
-    // If this completion was dismissed, show idle instead
+    // If this completion was dismissed, show idle instead (preserve schedule info!)
     addDebugLog(`[DISMISS CHECK] isCompleted: ${isCompleted}`);
     addDebugLog(`[DISMISS CHECK] Comparing: "${dismissedCompletionId}" === "${String(currentCompletionId)}"`);
     addDebugLog(`[DISMISS CHECK] Match result: ${dismissedCompletionId === String(currentCompletionId)}`);
     if (isCompleted && dismissedCompletionId === String(currentCompletionId)) {
-        addDebugLog(`[DISMISS CHECK] ✅ MATCH! Completion was dismissed, changing status to idle`);
-        status = { status: 'idle' };
+        addDebugLog(`[DISMISS CHECK] ✅ MATCH! Completion was dismissed, changing status to idle (preserving schedule info)`);
+        // Preserve schedule info when forcing idle
+        status = {
+            status: 'idle',
+            is_scheduled: status.is_scheduled,
+            next_run_time: status.next_run_time
+        };
+        addDebugLog(`[DISMISS CHECK] Preserved is_scheduled: ${status.is_scheduled}, next_run_time: ${status.next_run_time}`);
     } else if (isCompleted) {
         addDebugLog(`[DISMISS CHECK] No match - showing completion screen`);
     }
@@ -3615,15 +3621,15 @@ function dismissCompletion() {
 
     // Unlock the completion screen before dismissing
     completionScreenLocked = false;
-    addDebugLog(`[DISMISS] Unlocked completion screen, calling updateJobStatusUI with idle`);
-    // Hide completion screen and show idle/ready state
-    updateJobStatusUI({ status: 'idle' }, 'dismissCompletion');
+    addDebugLog(`[DISMISS] Unlocked completion screen, loading actual job status from backend`);
+    // Load actual status from backend (will show scheduled screen if schedules exist)
+    loadJobStatus('dismissCompletion');
 }
 
 function dismissError() {
     addDebugLog(`[ERROR DISMISS] dismissError() called`);
-    // Hide error screen and show idle/ready state
-    updateJobStatusUI({ status: 'idle' }, 'dismissError');
+    // Load actual status from backend (will show scheduled screen if schedules exist)
+    loadJobStatus('dismissError');
 }
 
 // ============================================================================
