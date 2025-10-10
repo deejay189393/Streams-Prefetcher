@@ -64,6 +64,9 @@ class StreamsPrefetcherWrapper:
                 catalog_id = cat['id'].split('|', 1)[1]
                 catalog_filter.append(catalog_id)
 
+        # Get cache_uncached_streams config
+        cache_uncached_streams = config.get('cache_uncached_streams', {})
+
         return {
             'addon_urls': addon_urls,
             'catalog_filter': catalog_filter if catalog_filter else None,
@@ -78,7 +81,12 @@ class StreamsPrefetcherWrapper:
             'randomize_items': config.get('randomize_item_prefetching', False),
             'cache_validity_seconds': config.get('cache_validity', 259200),
             'max_execution_time': config.get('max_execution_time', -1),
-            'enable_logging': config.get('enable_logging', False)
+            'enable_logging': config.get('enable_logging', False),
+            'cache_uncached_streams_enabled': cache_uncached_streams.get('enabled', False),
+            'cached_stream_regex': cache_uncached_streams.get('cached_stream_regex', '⚡'),
+            'max_cache_requests_per_item': cache_uncached_streams.get('max_cache_requests_per_item', 1),
+            'max_cache_requests_global': cache_uncached_streams.get('max_cache_requests_global', 50),
+            'max_required_cached_streams': cache_uncached_streams.get('max_required_cached_streams', 0)
         }
 
     def run(self) -> Dict[str, Any]:

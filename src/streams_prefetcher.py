@@ -16,6 +16,7 @@ import math
 import random
 import sqlite3
 import os
+import re
 from datetime import datetime, timezone
 from urllib.parse import urljoin, quote
 from typing import List, Dict, Any, Optional, Tuple
@@ -569,7 +570,7 @@ def format_time_string(seconds: float) -> str:
         return " ".join(parts)
 
 class StreamsPrefetcher:
-    def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False, scheduler=None):
+    def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False, cache_uncached_streams_enabled: bool = False, cached_stream_regex: str = '⚡', max_cache_requests_per_item: int = 1, max_cache_requests_global: int = 50, max_required_cached_streams: int = 0, scheduler=None):
         self.addon_urls = addon_urls
         self.scheduler = scheduler
         self.movies_global_limit = movies_global_limit
@@ -585,6 +586,14 @@ class StreamsPrefetcher:
         self.max_execution_time = max_execution_time
         self.enable_logging = enable_logging
         self.logging_dir = "data/logs" if enable_logging else None
+
+        # Cache uncached streams feature
+        self.cache_uncached_streams_enabled = cache_uncached_streams_enabled
+        self.cached_stream_regex = cached_stream_regex
+        self.max_cache_requests_per_item = max_cache_requests_per_item
+        self.max_cache_requests_global = max_cache_requests_global
+        self.max_required_cached_streams = max_required_cached_streams
+        self.cache_requests_sent_count = 0  # Track global count
 
         self.prefetched_movies_count = 0
         self.prefetched_series_count = 0
@@ -897,6 +906,53 @@ class StreamsPrefetcher:
             response.raise_for_status()
             time.sleep(self.delay)
             self.results['statistics']['cache_requests_successful'] += 1
+
+            # Cache uncached streams feature
+            if self.cache_uncached_streams_enabled:
+                try:
+                    stream_data = response.json()
+                    streams = stream_data.get('streams', [])
+
+                    if streams:
+                        # Count cached streams using regex
+                        cached_pattern = re.compile(self.cached_stream_regex)
+                        cached_count = 0
+                        uncached_streams = []
+
+                        for stream in streams:
+                            name = stream.get('name', '')
+                            description = stream.get('description', '')
+                            combined_text = f"{name} {description}"
+
+                            if cached_pattern.search(combined_text):
+                                cached_count += 1
+                            else:
+                                url = stream.get('url', '')
+                                if url:
+                                    uncached_streams.append(url)
+
+                        # Check if we need to trigger more caching
+                        if cached_count < self.max_required_cached_streams:
+                            # Calculate how many HEAD requests we can send
+                            requests_to_send = min(
+                                len(uncached_streams),
+                                self.max_cache_requests_per_item,
+                                self.max_cache_requests_global - self.cache_requests_sent_count
+                            )
+
+                            # Send HEAD requests to uncached streams
+                            for i in range(requests_to_send):
+                                try:
+                                    head_response = self.session.head(uncached_streams[i], timeout=10)
+                                    head_response.close()
+                                    self.cache_requests_sent_count += 1
+                                    time.sleep(self.delay)
+                                except requests.exceptions.RequestException:
+                                    pass  # Silently fail individual HEAD requests
+
+                except (json.JSONDecodeError, KeyError):
+                    pass  # Silently fail JSON parsing errors
+
             return True
         except requests.exceptions.RequestException:
             self.results['statistics']['errors'] += 1

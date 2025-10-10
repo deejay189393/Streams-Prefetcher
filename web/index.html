@@ -105,7 +105,9 @@
                             <div class="form-group">
                                 <label for="movies-global-limit">
                                     Movies Global Limit
-                                    <span class="info-icon" data-tooltip="Total maximum number of movie items to prefetch across all catalogs. Check 'Unlimited' for no limit. Default: Unlimited"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Total maximum number of movie items to prefetch across all catalogs. Check 'Unlimited' for no limit.
+
+Default: <strong>Unlimited</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -120,7 +122,9 @@
                             <div class="form-group">
                                 <label for="series-global-limit">
                                     Series Global Limit
-                                    <span class="info-icon" data-tooltip="Total maximum number of series items to prefetch across all catalogs. Check 'Unlimited' for no limit. Default: Unlimited"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Total maximum number of series items to prefetch across all catalogs. Check 'Unlimited' for no limit.
+
+Default: <strong>Unlimited</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -137,7 +141,9 @@
                             <div class="form-group">
                                 <label for="movies-per-catalog">
                                     Movies per Catalog
-                                    <span class="info-icon" data-tooltip="Maximum number of movie items to prefetch from each movie catalog. Check 'Unlimited' for no limit. Default: 50"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Maximum number of movie items to prefetch from each movie catalog. Check 'Unlimited' for no limit.
+
+Default: <strong>50</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -152,7 +158,9 @@
                             <div class="form-group">
                                 <label for="series-per-catalog">
                                     Series per Catalog
-                                    <span class="info-icon" data-tooltip="Maximum number of series items to prefetch from each series catalog. Check 'Unlimited' for no limit. Default: 5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Maximum number of series items to prefetch from each series catalog. Check 'Unlimited' for no limit.
+
+Default: <strong>5</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -168,7 +176,9 @@
                         <div class="form-group">
                             <label for="items-per-mixed-catalog">
                                 Items per Mixed Catalog
-                                <span class="info-icon" data-tooltip="Maximum number of items to prefetch from catalogs that contain both movies and series. Check 'Unlimited' for no limit. Default: 30"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <span class="info-icon" data-tooltip="Maximum number of items to prefetch from catalogs that contain both movies and series. Check 'Unlimited' for no limit.
+
+Default: <strong>30</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -183,7 +193,9 @@
                         <div class="form-group">
                             <label for="max-execution-time">
                                 Max Execution Time
-                                <span class="info-icon" data-tooltip="Maximum time allowed for a single prefetch job to run. Check 'Unlimited' for no time limit. Default: 90 minutes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <span class="info-icon" data-tooltip="Maximum time allowed for a single prefetch job to run. Check 'Unlimited' for no time limit.
+
+Default: <strong>90 minutes</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -212,7 +224,9 @@
                         <div class="form-group">
                             <label for="delay">
                                 Delay Between Requests
-                                <span class="info-icon" data-tooltip="Time delay between consecutive stream requests to avoid overloading addons. Default: 2 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <span class="info-icon" data-tooltip="Time delay between consecutive stream requests to avoid overloading addons.
+
+Default: <strong>2 seconds</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -245,6 +259,79 @@
                     </div>
                 </div>
 
+                <!-- Service Cache Requests Subsection -->
+                <div class="config-subsection">
+                    <h3 class="subsection-title" style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="display: flex; align-items: center;">
+                            🔄 Service Cache Requests
+                            <span class="info-icon" data-tooltip="Performs cache requests for uncached streams to the services that are preconfigured in your Stream Addons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="M12 16v-4M12 8h.01"></path>
+                                    </svg></span>
+                        </span>
+                        <label class="toggle-switch" onclick="event.stopPropagation()">
+                            <input type="checkbox" id="cache-uncached-streams-enabled" onchange="toggleCacheUncachedStreams()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </h3>
+                    <div class="subsection-content" id="cache-uncached-streams-content">
+                        <div class="form-group">
+                            <label for="cached-stream-regex">
+                                Cached Stream Detection Pattern
+                                <span class="info-icon" data-tooltip="Regular expression pattern to detect cached streams in stream names and descriptions.
+
+Default: <strong>⚡</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="M12 16v-4M12 8h.01"></path>
+                                        </svg></span>
+                            </label>
+                            <input type="text" id="cached-stream-regex" value="⚡" placeholder="⚡">
+                            <div id="cached-stream-regex-error" style="color: var(--danger); font-size: 13px; margin-top: 5px; display: none;"></div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="max-cache-requests-per-item">
+                                    Max Requests per Item
+                                    <span class="info-icon" data-tooltip="Maximum number of uncached stream URLs to request per movie/episode. Higher values trigger more caches but take longer.
+
+Default: <strong>1</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
+                                </label>
+                                <input type="number" id="max-cache-requests-per-item" value="1" min="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="max-cache-requests-global">
+                                    Global Request Limit
+                                    <span class="info-icon" data-tooltip="Maximum total number of cache requests to send across the entire prefetch session. Prevents excessive requests to your debrid service.
+
+Default: <strong>50</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
+                                </label>
+                                <input type="number" id="max-cache-requests-global" value="50" min="0">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="max-required-cached-streams">
+                                Minimum Required Cached Streams
+                                <span class="info-icon" data-tooltip="Only trigger cache requests if fewer than this many cached streams are detected. Set to 0 to always trigger requests for uncached streams.
+
+Default: <strong>0</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="M12 16v-4M12 8h.01"></path>
+                                        </svg></span>
+                            </label>
+                            <input type="number" id="max-required-cached-streams" value="0" min="0" style="max-width: 200px;">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Randomization Subsection -->
                 <div class="config-subsection">
                     <h3 class="subsection-title">🔮 Randomization</h3>
@@ -253,7 +340,9 @@
                             <div class="form-group">
                                 <label>
                                     Randomize Catalog Processing
-                                    <span class="info-icon" data-tooltip="Process catalogs in random order instead of sequential order. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Process catalogs in random order instead of sequential order.
+
+Default: <strong>Disabled</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -267,7 +356,9 @@
                             <div class="form-group">
                                 <label>
                                     Randomize Item Prefetching
-                                    <span class="info-icon" data-tooltip="Prefetch streams of items fetched from a catalog's page in random order instead of sequential order. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Prefetch streams of items fetched from a catalog's page in random order instead of sequential order.
+
+Default: <strong>Disabled</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -288,7 +379,9 @@
                         <div class="form-group">
                             <label for="cache-validity">
                                 Skip Prefetching if already done within
-                                <span class="info-icon" data-tooltip="Skip prefetching streams for items if they were already prefetched within this time period. Check 'Unlimited' to never re-prefetch items (once done, always skipped). Set to 0 to always prefetch (never skip). Default: 1 week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <span class="info-icon" data-tooltip="Skip prefetching streams for items if they were already prefetched within this time period. Check 'Unlimited' to never re-prefetch items (once done, always skipped). Set to 0 to always prefetch (never skip).
+
+Default: <strong>1 week</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -312,7 +405,9 @@
                         <div class="form-group">
                             <label>
                                 Enable creation of prefetch log files
-                                <span class="info-icon" data-tooltip="Enable creation of detailed log files in data/logs directory for each prefetch run. Useful for debugging and monitoring. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <span class="info-icon" data-tooltip="Enable creation of detailed log files in data/logs directory for each prefetch run. Useful for debugging and monitoring.
+
+Default: <strong>Disabled</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>

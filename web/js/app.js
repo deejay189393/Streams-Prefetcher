@@ -378,6 +378,66 @@ function toggleScheduling() {
     saveSchedulesSilent();
 }
 
+function toggleCacheUncachedStreams() {
+    const checkbox = document.getElementById('cache-uncached-streams-enabled');
+    const content = document.getElementById('cache-uncached-streams-content');
+
+    // Get all input fields within the content
+    const inputs = content.querySelectorAll('input');
+
+    if (checkbox.checked) {
+        // Enable all fields
+        inputs.forEach(input => input.disabled = false);
+        content.style.opacity = '1';
+    } else {
+        // Disable all fields
+        inputs.forEach(input => input.disabled = true);
+        content.style.opacity = '0.5';
+    }
+}
+
+// Regex validation with debounce
+let regexValidationTimeout = null;
+function validateCachedStreamRegex() {
+    const input = document.getElementById('cached-stream-regex');
+    const errorDiv = document.getElementById('cached-stream-regex-error');
+    const value = input.value.trim();
+
+    if (!value) {
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+        input.style.borderColor = '';
+        return;
+    }
+
+    try {
+        // Test if it's a valid regex
+        new RegExp(value);
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+        input.style.borderColor = '';
+    } catch (e) {
+        errorDiv.textContent = 'Invalid regular expression: ' + e.message;
+        errorDiv.style.display = 'block';
+        input.style.borderColor = 'var(--danger)';
+    }
+}
+
+// Add event listener for regex validation on input (with debounce)
+document.addEventListener('DOMContentLoaded', function() {
+    const regexInput = document.getElementById('cached-stream-regex');
+    if (regexInput) {
+        regexInput.addEventListener('input', function() {
+            // Clear previous timeout
+            if (regexValidationTimeout) {
+                clearTimeout(regexValidationTimeout);
+            }
+            // Set new timeout for 2 seconds
+            regexValidationTimeout = setTimeout(validateCachedStreamRegex, 2000);
+        });
+    }
+});
+
 function showAddScheduleModal() {
     editingScheduleIndex = null;
     document.getElementById('modal-title').textContent = 'Add Schedule';
@@ -1242,6 +1302,15 @@ function populateConfigurationForm(config) {
     document.querySelector(`input[name="randomize-catalog"][value="${config.randomize_catalog_processing}"]`).checked = true;
     document.querySelector(`input[name="randomize-item"][value="${config.randomize_item_prefetching}"]`).checked = true;
     document.querySelector(`input[name="enable-logging"][value="${config.enable_logging}"]`).checked = true;
+
+    // Populate cache_uncached_streams config
+    const cacheUncachedConfig = config.cache_uncached_streams || {};
+    document.getElementById('cache-uncached-streams-enabled').checked = cacheUncachedConfig.enabled || false;
+    document.getElementById('cached-stream-regex').value = cacheUncachedConfig.cached_stream_regex || '⚡';
+    document.getElementById('max-cache-requests-per-item').value = cacheUncachedConfig.max_cache_requests_per_item || 1;
+    document.getElementById('max-cache-requests-global').value = cacheUncachedConfig.max_cache_requests_global || 50;
+    document.getElementById('max-required-cached-streams').value = cacheUncachedConfig.max_required_cached_streams || 0;
+    toggleCacheUncachedStreams(); // Apply enabled/disabled state to fields
 }
 
 function setLimitValue(fieldId, value) {
@@ -1774,7 +1843,14 @@ async function saveConfigurationSilent() {
             proxy: document.getElementById('proxy').value.trim(),
             randomize_catalog_processing: document.querySelector('input[name="randomize-catalog"]:checked').value === 'true',
             randomize_item_prefetching: document.querySelector('input[name="randomize-item"]:checked').value === 'true',
-            enable_logging: document.querySelector('input[name="enable-logging"]:checked').value === 'true'
+            enable_logging: document.querySelector('input[name="enable-logging"]:checked').value === 'true',
+            cache_uncached_streams: {
+                enabled: document.getElementById('cache-uncached-streams-enabled').checked,
+                cached_stream_regex: document.getElementById('cached-stream-regex').value.trim(),
+                max_cache_requests_per_item: parseInt(document.getElementById('max-cache-requests-per-item').value),
+                max_cache_requests_global: parseInt(document.getElementById('max-cache-requests-global').value),
+                max_required_cached_streams: parseInt(document.getElementById('max-required-cached-streams').value)
+            }
         };
 
         const response = await fetch('/api/config', {
@@ -1845,7 +1921,14 @@ async function saveConfiguration() {
             proxy: document.getElementById('proxy').value.trim(),
             randomize_catalog_processing: document.querySelector('input[name="randomize-catalog"]:checked').value === 'true',
             randomize_item_prefetching: document.querySelector('input[name="randomize-item"]:checked').value === 'true',
-            enable_logging: document.querySelector('input[name="enable-logging"]:checked').value === 'true'
+            enable_logging: document.querySelector('input[name="enable-logging"]:checked').value === 'true',
+            cache_uncached_streams: {
+                enabled: document.getElementById('cache-uncached-streams-enabled').checked,
+                cached_stream_regex: document.getElementById('cached-stream-regex').value.trim(),
+                max_cache_requests_per_item: parseInt(document.getElementById('max-cache-requests-per-item').value),
+                max_cache_requests_global: parseInt(document.getElementById('max-cache-requests-global').value),
+                max_required_cached_streams: parseInt(document.getElementById('max-required-cached-streams').value)
+            }
         };
 
         // Validate configuration

@@ -30,6 +30,13 @@ class ConfigManager:
             'enabled': False,
             'cron_expression': '0 2,5,8 * * *',  # Daily at 2 AM, 5 AM, 8 AM
             'timezone': 'UTC'
+        },
+        'cache_uncached_streams': {
+            'enabled': False,
+            'cached_stream_regex': '⚡',
+            'max_cache_requests_per_item': 1,
+            'max_cache_requests_global': 50,
+            'max_required_cached_streams': 0
         }
     }
 
