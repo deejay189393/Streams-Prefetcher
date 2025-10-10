@@ -3,6 +3,7 @@ runner/
 __pycache__/
 *.pyc
 .env
-**/[Cc][Ll][Aa][Uu][Dd][Ee]**
+*[Cc][Ll][Aa][Uu][Dd][Ee]*
+**/*[Cc][Ll][Aa][Uu][Dd][Ee]*
 screenshots*/
 testresults/
