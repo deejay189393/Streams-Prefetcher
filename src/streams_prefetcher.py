@@ -894,10 +894,10 @@ class StreamsPrefetcher:
         return [{'id': f"{series_imdb_id}:{v['season']}:{v['episode']}", 'season': v['season'], 'episode': v['episode']}
                 for v in videos if 'season' in v and 'episode' in v]
 
-    def prefetch_streams(self, content_id: str, content_type: str) -> bool:
-        return any(self._prefetch_single_stream(content_id, content_type, url) for url in self.stream_urls)
+    def prefetch_streams(self, content_id: str, content_type: str, title: str = "") -> bool:
+        return any(self._prefetch_single_stream(content_id, content_type, url, title) for url in self.stream_urls)
 
-    def _prefetch_single_stream(self, content_id: str, content_type: str, stream_addon_url: str) -> bool:
+    def _prefetch_single_stream(self, content_id: str, content_type: str, stream_addon_url: str, title: str = "") -> bool:
         stream_url = f"{stream_addon_url}/stream/{content_type}/{content_id}.json"
         self.results['statistics']['cache_requests_made'] += 1
         response = None
@@ -932,7 +932,7 @@ class StreamsPrefetcher:
                                     uncached_streams.append(url)
 
                         # Check if we need to trigger more caching
-                        if cached_count < self.max_required_cached_streams:
+                        if cached_count <= self.max_required_cached_streams:
                             # Calculate how many HEAD requests we can send
                             requests_to_send = min(
                                 len(uncached_streams),
@@ -941,6 +941,10 @@ class StreamsPrefetcher:
                             )
 
                             # Send HEAD requests to uncached streams
+                            if requests_to_send > 0 and title and content_type == 'movie':
+                                # Log which movie is triggering cache requests
+                                sys.stdout.write(f"\n🔄 Caching: {title}\n")
+                                sys.stdout.flush()
                             for i in range(requests_to_send):
                                 try:
                                     head_response = self.session.head(uncached_streams[i], timeout=10)
@@ -1152,7 +1156,7 @@ class StreamsPrefetcher:
                         if self._check_time_limit():
                             break
 
-                        if self.prefetch_streams(imdb_id, 'movie'):
+                        if self.prefetch_streams(imdb_id, 'movie', title):
                             self.update_cache(imdb_id, title)
                             success_count += 1; prefetched_in_this_catalog += 1; self.prefetched_movies_count += 1
                             item_statuses_on_page.append('successful')
@@ -1210,7 +1214,7 @@ class StreamsPrefetcher:
                             if self._check_time_limit():
                                 break
 
-                            if self.prefetch_streams(ep['id'], 'series'):
+                            if self.prefetch_streams(ep['id'], 'series', ep_title):
                                self.update_cache(ep['id'], ep_title); series_had_success = True; self.prefetched_episodes_count += 1
 
                         if series_had_success:
@@ -1249,6 +1253,7 @@ class StreamsPrefetcher:
         self.results['statistics']['movies_prefetched'] = self.prefetched_movies_count
         self.results['statistics']['series_prefetched'] = self.prefetched_series_count
         self.results['statistics']['episodes_prefetched'] = self.prefetched_episodes_count
+        self.results['statistics']['service_cache_requests_sent'] = self.cache_requests_sent_count
         
         # Store timing information in results
         self.results['timing'] = {
