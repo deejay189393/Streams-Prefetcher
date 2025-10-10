@@ -538,6 +538,13 @@ async function saveSchedulesSilent() {
 
             // Mark schedule as configured for smart collapse behavior
             localStorage.setItem('schedule-configured', 'true');
+
+            // Refresh job status to update UI (scheduled vs idle)
+            // Small delay to ensure backend has processed the schedule
+            setTimeout(() => {
+                addDebugLog('[SCHEDULE SAVE] Refreshing job status after schedule save...');
+                loadJobStatus('schedule-update');
+            }, 200);
         } else {
             console.error('Failed to auto-save schedules:', data.error);
         }
@@ -554,13 +561,15 @@ async function loadSchedules() {
         if (data.success && data.schedule) {
             const scheduleData = data.schedule;
 
+            // Load schedules FIRST (before toggleScheduling to prevent race condition)
+            currentSchedules = scheduleData.schedules || [];
+
             // Set enabled state
             const checkbox = document.getElementById('scheduling-enabled');
             checkbox.checked = scheduleData.enabled || false;
             toggleScheduling();
 
-            // Load schedules
-            currentSchedules = scheduleData.schedules || [];
+            // Render the schedule list
             renderSchedulesList();
         }
     } catch (error) {
@@ -2684,7 +2693,25 @@ function updateJobStatusUI(status, caller = 'unknown') {
 
     // Show appropriate status display
     addDebugLog(`🔄 [UI UPDATE] Final status to display: ${status.status}`);
-    if (status.status === 'idle') {
+    addDebugLog(`🔄 [UI UPDATE] is_scheduled: ${status.is_scheduled}, next_run_time: ${status.next_run_time}`);
+    if (status.status === 'idle' && status.is_scheduled && status.next_run_time) {
+        // Show scheduled state when idle with active schedules
+        const scheduledDisplay = document.getElementById('status-scheduled');
+        if (scheduledDisplay) {
+            if (!isTargetAlreadyVisible) {
+                addDebugLog(`🔄 [UI UPDATE] ✅ Showing SCHEDULED screen`);
+                scheduledDisplay.style.display = 'block';
+                logStatusScreens();
+            }
+            updateNextRunInfo(status);
+        }
+
+        // Enable Start Now button for scheduled state
+        const startNowBtn = document.getElementById('start-now-btn-scheduled');
+        if (startNowBtn) {
+            startNowBtn.disabled = false;
+        }
+    } else if (status.status === 'idle') {
         // Clear stored progress when idle
         lastKnownProgress = null;
 
@@ -3093,10 +3120,81 @@ function updateNextRunInfo(status) {
         // Start countdown
         updateCountdown();
         countdownInterval = setInterval(updateCountdown, 1000);
+    }
+}
 
-        const nextRunTimestamp = new Date(status.next_run_time).getTime() / 1000;
-        document.getElementById('next-run-info').innerHTML = `
-            Next scheduled run: ${formatCustomDateTime(nextRunTimestamp)}
+function updateCountdown() {
+    if (!nextRunTimestamp) return;
+
+    const now = Date.now();
+    const remaining = nextRunTimestamp - now;
+
+    // If countdown is over, clear interval
+    if (remaining <= 0) {
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+        }
+        return;
+    }
+
+    // Calculate time units
+    const totalSeconds = Math.floor(remaining / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    // Build time parts array
+    const parts = [];
+
+    // Find the first non-zero unit to determine what to show
+    const hasNonZeroDays = days > 0;
+    const hasNonZeroHours = hours > 0;
+    const hasNonZeroMinutes = minutes > 0;
+
+    // Add parts based on rules:
+    // - Show all units from largest non-zero to seconds
+    // - Hide larger units that are zero
+    if (hasNonZeroDays) {
+        parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+        parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+        parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+    } else if (hasNonZeroHours) {
+        parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+        parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+    } else if (hasNonZeroMinutes) {
+        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+        parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+    } else {
+        parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+    }
+
+    const timeString = parts.join(', ');
+
+    // Calculate pulsation speed
+    // No pulse if > 60 seconds
+    // At 60s: 2000ms, at 0s: 200ms (linear interpolation)
+    let pulseDuration = 2000; // default, no pulse
+    if (totalSeconds <= 60) {
+        // Linear interpolation from 2000ms at 60s to 200ms at 0s
+        // Formula: duration = 2000 - (2000-200) * (60-remaining)/60
+        pulseDuration = 2000 - (1800 * (60 - totalSeconds) / 60);
+    }
+
+    // Update the countdown display
+    const nextRunInfo = document.getElementById('next-run-info');
+    if (nextRunInfo) {
+        const shouldPulse = totalSeconds <= 60;
+        const pulseClass = shouldPulse ? 'countdown-pulsing' : '';
+
+        nextRunInfo.innerHTML = `
+            <div>Next scheduled run in:</div>
+            <div class="countdown-timer ${pulseClass}" style="--pulse-duration: ${pulseDuration}ms;">
+                ${timeString}
+            </div>
         `;
     }
 }
