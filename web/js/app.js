@@ -13,6 +13,9 @@ let eventSource = null;
 let catalogsLoaded = false;
 let countdownInterval = null;
 let nextRunTimestamp = null;
+let executionTimeInterval = null;
+let maxExecutionTime = null;
+let jobStartTime = null;
 let configSaved = false;
 let configModified = false;
 let catalogSaveTimeout = null;
@@ -288,6 +291,39 @@ function formatDuration(seconds) {
     if (s > 0 || parts.length === 0) parts.push(`${s}s`);
 
     return parts.join(' ');
+}
+
+function formatExecutionTime(seconds) {
+    if (!seconds || seconds < 0) return '-';
+
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+
+    const parts = [];
+
+    // Add days if > 0
+    if (d > 0) {
+        parts.push(`${d} ${d === 1 ? 'day' : 'days'}`);
+    }
+
+    // Add hours if > 0
+    if (h > 0) {
+        parts.push(`${h} ${h === 1 ? 'hour' : 'hours'}`);
+    }
+
+    // Add minutes if > 0
+    if (m > 0) {
+        parts.push(`${m} ${m === 1 ? 'minute' : 'minutes'}`);
+    }
+
+    // Add seconds if > 0 or if no other parts
+    if (s > 0 || parts.length === 0) {
+        parts.push(`${s} ${s === 1 ? 'second' : 'seconds'}`);
+    }
+
+    return parts.join(', ');
 }
 
 // ============================================================================
@@ -2794,6 +2830,11 @@ function updateJobStatusUI(status, caller = 'unknown') {
 
             // Reset terminate button to original state (force reset for new job)
             resetTerminateButton(true);
+
+            // Start execution time progress bar (only on first run, not on page refresh during running job)
+            if (status.start_time && currentConfig && currentConfig.max_execution_time !== undefined) {
+                startExecutionTimeInterval(status.start_time, currentConfig.max_execution_time);
+            }
         }
 
         // Restore running icon with smooth transition (in case we came from paused)
@@ -2877,6 +2918,9 @@ function updateJobStatusUI(status, caller = 'unknown') {
             logStatusScreens();
         }
 
+        // Stop execution time progress bar when job pauses
+        stopExecutionTimeInterval();
+
         // DEBUG: Log progress data
         addDebugLog(`[PAUSED] Progress data: ${JSON.stringify(status.progress)}`);
         addDebugLog(`[PAUSED] Progress keys: ${Object.keys(status.progress || {}).join(', ')}`);
@@ -2958,6 +3002,9 @@ function updateJobStatusUI(status, caller = 'unknown') {
                 logStatusScreens();
             }
             completionScreenLocked = true;
+
+            // Stop execution time progress bar when job completes
+            stopExecutionTimeInterval();
 
             if (status.summary) {
                 try {
@@ -3115,6 +3162,9 @@ function updateJobStatusUI(status, caller = 'unknown') {
                 logStatusScreens();
             }
 
+            // Stop execution time progress bar when job fails
+            stopExecutionTimeInterval();
+
             // Populate error details
             const errorMessage = document.getElementById('error-message');
             const errorTimestamp = document.getElementById('error-timestamp');
@@ -3229,6 +3279,91 @@ function updateCountdown() {
             </div>
         `;
     }
+}
+
+// ============================================================================
+// Execution Time Progress (Performance-Optimized, Client-Side Calculation)
+// ============================================================================
+
+function updateExecutionTime() {
+    if (!jobStartTime || !maxExecutionTime || maxExecutionTime === -1) return;
+
+    const now = Date.now();
+    const elapsedSeconds = Math.floor((now - (jobStartTime * 1000)) / 1000);
+
+    // If elapsed time exceeds max, cap at max
+    const cappedElapsed = Math.min(elapsedSeconds, maxExecutionTime);
+
+    // Calculate percentage
+    const percent = Math.round((cappedElapsed / maxExecutionTime) * 100);
+
+    // Update progress bar
+    const fillElement = document.getElementById('execution-time-fill');
+    const percentElement = document.getElementById('execution-time-percent');
+    const labelElement = document.getElementById('execution-time-label');
+
+    if (fillElement) {
+        fillElement.style.width = `${percent}%`;
+    }
+
+    if (percentElement) {
+        percentElement.textContent = `${percent}%`;
+    }
+
+    if (labelElement) {
+        const elapsedText = formatExecutionTime(cappedElapsed);
+        const maxText = formatExecutionTime(maxExecutionTime);
+        labelElement.textContent = `${elapsedText} of ${maxText}`;
+    }
+}
+
+function startExecutionTimeInterval(startTime, maxTime) {
+    // Stop any existing interval first
+    stopExecutionTimeInterval();
+
+    // Store values
+    jobStartTime = startTime;
+    maxExecutionTime = maxTime;
+
+    // Only start if max execution time is not unlimited
+    if (maxTime === -1) {
+        // Hide progress bar for unlimited
+        const progressSection = document.getElementById('execution-time-progress');
+        if (progressSection) {
+            progressSection.style.display = 'none';
+        }
+        return;
+    }
+
+    // Show progress bar
+    const progressSection = document.getElementById('execution-time-progress');
+    if (progressSection) {
+        progressSection.style.display = 'block';
+    }
+
+    // Update immediately
+    updateExecutionTime();
+
+    // Start 1-second interval
+    executionTimeInterval = setInterval(updateExecutionTime, 1000);
+}
+
+function stopExecutionTimeInterval() {
+    // Clear interval if running
+    if (executionTimeInterval) {
+        clearInterval(executionTimeInterval);
+        executionTimeInterval = null;
+    }
+
+    // Hide progress bar
+    const progressSection = document.getElementById('execution-time-progress');
+    if (progressSection) {
+        progressSection.style.display = 'none';
+    }
+
+    // Clear stored values
+    jobStartTime = null;
+    maxExecutionTime = null;
 }
 
 function updateProgressInfo(progress, preserveActionText = false) {
