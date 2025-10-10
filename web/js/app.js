@@ -338,8 +338,8 @@ function toggleScheduling() {
         addBtn.disabled = true;
     }
 
-    // Auto-save scheduling state
-    autoSaveSchedules();
+    // Immediately save scheduling state
+    saveSchedulesSilent();
 }
 
 function showAddScheduleModal() {
@@ -396,7 +396,7 @@ function saveScheduleFromModal() {
 
     closeScheduleModal();
     renderSchedulesList();
-    autoSaveSchedules();
+    saveSchedulesSilent();
 }
 
 function editSchedule(index) {
@@ -418,7 +418,7 @@ function deleteSchedule(index) {
     if (confirm('Are you sure you want to delete this schedule?')) {
         currentSchedules.splice(index, 1);
         renderSchedulesList();
-        autoSaveSchedules();
+        saveSchedulesSilent();
     }
 }
 
@@ -428,7 +428,7 @@ function confirmDeleteAllSchedules() {
     if (confirm(`Are you sure you want to delete all ${currentSchedules.length} schedule(s)? This cannot be undone.`)) {
         currentSchedules = [];
         renderSchedulesList();
-        autoSaveSchedules();
+        saveSchedulesSilent();
         showNotification('All schedules deleted', 'success');
     }
 }
@@ -521,6 +521,12 @@ async function saveSchedulesSilent() {
     try {
         const enabled = document.getElementById('scheduling-enabled').checked;
 
+        addDebugLog('═══════════════════════════════════════════════════');
+        addDebugLog('💾 [SAVE SCHEDULE] Starting save...');
+        addDebugLog(`💾 [SAVE SCHEDULE] enabled: ${enabled}`);
+        addDebugLog(`💾 [SAVE SCHEDULE] currentSchedules count: ${currentSchedules.length}`);
+        addDebugLog(`💾 [SAVE SCHEDULE] currentSchedules data: ${JSON.stringify(currentSchedules)}`);
+
         const response = await fetch('/api/schedule', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -531,17 +537,28 @@ async function saveSchedulesSilent() {
         });
 
         const data = await response.json();
+        addDebugLog(`💾 [SAVE SCHEDULE] Response received: ${JSON.stringify(data)}`);
 
         if (data.success) {
             // Silent save - no notification
             showSaveNotification();
+            addDebugLog('💾 [SAVE SCHEDULE] ✅ Save successful, starting 600ms timer...');
 
             // Mark schedule as configured for smart collapse behavior
             localStorage.setItem('schedule-configured', 'true');
+
+            // Refresh job status to update UI (scheduled vs idle)
+            // Delay to ensure backend APScheduler has fully processed the schedule
+            setTimeout(() => {
+                addDebugLog('⏰ [SAVE SCHEDULE] 600ms timer fired! Calling loadJobStatus...');
+                loadJobStatus('schedule-update');
+            }, 600);
         } else {
+            addDebugLog(`💾 [SAVE SCHEDULE] ❌ Save failed: ${data.error}`);
             console.error('Failed to auto-save schedules:', data.error);
         }
     } catch (error) {
+        addDebugLog(`💾 [SAVE SCHEDULE] ❌ Exception: ${error.message}`);
         console.error('Error auto-saving schedules:', error);
     }
 }
@@ -554,13 +571,15 @@ async function loadSchedules() {
         if (data.success && data.schedule) {
             const scheduleData = data.schedule;
 
+            // Load schedules FIRST (before toggleScheduling to prevent race condition)
+            currentSchedules = scheduleData.schedules || [];
+
             // Set enabled state
             const checkbox = document.getElementById('scheduling-enabled');
             checkbox.checked = scheduleData.enabled || false;
             toggleScheduling();
 
-            // Load schedules
-            currentSchedules = scheduleData.schedules || [];
+            // Render the schedule list
             renderSchedulesList();
         }
     } catch (error) {
@@ -2616,13 +2635,19 @@ function updateJobStatusUI(status, caller = 'unknown') {
     const isCompleted = status.status === 'completed' || status.status === 'cancelled';
     addDebugLog(`    isCompleted=${isCompleted}`);
 
-    // If this completion was dismissed, show idle instead
+    // If this completion was dismissed, show idle instead (preserve schedule info!)
     addDebugLog(`[DISMISS CHECK] isCompleted: ${isCompleted}`);
     addDebugLog(`[DISMISS CHECK] Comparing: "${dismissedCompletionId}" === "${String(currentCompletionId)}"`);
     addDebugLog(`[DISMISS CHECK] Match result: ${dismissedCompletionId === String(currentCompletionId)}`);
     if (isCompleted && dismissedCompletionId === String(currentCompletionId)) {
-        addDebugLog(`[DISMISS CHECK] ✅ MATCH! Completion was dismissed, changing status to idle`);
-        status = { status: 'idle' };
+        addDebugLog(`[DISMISS CHECK] ✅ MATCH! Completion was dismissed, changing status to idle (preserving schedule info)`);
+        // Preserve schedule info when forcing idle
+        status = {
+            status: 'idle',
+            is_scheduled: status.is_scheduled,
+            next_run_time: status.next_run_time
+        };
+        addDebugLog(`[DISMISS CHECK] Preserved is_scheduled: ${status.is_scheduled}, next_run_time: ${status.next_run_time}`);
     } else if (isCompleted) {
         addDebugLog(`[DISMISS CHECK] No match - showing completion screen`);
     }
@@ -2684,7 +2709,41 @@ function updateJobStatusUI(status, caller = 'unknown') {
 
     // Show appropriate status display
     addDebugLog(`🔄 [UI UPDATE] Final status to display: ${status.status}`);
-    if (status.status === 'idle') {
+    addDebugLog(`🔄 [UI UPDATE] is_scheduled: ${status.is_scheduled}, next_run_time: ${status.next_run_time}`);
+
+    // DETAILED CONDITIONAL CHECK LOGGING
+    addDebugLog(`🔍 [CONDITIONAL CHECK] status.status === 'idle': ${status.status === 'idle'}`);
+    addDebugLog(`🔍 [CONDITIONAL CHECK] status.is_scheduled: ${status.is_scheduled}`);
+    addDebugLog(`🔍 [CONDITIONAL CHECK] status.next_run_time: ${status.next_run_time}`);
+    addDebugLog(`🔍 [CONDITIONAL CHECK] ALL THREE TRUE? ${status.status === 'idle' && status.is_scheduled && status.next_run_time}`);
+
+    if (status.status === 'idle' && status.is_scheduled && status.next_run_time) {
+        // Show scheduled state when idle with active schedules
+        const scheduledDisplay = document.getElementById('status-scheduled');
+        if (scheduledDisplay) {
+            // Check if scheduled screen is already visible
+            const scheduledAlreadyVisible = scheduledDisplay.style.display === 'block';
+
+            if (!scheduledAlreadyVisible) {
+                addDebugLog(`🔄 [UI UPDATE] ⚠️ SCHEDULED screen not visible, forcing display!`);
+                // Hide all screens first
+                document.querySelectorAll('[id^="status-"]').forEach(el => el.style.display = 'none');
+                // Show scheduled screen
+                addDebugLog(`🔄 [UI UPDATE] ✅ Showing SCHEDULED screen`);
+                scheduledDisplay.style.display = 'block';
+                logStatusScreens();
+            } else {
+                addDebugLog(`🔄 [UI UPDATE] SCHEDULED screen already visible, just updating content`);
+            }
+            updateNextRunInfo(status);
+        }
+
+        // Enable Start Now button for scheduled state
+        const startNowBtn = document.getElementById('start-now-btn-scheduled');
+        if (startNowBtn) {
+            startNowBtn.disabled = false;
+        }
+    } else if (status.status === 'idle') {
         // Clear stored progress when idle
         lastKnownProgress = null;
 
@@ -3093,10 +3152,81 @@ function updateNextRunInfo(status) {
         // Start countdown
         updateCountdown();
         countdownInterval = setInterval(updateCountdown, 1000);
+    }
+}
 
-        const nextRunTimestamp = new Date(status.next_run_time).getTime() / 1000;
-        document.getElementById('next-run-info').innerHTML = `
-            Next scheduled run: ${formatCustomDateTime(nextRunTimestamp)}
+function updateCountdown() {
+    if (!nextRunTimestamp) return;
+
+    const now = Date.now();
+    const remaining = nextRunTimestamp - now;
+
+    // If countdown is over, clear interval
+    if (remaining <= 0) {
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+        }
+        return;
+    }
+
+    // Calculate time units
+    const totalSeconds = Math.floor(remaining / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    // Build time parts array
+    const parts = [];
+
+    // Find the first non-zero unit to determine what to show
+    const hasNonZeroDays = days > 0;
+    const hasNonZeroHours = hours > 0;
+    const hasNonZeroMinutes = minutes > 0;
+
+    // Add parts based on rules:
+    // - Show all units from largest non-zero to seconds
+    // - Hide larger units that are zero
+    if (hasNonZeroDays) {
+        parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+        parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+        parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+    } else if (hasNonZeroHours) {
+        parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+        parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+    } else if (hasNonZeroMinutes) {
+        parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+        parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+    } else {
+        parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+    }
+
+    const timeString = parts.join(', ');
+
+    // Calculate pulsation speed
+    // No pulse if > 60 seconds
+    // At 60s: 2000ms, at 0s: 200ms (linear interpolation)
+    let pulseDuration = 2000; // default, no pulse
+    if (totalSeconds <= 60) {
+        // Linear interpolation from 2000ms at 60s to 200ms at 0s
+        // Formula: duration = 2000 - (2000-200) * (60-remaining)/60
+        pulseDuration = 2000 - (1800 * (60 - totalSeconds) / 60);
+    }
+
+    // Update the countdown display
+    const nextRunInfo = document.getElementById('next-run-info');
+    if (nextRunInfo) {
+        const shouldPulse = totalSeconds <= 60;
+        const pulseClass = shouldPulse ? 'countdown-pulsing' : '';
+
+        nextRunInfo.innerHTML = `
+            <div>Next scheduled run in:</div>
+            <div class="countdown-timer ${pulseClass}" style="--pulse-duration: ${pulseDuration}ms;">
+                ${timeString}
+            </div>
         `;
     }
 }
@@ -3491,15 +3621,15 @@ function dismissCompletion() {
 
     // Unlock the completion screen before dismissing
     completionScreenLocked = false;
-    addDebugLog(`[DISMISS] Unlocked completion screen, calling updateJobStatusUI with idle`);
-    // Hide completion screen and show idle/ready state
-    updateJobStatusUI({ status: 'idle' }, 'dismissCompletion');
+    addDebugLog(`[DISMISS] Unlocked completion screen, loading actual job status from backend`);
+    // Load actual status from backend (will show scheduled screen if schedules exist)
+    loadJobStatus('dismissCompletion');
 }
 
 function dismissError() {
     addDebugLog(`[ERROR DISMISS] dismissError() called`);
-    // Hide error screen and show idle/ready state
-    updateJobStatusUI({ status: 'idle' }, 'dismissError');
+    // Load actual status from backend (will show scheduled screen if schedules exist)
+    loadJobStatus('dismissError');
 }
 
 // ============================================================================

@@ -1816,17 +1816,43 @@ footer {
 
 /* Schedule Info */
 .schedule-info {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 16px;
     margin-top: 16px;
+    margin-bottom: 24px;
     font-size: 14px;
     line-height: 1.8;
 }
 
 .schedule-info strong {
     color: var(--primary-color);
+}
+
+/* Countdown Timer */
+.countdown-timer {
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+    margin-top: 4px;
+    display: inline-block;
+    padding: 4px;
+    border-radius: 6px;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.countdown-pulsing {
+    animation: countdown-pulse var(--pulse-duration, 2000ms) ease-in-out infinite;
+}
+
+@keyframes countdown-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+        box-shadow: 0 0 0 rgba(59, 130, 246, 0);
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.95;
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+    }
 }
 
 /* Responsive Design */
