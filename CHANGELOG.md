@@ -5,6 +5,26 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2025-10-10
+
+### Added
+- Live countdown timer showing time remaining until next scheduled prefetch
+- Countdown updates every second with pulsating animation effect
+- Countdown timer displays in scheduled state screen
+
+### Fixed
+- Schedule state preservation when dismissing completion/error screens
+- UI now correctly shows scheduled screen (not idle) after dismissing results when schedules exist
+- UI now updates immediately when schedules are added, edited, deleted, or toggled
+- Schedule Edit and Delete buttons now clickable (pointer events work through gradient overlay)
+
+### Changed
+- Countdown timer styled with rounded rectangle box and subtle blue background
+- Schedule saves now happen immediately (removed 2-second debounce delay)
+- Increased post-save delay from 200ms to 600ms for more reliable backend processing
+
+Closes #6
+
 ## [0.10.2] - 2025-10-08
 
 ### Fixed
