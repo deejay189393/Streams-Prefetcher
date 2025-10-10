@@ -338,8 +338,8 @@ function toggleScheduling() {
         addBtn.disabled = true;
     }
 
-    // Auto-save scheduling state
-    autoSaveSchedules();
+    // Immediately save scheduling state
+    saveSchedulesSilent();
 }
 
 function showAddScheduleModal() {
@@ -396,7 +396,7 @@ function saveScheduleFromModal() {
 
     closeScheduleModal();
     renderSchedulesList();
-    autoSaveSchedules();
+    saveSchedulesSilent();
 }
 
 function editSchedule(index) {
@@ -418,7 +418,7 @@ function deleteSchedule(index) {
     if (confirm('Are you sure you want to delete this schedule?')) {
         currentSchedules.splice(index, 1);
         renderSchedulesList();
-        autoSaveSchedules();
+        saveSchedulesSilent();
     }
 }
 
@@ -428,7 +428,7 @@ function confirmDeleteAllSchedules() {
     if (confirm(`Are you sure you want to delete all ${currentSchedules.length} schedule(s)? This cannot be undone.`)) {
         currentSchedules = [];
         renderSchedulesList();
-        autoSaveSchedules();
+        saveSchedulesSilent();
         showNotification('All schedules deleted', 'success');
     }
 }
@@ -521,6 +521,12 @@ async function saveSchedulesSilent() {
     try {
         const enabled = document.getElementById('scheduling-enabled').checked;
 
+        addDebugLog('═══════════════════════════════════════════════════');
+        addDebugLog('💾 [SAVE SCHEDULE] Starting save...');
+        addDebugLog(`💾 [SAVE SCHEDULE] enabled: ${enabled}`);
+        addDebugLog(`💾 [SAVE SCHEDULE] currentSchedules count: ${currentSchedules.length}`);
+        addDebugLog(`💾 [SAVE SCHEDULE] currentSchedules data: ${JSON.stringify(currentSchedules)}`);
+
         const response = await fetch('/api/schedule', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -531,24 +537,28 @@ async function saveSchedulesSilent() {
         });
 
         const data = await response.json();
+        addDebugLog(`💾 [SAVE SCHEDULE] Response received: ${JSON.stringify(data)}`);
 
         if (data.success) {
             // Silent save - no notification
             showSaveNotification();
+            addDebugLog('💾 [SAVE SCHEDULE] ✅ Save successful, starting 600ms timer...');
 
             // Mark schedule as configured for smart collapse behavior
             localStorage.setItem('schedule-configured', 'true');
 
             // Refresh job status to update UI (scheduled vs idle)
-            // Small delay to ensure backend has processed the schedule
+            // Delay to ensure backend APScheduler has fully processed the schedule
             setTimeout(() => {
-                addDebugLog('[SCHEDULE SAVE] Refreshing job status after schedule save...');
+                addDebugLog('⏰ [SAVE SCHEDULE] 600ms timer fired! Calling loadJobStatus...');
                 loadJobStatus('schedule-update');
-            }, 200);
+            }, 600);
         } else {
+            addDebugLog(`💾 [SAVE SCHEDULE] ❌ Save failed: ${data.error}`);
             console.error('Failed to auto-save schedules:', data.error);
         }
     } catch (error) {
+        addDebugLog(`💾 [SAVE SCHEDULE] ❌ Exception: ${error.message}`);
         console.error('Error auto-saving schedules:', error);
     }
 }
@@ -2694,14 +2704,30 @@ function updateJobStatusUI(status, caller = 'unknown') {
     // Show appropriate status display
     addDebugLog(`🔄 [UI UPDATE] Final status to display: ${status.status}`);
     addDebugLog(`🔄 [UI UPDATE] is_scheduled: ${status.is_scheduled}, next_run_time: ${status.next_run_time}`);
+
+    // DETAILED CONDITIONAL CHECK LOGGING
+    addDebugLog(`🔍 [CONDITIONAL CHECK] status.status === 'idle': ${status.status === 'idle'}`);
+    addDebugLog(`🔍 [CONDITIONAL CHECK] status.is_scheduled: ${status.is_scheduled}`);
+    addDebugLog(`🔍 [CONDITIONAL CHECK] status.next_run_time: ${status.next_run_time}`);
+    addDebugLog(`🔍 [CONDITIONAL CHECK] ALL THREE TRUE? ${status.status === 'idle' && status.is_scheduled && status.next_run_time}`);
+
     if (status.status === 'idle' && status.is_scheduled && status.next_run_time) {
         // Show scheduled state when idle with active schedules
         const scheduledDisplay = document.getElementById('status-scheduled');
         if (scheduledDisplay) {
-            if (!isTargetAlreadyVisible) {
+            // Check if scheduled screen is already visible
+            const scheduledAlreadyVisible = scheduledDisplay.style.display === 'block';
+
+            if (!scheduledAlreadyVisible) {
+                addDebugLog(`🔄 [UI UPDATE] ⚠️ SCHEDULED screen not visible, forcing display!`);
+                // Hide all screens first
+                document.querySelectorAll('[id^="status-"]').forEach(el => el.style.display = 'none');
+                // Show scheduled screen
                 addDebugLog(`🔄 [UI UPDATE] ✅ Showing SCHEDULED screen`);
                 scheduledDisplay.style.display = 'block';
                 logStatusScreens();
+            } else {
+                addDebugLog(`🔄 [UI UPDATE] SCHEDULED screen already visible, just updating content`);
             }
             updateNextRunInfo(status);
         }
