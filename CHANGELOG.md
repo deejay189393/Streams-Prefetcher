@@ -5,6 +5,16 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1] - 2025-10-10
+
+### Added
+- Prefetch Time progress bar showing elapsed time vs max execution time during jobs
+- Real-time countdown with human-readable format (hours, minutes, seconds)
+- Percentage progress indicator for time-based execution limits
+- Automatic hiding when max execution time is unlimited
+
+Closes #28
+
 ## [0.11.0] - 2025-10-10
 
 ### Added
