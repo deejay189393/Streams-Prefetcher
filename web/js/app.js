@@ -1230,6 +1230,26 @@ function populateConfigurationForm(config) {
     }
     toggleNoDelay();
 
+    // Network Request Timeout - handle unlimited (-1) and convert to appropriate unit
+    const timeoutSeconds = config.network_request_timeout !== undefined ? config.network_request_timeout : 30;
+    if (timeoutSeconds === -1) {
+        // Unlimited - show 30 seconds in UI but checkbox will be checked
+        document.getElementById('network-request-timeout-value').value = 30;
+        document.getElementById('network-request-timeout-unit').value = '1';
+        document.getElementById('network-request-timeout-unlimited').checked = true;
+    } else if (timeoutSeconds % 60 === 0) {
+        // Divisible by minutes
+        document.getElementById('network-request-timeout-value').value = timeoutSeconds / 60;
+        document.getElementById('network-request-timeout-unit').value = '60';
+        document.getElementById('network-request-timeout-unlimited').checked = false;
+    } else {
+        // Whole seconds
+        document.getElementById('network-request-timeout-value').value = timeoutSeconds;
+        document.getElementById('network-request-timeout-unit').value = '1';
+        document.getElementById('network-request-timeout-unlimited').checked = false;
+    }
+    toggleUnlimitedTime('network-request-timeout');
+
     // Cache validity - handle unlimited (-1) and convert to appropriate unit
     const cacheValiditySeconds = config.cache_validity !== undefined ? config.cache_validity : 604800; // Default: 1 week
     if (cacheValiditySeconds === -1) {
@@ -1838,6 +1858,7 @@ async function saveConfigurationSilent() {
             series_per_catalog: getLimitValue('series-per-catalog'),
             items_per_mixed_catalog: getLimitValue('items-per-mixed-catalog'),
             delay: document.getElementById('delay-no-delay').checked ? 0 : parseFloat(document.getElementById('delay-value').value) * parseFloat(document.getElementById('delay-unit').value),
+            network_request_timeout: document.getElementById('network-request-timeout-unlimited').checked ? -1 : parseFloat(document.getElementById('network-request-timeout-value').value) * parseFloat(document.getElementById('network-request-timeout-unit').value),
             cache_validity: document.getElementById('cache-validity-unlimited').checked ? -1 : parseFloat(document.getElementById('cache-validity-value').value) * parseFloat(document.getElementById('cache-validity-unit').value),
             max_execution_time: document.getElementById('max-execution-time-unlimited').checked ? -1 : parseFloat(document.getElementById('max-execution-time-value').value) * parseFloat(document.getElementById('max-execution-time-unit').value),
             proxy: document.getElementById('proxy').value.trim(),
@@ -1916,6 +1937,7 @@ async function saveConfiguration() {
             series_per_catalog: getLimitValue('series-per-catalog'),
             items_per_mixed_catalog: getLimitValue('items-per-mixed-catalog'),
             delay: document.getElementById('delay-no-delay').checked ? 0 : parseFloat(document.getElementById('delay-value').value) * parseFloat(document.getElementById('delay-unit').value),
+            network_request_timeout: document.getElementById('network-request-timeout-unlimited').checked ? -1 : parseFloat(document.getElementById('network-request-timeout-value').value) * parseFloat(document.getElementById('network-request-timeout-unit').value),
             cache_validity: document.getElementById('cache-validity-unlimited').checked ? -1 : parseFloat(document.getElementById('cache-validity-value').value) * parseFloat(document.getElementById('cache-validity-unit').value),
             max_execution_time: document.getElementById('max-execution-time-unlimited').checked ? -1 : parseFloat(document.getElementById('max-execution-time-value').value) * parseFloat(document.getElementById('max-execution-time-unit').value),
             proxy: document.getElementById('proxy').value.trim(),

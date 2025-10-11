@@ -217,9 +217,9 @@ Default: <strong>90 minutes</strong>"><svg viewBox="0 0 24 24" fill="none" strok
                     </div>
                 </div>
 
-                <!-- Request Subsection -->
+                <!-- Network Requests Subsection -->
                 <div class="config-subsection">
-                    <h3 class="subsection-title">🌐 Request</h3>
+                    <h3 class="subsection-title">🌐 Network Requests</h3>
                     <div class="subsection-content">
                         <div class="form-group">
                             <label for="delay">
@@ -243,6 +243,29 @@ Default: <strong>2 seconds</strong>"><svg viewBox="0 0 24 24" fill="none" stroke
                             <label class="checkbox-label">
                                 <input type="checkbox" id="delay-no-delay" onchange="toggleNoDelay()">
                                 No Delay
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="network-request-timeout">
+                                Network Request Timeout
+                                <span class="info-icon" data-tooltip="Maximum time to wait for a response from network requests performed by this tool before timing out. Check 'Unlimited' for no timeout.
+
+Default: <strong>30 seconds</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
+                            </label>
+                            <div class="time-input">
+                                <input type="number" id="network-request-timeout-value" value="30" min="0" step="0.1">
+                                <select id="network-request-timeout-unit">
+                                    <option value="1" selected>Seconds</option>
+                                    <option value="60">Minutes</option>
+                                </select>
+                            </div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="network-request-timeout-unlimited" onchange="toggleUnlimitedTime('network-request-timeout')">
+                                Unlimited
                             </label>
                         </div>
 

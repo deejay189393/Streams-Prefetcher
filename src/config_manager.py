@@ -19,6 +19,7 @@ class ConfigManager:
         'series_per_catalog': 3,
         'items_per_mixed_catalog': 20,
         'delay': 2,  # In seconds
+        'network_request_timeout': 30,  # In seconds
         'proxy': '',
         'randomize_catalog_processing': False,
         'randomize_item_prefetching': False,

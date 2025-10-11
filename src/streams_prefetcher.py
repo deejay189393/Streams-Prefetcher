@@ -570,7 +570,7 @@ def format_time_string(seconds: float) -> str:
         return " ".join(parts)
 
 class StreamsPrefetcher:
-    def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False, cache_uncached_streams_enabled: bool = False, cached_stream_regex: str = '⚡', max_cache_requests_per_item: int = 1, max_cache_requests_global: int = 50, max_required_cached_streams: int = 0, scheduler=None):
+    def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, network_request_timeout: int = 30, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False, cache_uncached_streams_enabled: bool = False, cached_stream_regex: str = '⚡', max_cache_requests_per_item: int = 1, max_cache_requests_global: int = 50, max_required_cached_streams: int = 0, scheduler=None):
         self.addon_urls = addon_urls
         self.scheduler = scheduler
         self.movies_global_limit = movies_global_limit
@@ -579,6 +579,7 @@ class StreamsPrefetcher:
         self.series_per_catalog = series_per_catalog
         self.items_per_mixed_catalog = items_per_mixed_catalog
         self.delay = delay
+        self.network_request_timeout = network_request_timeout if network_request_timeout != -1 else None
         self.proxy_url = proxy_url
         self.randomize_catalogs = randomize_catalogs
         self.randomize_items = randomize_items
@@ -762,7 +763,7 @@ class StreamsPrefetcher:
 
     def make_request(self, url: str) -> Optional[Dict[Any, Any]]:
         try:
-            response = self.session.get(url, timeout=30)
+            response = self.session.get(url, timeout=self.network_request_timeout)
             response.raise_for_status()
             data = response.json()
             time.sleep(self.delay)
@@ -902,7 +903,7 @@ class StreamsPrefetcher:
         self.results['statistics']['cache_requests_made'] += 1
         response = None
         try:
-            response = self.session.get(stream_url, timeout=30)
+            response = self.session.get(stream_url, timeout=self.network_request_timeout)
             response.raise_for_status()
             time.sleep(self.delay)
             self.results['statistics']['cache_requests_successful'] += 1
@@ -947,7 +948,7 @@ class StreamsPrefetcher:
                                 sys.stdout.flush()
                             for i in range(requests_to_send):
                                 try:
-                                    head_response = self.session.head(uncached_streams[i], timeout=10)
+                                    head_response = self.session.head(uncached_streams[i], timeout=self.network_request_timeout)
                                     head_response.close()
                                     self.cache_requests_sent_count += 1
                                     time.sleep(self.delay)

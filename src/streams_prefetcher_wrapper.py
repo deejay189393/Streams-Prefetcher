@@ -76,6 +76,7 @@ class StreamsPrefetcherWrapper:
             'series_per_catalog': config.get('series_per_catalog', 5),
             'items_per_mixed_catalog': config.get('items_per_mixed_catalog', 30),
             'delay': config.get('delay', 0),
+            'network_request_timeout': config.get('network_request_timeout', 30),
             'proxy_url': config.get('proxy', None) or None,
             'randomize_catalogs': config.get('randomize_catalog_processing', False),
             'randomize_items': config.get('randomize_item_prefetching', False),
