@@ -757,7 +757,8 @@ class StreamsPrefetcher:
             'statistics': {
                 'total_catalogs_in_manifest': 0, 'filtered_catalogs': 0, 'total_pages_fetched': 0,
                 'movies_prefetched': 0, 'series_prefetched': 0, 'episodes_found': 0, 'episodes_prefetched': 0,
-                'cache_requests_made': 0, 'cache_requests_successful': 0, 'items_from_cache': 0, 'errors': 0
+                'cache_requests_made': 0, 'cache_requests_successful': 0, 'items_from_cache': 0, 'errors': 0,
+                'service_cache_requests_sent': 0
             }
         }
 
@@ -1059,7 +1060,8 @@ class StreamsPrefetcher:
             # Store initial counts at the start of processing this catalog
             initial_movies_count = self.prefetched_movies_count
             initial_series_count = self.prefetched_series_count
-            
+            initial_cache_requests = self.cache_requests_sent_count  # Track cache requests at start
+
             page = 0
             success_count, failed_count, cached_count, prefetched_in_this_catalog = 0, 0, 0, 0
             
@@ -1225,14 +1227,18 @@ class StreamsPrefetcher:
 
             catalog_end_time = time.time()
             catalog_duration = catalog_end_time - catalog_start_time
-            
+
+            # Calculate cache requests made during this catalog
+            catalog_cache_requests = self.cache_requests_sent_count - initial_cache_requests
+
             # Store catalog timing information
             catalog_result = {
                 'name': cat_name,
                 'type': cat_mode,
                 'success_count': success_count,
-                'failed_count': failed_count, 
+                'failed_count': failed_count,
                 'cached_count': cached_count,
+                'cache_requests_sent': catalog_cache_requests,
                 'duration': catalog_duration,
                 'start_time': catalog_start_time,
                 'end_time': catalog_end_time

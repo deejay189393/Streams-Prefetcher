@@ -823,7 +823,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Now load config (which will auto-load catalogs if needed)
     addDebugLog('Loading configuration...');
-    loadConfiguration();
+    await loadConfiguration();
     addDebugLog('Loading schedules...');
     loadSchedules();
     addDebugLog('Checking timezone mismatch...');
@@ -3254,6 +3254,7 @@ function updateJobStatusUI(status, caller = 'unknown') {
                                 <td>${cat.success_count || 0}</td>
                                 <td>${cat.failed_count || 0}</td>
                                 <td>${cat.cached_count || 0}</td>
+                                <td>${cat.cache_requests_sent || 0}</td>
                                 <td>${total}</td>
                             `;
                         });
@@ -4168,7 +4169,7 @@ function populateCatalogTable(catalogs) {
     if (catalogs.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">
                     No catalog data available
                 </td>
             </tr>
@@ -4189,6 +4190,8 @@ function populateCatalogTable(catalogs) {
         const cached = catalog.cached_count || 0;
         const total = success + failed + cached;
 
+        const cacheRequests = catalog.cache_requests_sent || 0;
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td class="catalog-name" title="${name}">${name}</td>
@@ -4197,6 +4200,7 @@ function populateCatalogTable(catalogs) {
             <td class="success-count">${success}</td>
             <td class="failed-count">${failed}</td>
             <td class="cached-count">${cached}</td>
+            <td class="cache-requests-count">${cacheRequests}</td>
             <td>${total}</td>
         `;
         tbody.appendChild(row);
