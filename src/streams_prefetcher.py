@@ -601,6 +601,12 @@ class StreamsPrefetcher:
         self.prefetched_episodes_count = 0
         self.prefetched_cached_count = 0
 
+        # Dashboard auto-refresh throttling
+        self._last_dashboard_redraw = 0.0
+        self._min_redraw_interval = 0.5  # 500ms = max 2 redraws/second
+        self._is_processing_items = False
+        self._current_dashboard_args = None
+
         # Initialize timing
         self.start_time = None
         self.end_time = None
@@ -695,6 +701,22 @@ class StreamsPrefetcher:
     def _check_time_limit(self) -> bool:
         """Check if max execution time has been reached"""
         return self.max_execution_time != -1 and (time.time() - self.start_time) >= self.max_execution_time
+
+    def _should_auto_redraw(self) -> bool:
+        """Check if enough time has passed for throttled auto-redraw"""
+        if not self._is_processing_items or self._current_dashboard_args is None:
+            return False
+        current_time = time.time()
+        if current_time - self._last_dashboard_redraw >= self._min_redraw_interval:
+            self._last_dashboard_redraw = current_time
+            return True
+        return False
+
+    def _auto_redraw_dashboard(self):
+        """Conditionally redraw dashboard with throttling"""
+        if self._should_auto_redraw():
+            self._current_dashboard_args['prefetched_cached_count'] = self.prefetched_cached_count
+            self.progress_tracker.redraw_dashboard(**self._current_dashboard_args)
 
     def __del__(self):
         if self.db_conn:
@@ -1100,7 +1122,8 @@ class StreamsPrefetcher:
                 metas = cat_data.get('metas', []) if cat_data else []
                 if not metas: break
                 if self.randomize_items: random.shuffle(metas)
-                
+
+                self._is_processing_items = True  # Enable auto-refresh
                 item_statuses_on_page = []
                 for item in metas:
                     # Check if paused BEFORE starting new item (wait if paused)
@@ -1145,7 +1168,13 @@ class StreamsPrefetcher:
                             **dashboard_args
                         )
                         if not imdb_id: failed_count += 1; item_statuses_on_page.append('failed'); continue
-                        if self.is_cache_valid(imdb_id): cached_count += 1; self.prefetched_cached_count += 1; item_statuses_on_page.append('cached'); continue
+                        if self.is_cache_valid(imdb_id):
+                            cached_count += 1
+                            self.prefetched_cached_count += 1
+                            item_statuses_on_page.append('cached')
+                            self._current_dashboard_args = dashboard_args
+                            self._auto_redraw_dashboard()
+                            continue
 
                         # Check if pause was requested BEFORE prefetching (after showing UI)
                         if self.scheduler and self.scheduler.pause_requested:
@@ -1224,6 +1253,8 @@ class StreamsPrefetcher:
                             success_count += 1; prefetched_in_this_catalog += 1; self.prefetched_series_count += 1
                             item_statuses_on_page.append('successful')
                         else: failed_count += 1; item_statuses_on_page.append('failed')
+
+                self._is_processing_items = False  # Disable auto-refresh
 
             catalog_end_time = time.time()
             catalog_duration = catalog_end_time - catalog_start_time
