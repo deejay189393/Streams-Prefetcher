@@ -2914,6 +2914,13 @@ function updateJobStatusUI(status, caller = 'unknown') {
             // Reset terminate button to original state (force reset for new job)
             resetTerminateButton(true);
 
+            // Show/hide cache requests card based on feature enablement
+            const cacheUncachedEnabled = currentConfig?.cache_uncached_streams?.enabled || false;
+            const cacheRequestsCard = document.getElementById('stat-card-cache-requests');
+            if (cacheRequestsCard) {
+                cacheRequestsCard.style.display = cacheUncachedEnabled ? 'flex' : 'none';
+            }
+
             // Start execution time progress bar (only on first run, not on page refresh during running job)
             if (status.start_time && currentConfig && currentConfig.max_execution_time !== undefined) {
                 startExecutionTimeInterval(status.start_time, currentConfig.max_execution_time);
@@ -3089,6 +3096,13 @@ function updateJobStatusUI(status, caller = 'unknown') {
             // Stop execution time progress bar when job completes
             stopExecutionTimeInterval();
 
+            // Show/hide cache requests card in completion screen based on feature enablement
+            const cacheUncachedEnabledCompletion = currentConfig?.cache_uncached_streams?.enabled || false;
+            const completionCacheRequestsCard = document.getElementById('completion-stat-cache-requests');
+            if (completionCacheRequestsCard) {
+                completionCacheRequestsCard.style.display = cacheUncachedEnabledCompletion ? 'block' : 'none';
+            }
+
             if (status.summary) {
                 try {
                     addDebugLog(`📊 [COMPLETION STATS] ═══════════════════════════════════════`);
@@ -3159,6 +3173,7 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     setEl('completion-episodes', stats.episodes_prefetched || 0);
                     setEl('completion-pages', stats.total_pages_fetched || 0);
                     setEl('completion-cached', stats.items_from_cache || 0);
+                    setEl('completion-cache-requests', stats.service_cache_requests_sent || 0);
 
                     const successRate = stats.cache_requests_made > 0
                         ? `${Math.round((stats.cache_requests_successful / stats.cache_requests_made) * 100)}%`
@@ -3463,6 +3478,8 @@ function updateProgressInfo(progress, preserveActionText = false) {
         document.getElementById('stat-series-limit').textContent = 'of ∞';
         document.getElementById('stat-episodes').textContent = '0';
         document.getElementById('stat-cached').textContent = '0';
+        document.getElementById('stat-cache-requests').textContent = '0';
+        document.getElementById('stat-cache-requests-limit').textContent = 'of 0';
 
         document.getElementById('overall-progress-fill').style.width = '0%';
         document.getElementById('overall-progress-percent').textContent = '0%';
@@ -3501,6 +3518,12 @@ function updateProgressInfo(progress, preserveActionText = false) {
     document.getElementById('stat-episodes').textContent = episodesPrefetched;
 
     document.getElementById('stat-cached').textContent = cachedCount;
+
+    // Update cache requests stat if available
+    const cacheRequestsSent = progress.service_cache_requests_sent || 0;
+    const cacheRequestsLimit = progress.service_cache_requests_limit || 0;
+    document.getElementById('stat-cache-requests').textContent = cacheRequestsSent;
+    document.getElementById('stat-cache-requests-limit').textContent = `of ${cacheRequestsLimit}`;
 
     // Update RPDB poster if IMDb ID is available
     const currentTitle = progress.current_title || '';

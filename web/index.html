@@ -264,7 +264,7 @@ Default: <strong>2 seconds</strong>"><svg viewBox="0 0 24 24" fill="none" stroke
                     <h3 class="subsection-title" style="display: flex; align-items: center; justify-content: space-between;">
                         <span style="display: flex; align-items: center;">
                             🔄 Service Cache Requests
-                            <span class="info-icon" data-tooltip="Performs cache requests for uncached streams to the services that are preconfigured in your Stream Addons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <span class="info-icon" data-tooltip="Performs caching requests for uncached streams to the services that are preconfigured in your Stream addons."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <circle cx="12" cy="12" r="10"></circle>
                                         <path d="M12 16v-4M12 8h.01"></path>
                                     </svg></span>
@@ -277,7 +277,7 @@ Default: <strong>2 seconds</strong>"><svg viewBox="0 0 24 24" fill="none" stroke
                     <div class="subsection-content" id="cache-uncached-streams-content">
                         <div class="form-group">
                             <label for="cached-stream-regex">
-                                Cached Stream Detection Pattern
+                                Cached Streams Detection Pattern (RegEx)
                                 <span class="info-icon" data-tooltip="Regular expression pattern to detect cached streams in stream names and descriptions.
 
 Default: <strong>⚡</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -292,7 +292,7 @@ Default: <strong>⚡</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="curr
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="max-cache-requests-per-item">
-                                    Max Requests per Item
+                                    Max Caching Requests per Item
                                     <span class="info-icon" data-tooltip="Maximum number of uncached stream URLs to request per movie/episode. Higher values trigger more caches but take longer.
 
 Default: <strong>1</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -305,7 +305,7 @@ Default: <strong>1</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="curren
 
                             <div class="form-group">
                                 <label for="max-cache-requests-global">
-                                    Global Request Limit
+                                    Global Caching Requests Limit
                                     <span class="info-icon" data-tooltip="Maximum total number of cache requests to send across the entire prefetch session. Prevents excessive requests to your debrid service.
 
 Default: <strong>50</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -320,7 +320,7 @@ Default: <strong>50</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="curre
                         <div class="form-group">
                             <label for="max-required-cached-streams">
                                 Minimum Required Cached Streams
-                                <span class="info-icon" data-tooltip="Only trigger cache requests if fewer than this many cached streams are detected. Set to 0 to always trigger requests for uncached streams.
+                                <span class="info-icon" data-tooltip="Only trigger caching requests for uncached streams if fewer than this many cached streams are detected. Set to 0 to only trigger caching requests when there were no cached streams found.
 
 Default: <strong>0</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <circle cx="12" cy="12" r="10"></circle>
@@ -728,6 +728,14 @@ Default: <strong>Disabled</strong>"><svg viewBox="0 0 24 24" fill="none" stroke=
                             <div class="stat-value" id="stat-cached">0</div>
                         </div>
                     </div>
+                    <div class="stat-card" id="stat-card-cache-requests" style="display: none;">
+                        <div class="stat-icon">🔄</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Stream Caching Requested</div>
+                            <div class="stat-value" id="stat-cache-requests">0</div>
+                            <div class="stat-limit" id="stat-cache-requests-limit">of 0</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Page Fetching Status (shows during page loading) -->
@@ -869,6 +877,11 @@ Default: <strong>Disabled</strong>"><svg viewBox="0 0 24 24" fill="none" stroke=
                             <div class="summary-stat-icon">⚡</div>
                             <div class="summary-stat-value" id="completion-cached">0</div>
                             <div class="summary-stat-label">Already Prefetched</div>
+                        </div>
+                        <div class="summary-stat" id="completion-stat-cache-requests" style="display: none;">
+                            <div class="summary-stat-icon">🔄</div>
+                            <div class="summary-stat-value" id="completion-cache-requests">0</div>
+                            <div class="summary-stat-label">Stream Caching Requested</div>
                         </div>
                         <div class="summary-stat">
                             <div class="summary-stat-icon">📁</div>

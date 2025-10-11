@@ -215,7 +215,7 @@ label {
     box-shadow: 0 8px 24px rgba(0,0,0,0.8),
                 0 0 20px rgba(30, 64, 175, 0.4);
     display: none;
-    white-space: normal;
+    white-space: pre-line;
     font-weight: normal;
     backdrop-filter: blur(10px);
     opacity: 0;
