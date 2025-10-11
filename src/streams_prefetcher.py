@@ -1216,7 +1216,13 @@ class StreamsPrefetcher:
                         if not episodes: failed_count += 1; item_statuses_on_page.append('failed'); continue
                         self.results['statistics']['episodes_found'] += len(episodes)
                         cached_episodes = sum(1 for ep in episodes if self.is_cache_valid(ep['id']))
-                        if (cached_episodes / len(episodes)) >= 0.75: cached_count += 1; self.prefetched_cached_count += 1; item_statuses_on_page.append('cached'); continue
+                        if (cached_episodes / len(episodes)) >= 0.75:
+                            cached_count += 1
+                            self.prefetched_cached_count += 1
+                            item_statuses_on_page.append('cached')
+                            self._current_dashboard_args = dashboard_args
+                            self._auto_redraw_dashboard()
+                            continue
                         series_had_success = False
                         for ep in episodes:
                             # Check if paused BEFORE starting new episode (wait if paused)
