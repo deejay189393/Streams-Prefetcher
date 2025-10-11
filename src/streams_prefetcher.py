@@ -603,7 +603,7 @@ class StreamsPrefetcher:
 
         # Dashboard auto-refresh throttling
         self._last_dashboard_redraw = 0.0
-        self._min_redraw_interval = 0.5  # 500ms = max 2 redraws/second
+        self._min_redraw_interval = 0.1  # 100ms = max 10 redraws/second
         self._is_processing_items = False
         self._current_dashboard_args = None
 
@@ -716,7 +716,7 @@ class StreamsPrefetcher:
             self._last_dashboard_redraw = current_time
             self._log(f"[AUTO_REDRAW_DEBUG] Allowed: {time_since_last:.3f}s since last redraw (cached_count={self.prefetched_cached_count})")
             return True
-        self._log(f"[AUTO_REDRAW_DEBUG] Throttled: only {time_since_last:.3f}s since last redraw (need {self._min_redraw_interval}s)")
+        self._log(f"[AUTO_REDRAW_DEBUG] Throttled: only {time_since_last:.3f}s since last redraw (need {self._min_redraw_interval:.1f}s)")
         return False
 
     def _auto_redraw_dashboard(self):
