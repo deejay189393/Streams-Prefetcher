@@ -149,6 +149,11 @@ class StreamsPrefetcherWrapper:
             # Extract progress data and call callback
             if self.progress_callback:
                 mode = kwargs.get('mode', 'idle')
+                cached_count = kwargs.get('prefetched_cached_count', 0)
+
+                # Log callback trigger
+                if self.prefetcher.log_file:
+                    self.prefetcher._log(f"[PROGRESS_CALLBACK_DEBUG] Triggering callback: mode={mode}, cached_count={cached_count}")
 
                 # Build comprehensive progress data
                 progress_data = {
@@ -161,7 +166,7 @@ class StreamsPrefetcherWrapper:
                     'series_prefetched': kwargs.get('prefetched_series_count', 0),
                     'series_limit': kwargs.get('series_global_limit', -1),
                     'episodes_prefetched': self.prefetcher.prefetched_episodes_count,
-                    'cached_count': kwargs.get('prefetched_cached_count', 0),
+                    'cached_count': cached_count,
                     'catalog_movies_count': kwargs.get('catalog_movies_count', 0),
                     'catalog_series_count': kwargs.get('catalog_series_count', 0),
                     'mode': mode,

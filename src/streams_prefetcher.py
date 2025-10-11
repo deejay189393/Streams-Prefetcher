@@ -704,19 +704,30 @@ class StreamsPrefetcher:
 
     def _should_auto_redraw(self) -> bool:
         """Check if enough time has passed for throttled auto-redraw"""
-        if not self._is_processing_items or self._current_dashboard_args is None:
+        if not self._is_processing_items:
+            self._log(f"[AUTO_REDRAW_DEBUG] Skipped: not processing items")
+            return False
+        if self._current_dashboard_args is None:
+            self._log(f"[AUTO_REDRAW_DEBUG] Skipped: no dashboard args")
             return False
         current_time = time.time()
-        if current_time - self._last_dashboard_redraw >= self._min_redraw_interval:
+        time_since_last = current_time - self._last_dashboard_redraw
+        if time_since_last >= self._min_redraw_interval:
             self._last_dashboard_redraw = current_time
+            self._log(f"[AUTO_REDRAW_DEBUG] Allowed: {time_since_last:.3f}s since last redraw (cached_count={self.prefetched_cached_count})")
             return True
+        self._log(f"[AUTO_REDRAW_DEBUG] Throttled: only {time_since_last:.3f}s since last redraw (need {self._min_redraw_interval}s)")
         return False
 
     def _auto_redraw_dashboard(self):
         """Conditionally redraw dashboard with throttling"""
+        self._log(f"[AUTO_REDRAW_DEBUG] Called with cached_count={self.prefetched_cached_count}")
         if self._should_auto_redraw():
             self._current_dashboard_args['prefetched_cached_count'] = self.prefetched_cached_count
+            self._log(f"[AUTO_REDRAW_DEBUG] Executing redraw with cached_count={self.prefetched_cached_count}")
             self.progress_tracker.redraw_dashboard(**self._current_dashboard_args)
+        else:
+            self._log(f"[AUTO_REDRAW_DEBUG] Skipped redraw")
 
     def __del__(self):
         if self.db_conn:

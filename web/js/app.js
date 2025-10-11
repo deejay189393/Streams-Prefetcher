@@ -836,6 +836,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     addDebugLog('Connecting event source...');
     connectEventSource();
 
+    // Track page visibility for debugging SSE throttling
+    document.addEventListener('visibilitychange', () => {
+        const state = document.visibilityState;
+        addDebugLog(`👁️ [PAGE VISIBILITY] Page is now: ${state}`);
+    });
+
     // Enable drag and drop for addon URLs
     initializeAddonUrlDragDrop();
 
@@ -3532,6 +3538,12 @@ function updateProgressInfo(progress, preserveActionText = false) {
     const episodesPrefetched = progress.episodes_prefetched || 0;
     const cachedCount = progress.cached_count || 0;
 
+    // DEBUG: Log cached count updates
+    const currentCachedDisplay = document.getElementById('stat-cached').textContent;
+    if (cachedCount > 0 || currentCachedDisplay !== '0') {
+        addDebugLog(`🔢 [UI UPDATE] Already Prefetched: ${currentCachedDisplay} → ${cachedCount}`);
+    }
+
     document.getElementById('stat-movies').textContent = moviesPrefetched;
     document.getElementById('stat-movies-limit').textContent = moviesLimit === -1 ? 'of ∞' : `of ${moviesLimit}`;
 
@@ -3938,7 +3950,9 @@ function handleSSEEvent(event, data) {
             break;
 
         case 'progress':
-            addDebugLog(`📨 [SSE] Progress event`);
+            const cachedInEvent = data.cached_count || 0;
+            const visibilityState = document.visibilityState;
+            addDebugLog(`📨 [SSE] Progress event received: cached_count=${cachedInEvent}, page_visible=${visibilityState === 'visible'}`);
             updateProgressInfo(data);
             break;
 
