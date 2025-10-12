@@ -327,6 +327,73 @@ function formatExecutionTime(seconds) {
 }
 
 // ============================================================================
+// Shared Stats Update Functions (DRY Refactor - Phase 3)
+// ============================================================================
+
+/**
+ * Update statistics cards with unified logic
+ * Eliminates ~100 lines of duplicate code across running/completion screens
+ * @param {string} prefix - Element ID prefix ('stat' for running, 'completion' for completed)
+ * @param {Object} stats - Statistics object
+ */
+function updateStatsCards(prefix, stats) {
+    const setEl = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setEl(`${prefix}-movies`, stats.movies || 0);
+    setEl(`${prefix}-series`, stats.series || 0);
+    setEl(`${prefix}-episodes`, stats.episodes || 0);
+    setEl(`${prefix}-cached`, stats.cached || 0);
+    setEl(`${prefix}-pages`, stats.pages || 0);
+    setEl(`${prefix}-catalogs`, stats.catalogs || 0);
+    setEl(`${prefix}-cache-requests`, stats.cache_requests || 0);
+}
+
+/**
+ * Populate catalog details table
+ * @param {HTMLElement} tbody - Table body element
+ * @param {Array} catalogs - Array of catalog objects
+ */
+function populateCatalogTable(tbody, catalogs) {
+    if (!tbody || !catalogs || catalogs.length === 0) return;
+
+    tbody.innerHTML = '';
+    catalogs.forEach(cat => {
+        const row = tbody.insertRow();
+        const total = (cat.success_count || 0) + (cat.failed_count || 0) + (cat.cached_count || 0);
+        const typeCapitalized = cat.type ? cat.type.charAt(0).toUpperCase() + cat.type.slice(1) : '-';
+
+        row.innerHTML = `
+            <td>${cat.name || '-'}</td>
+            <td><span class="catalog-type-badge">${typeCapitalized}</span></td>
+            <td>${formatDuration(cat.duration)}</td>
+            <td>${cat.success_count || 0}</td>
+            <td>${cat.failed_count || 0}</td>
+            <td>${cat.cached_count || 0}</td>
+            <td>${cat.cache_requests_sent || 0}</td>
+            <td>${total}</td>
+        `;
+    });
+}
+
+/**
+ * Calculate processing rates from stats and timing
+ * @param {Object} stats - Statistics object
+ * @param {Object} timing - Timing object with processing_duration
+ * @returns {Object} Rates object with movie_rate, series_rate, overall_rate
+ */
+function calculateProcessingRates(stats, timing) {
+    const procMins = (timing.processing_duration || 1) / 60;
+    return {
+        movie_rate: (stats.movies_prefetched / procMins).toFixed(1),
+        series_rate: (stats.episodes_prefetched / procMins).toFixed(1),
+        overall_rate: ((stats.movies_prefetched + stats.series_prefetched) / procMins).toFixed(1)
+    };
+}
+
+// ============================================================================
 // Collapsible Section Helpers
 // ============================================================================
 
@@ -3197,15 +3264,17 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     setEl('completion-total-duration', formatDuration(timing.total_duration));
                     setEl('completion-processing-time', formatDuration(timing.processing_duration));
 
-                    // Statistics
+                    // Statistics - Use shared function
                     addDebugLog(`📊 [COMPLETION STATS] ─── Populating STATISTICS fields ───`);
-                    setEl('completion-catalogs', stats.filtered_catalogs || 0);
-                    setEl('completion-movies', stats.movies_prefetched || 0);
-                    setEl('completion-series', stats.series_prefetched || 0);
-                    setEl('completion-episodes', stats.episodes_prefetched || 0);
-                    setEl('completion-pages', stats.total_pages_fetched || 0);
-                    setEl('completion-cached', stats.cached_count || 0);
-                    setEl('completion-cache-requests', stats.service_cache_requests_sent || 0);
+                    updateStatsCards('completion', {
+                        movies: stats.movies_prefetched,
+                        series: stats.series_prefetched,
+                        episodes: stats.episodes_prefetched,
+                        cached: stats.cached_count,
+                        pages: stats.total_pages_fetched,
+                        catalogs: stats.filtered_catalogs,
+                        cache_requests: stats.service_cache_requests_sent
+                    });
 
                     const successRate = stats.cache_requests_made > 0
                         ? `${Math.round((stats.cache_requests_successful / stats.cache_requests_made) * 100)}%`
@@ -3213,18 +3282,14 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     addDebugLog(`📊 [COMPLETION STATS] Success rate calculation: ${stats.cache_requests_successful}/${stats.cache_requests_made} = ${successRate}`);
                     setEl('completion-success-rate', successRate);
 
-                    // Rates
+                    // Rates - Use shared function
                     addDebugLog(`📊 [COMPLETION STATS] ─── Populating PROCESSING RATES ───`);
-                    const procMins = (timing.processing_duration || 1) / 60;
-                    addDebugLog(`📊 [COMPLETION STATS] Processing minutes: ${procMins.toFixed(2)}`);
+                    const rates = calculateProcessingRates(stats, timing);
+                    addDebugLog(`📊 [COMPLETION STATS] Processing minutes: ${((timing.processing_duration || 1) / 60).toFixed(2)}`);
 
-                    const movieRate = (stats.movies_prefetched / procMins).toFixed(1);
-                    const seriesRate = (stats.episodes_prefetched / procMins).toFixed(1);
-                    const overallRate = ((stats.movies_prefetched + stats.series_prefetched) / procMins).toFixed(1);
-
-                    setEl('completion-movie-rate', movieRate);
-                    setEl('completion-series-rate', seriesRate);
-                    setEl('completion-overall-rate', overallRate);
+                    setEl('completion-movie-rate', rates.movie_rate);
+                    setEl('completion-series-rate', rates.series_rate);
+                    setEl('completion-overall-rate', rates.overall_rate);
 
                     // Catalog Details Table
                     addDebugLog(`📊 [COMPLETION STATS] ─── Populating CATALOG DETAILS TABLE ───`);
@@ -3248,25 +3313,14 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     addDebugLog(`📊 [COMPLETION STATS] Number of processed catalogs: ${catalogs.length}`);
                     addDebugLog(`📊 [COMPLETION STATS] Catalogs array: ${JSON.stringify(catalogs, null, 2)}`);
 
+                    // Use shared function to populate table
                     const tbody = document.getElementById('catalog-details-tbody');
                     if (tbody && catalogs.length > 0) {
-                        addDebugLog(`📊 [COMPLETION STATS] Table body found, clearing and populating...`);
-                        tbody.innerHTML = '';
+                        addDebugLog(`📊 [COMPLETION STATS] Table body found, using shared function to populate...`);
+                        populateCatalogTable(tbody, catalogs);
                         catalogs.forEach((cat, idx) => {
-                            const row = tbody.insertRow();
                             const total = (cat.success_count || 0) + (cat.failed_count || 0) + (cat.cached_count || 0);
-                            const typeCapitalized = cat.type ? cat.type.charAt(0).toUpperCase() + cat.type.slice(1) : '-';
                             addDebugLog(`📊 [COMPLETION STATS] Row ${idx}: ${cat.name} (${cat.type}) - ${total} items`);
-                            row.innerHTML = `
-                                <td>${cat.name || '-'}</td>
-                                <td><span class="catalog-type-badge">${typeCapitalized}</span></td>
-                                <td>${formatDuration(cat.duration)}</td>
-                                <td>${cat.success_count || 0}</td>
-                                <td>${cat.failed_count || 0}</td>
-                                <td>${cat.cached_count || 0}</td>
-                                <td>${cat.cache_requests_sent || 0}</td>
-                                <td>${total}</td>
-                            `;
                         });
                         addDebugLog(`📊 [COMPLETION STATS] ✅ Table populated with ${catalogs.length} rows`);
                     } else {
@@ -4127,93 +4181,39 @@ stats.episodes_prefetched: ${stats.episodes_prefetched}`);
     document.getElementById('completion-total-duration').textContent = formatDuration(timing.total_duration);
     document.getElementById('completion-processing-time').textContent = formatDuration(timing.processing_duration);
 
-    // Populate Statistics
+    // Populate Statistics - Use shared function
     const catalogsProcessed = stats.filtered_catalogs || catalogs.length || 0;
-    const moviesCount = stats.movies_prefetched || 0;
-    const seriesCount = stats.series_prefetched || 0;
-    const episodesCount = stats.episodes_prefetched || 0;
-    const pagesCount = stats.total_pages_fetched || 0;
-    const cachedCount = stats.cached_count || 0;
+    updateStatsCards('completion', {
+        movies: stats.movies_prefetched,
+        series: stats.series_prefetched,
+        episodes: stats.episodes_prefetched,
+        cached: stats.cached_count,
+        pages: stats.total_pages_fetched,
+        catalogs: catalogsProcessed,
+        cache_requests: stats.service_cache_requests_sent
+    });
+
+    // Success rate
     const successfulCount = stats.cache_requests_successful || 0;
     const totalRequests = stats.cache_requests_made || 0;
     const successRate = totalRequests > 0 ? ((successfulCount / totalRequests) * 100).toFixed(1) : 0;
-
-    document.getElementById('completion-catalogs').textContent = catalogsProcessed;
-    document.getElementById('completion-movies').textContent = moviesCount;
-    document.getElementById('completion-series').textContent = seriesCount;
-    document.getElementById('completion-episodes').textContent = episodesCount;
-    document.getElementById('completion-pages').textContent = pagesCount;
-    document.getElementById('completion-cached').textContent = cachedCount;
     document.getElementById('completion-success-rate').textContent = `${successRate}%`;
 
-    // Populate Processing Rates
-    const processingDuration = timing.processing_duration || 0;
-    if (processingDuration > 0) {
-        const durationMinutes = processingDuration / 60;
-        const movieRate = (moviesCount / durationMinutes).toFixed(1);
-        const episodesRate = (episodesCount / durationMinutes).toFixed(1);
-        const totalItems = moviesCount + episodesCount;
-        const overallRate = (totalItems / durationMinutes).toFixed(1);
-
-        document.getElementById('completion-movie-rate').textContent = movieRate;
-        document.getElementById('completion-series-rate').textContent = episodesRate;
-        document.getElementById('completion-overall-rate').textContent = overallRate;
+    // Populate Processing Rates - Use shared function
+    if (timing.processing_duration > 0) {
+        const rates = calculateProcessingRates(stats, timing);
+        document.getElementById('completion-movie-rate').textContent = rates.movie_rate;
+        document.getElementById('completion-series-rate').textContent = rates.series_rate;
+        document.getElementById('completion-overall-rate').textContent = rates.overall_rate;
     } else {
         document.getElementById('completion-movie-rate').textContent = '-';
         document.getElementById('completion-series-rate').textContent = '-';
         document.getElementById('completion-overall-rate').textContent = '-';
     }
 
-    // Populate Catalog Details Table
-    populateCatalogTable(catalogs);
-}
-
-function populateCatalogTable(catalogs) {
+    // Populate Catalog Details Table - Use shared function
     const tbody = document.getElementById('catalog-details-tbody');
-    if (!tbody) return;
-
-    // Clear existing rows
-    tbody.innerHTML = '';
-
-    if (catalogs.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">
-                    No catalog data available
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    // Sort catalogs by duration (longest first)
-    const sortedCatalogs = [...catalogs].sort((a, b) => (b.duration || 0) - (a.duration || 0));
-
-    // Create table rows
-    sortedCatalogs.forEach(catalog => {
-        const name = catalog.name || 'Unknown';
-        const type = (catalog.type || 'mixed').charAt(0).toUpperCase() + (catalog.type || 'mixed').slice(1);
-        const duration = catalog.duration ? `${catalog.duration.toFixed(1)}s` : '-';
-        const success = catalog.success_count || 0;
-        const failed = catalog.failed_count || 0;
-        const cached = catalog.cached_count || 0;
-        const total = success + failed + cached;
-
-        const cacheRequests = catalog.cache_requests_sent || 0;
-
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td class="catalog-name" title="${name}">${name}</td>
-            <td>${type}</td>
-            <td>${duration}</td>
-            <td class="success-count">${success}</td>
-            <td class="failed-count">${failed}</td>
-            <td class="cached-count">${cached}</td>
-            <td class="cache-requests-count">${cacheRequests}</td>
-            <td>${total}</td>
-        `;
-        tbody.appendChild(row);
-    });
+    populateCatalogTable(tbody, catalogs);
 }
 
 // ============================================================================
