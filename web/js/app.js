@@ -3163,14 +3163,18 @@ function updateJobStatusUI(status, caller = 'unknown') {
 
                     // WORKAROUND: Use progress data as fallback if summary stats are missing/zero
                     let stats = status.summary.statistics || {};
-                    if (status.progress && (stats.movies_prefetched === 0 && status.progress.movies_prefetched > 0)) {
+                    if (status.progress && (
+                        (stats.movies_prefetched === 0 && status.progress.movies_prefetched > 0) ||
+                        (stats.series_prefetched === 0 && status.progress.series_prefetched > 0) ||
+                        (stats.cached_count === 0 && status.progress.cached_count > 0)
+                    )) {
                         addDebugLog(`📊 [COMPLETION STATS] ⚠️ Summary stats are zero but progress has data - using progress as fallback`);
                         stats = {
                             ...stats,
-                            movies_prefetched: status.progress.movies_prefetched || 0,
-                            series_prefetched: status.progress.series_prefetched || 0,
-                            episodes_prefetched: status.progress.episodes_prefetched || 0,
-                            items_from_cache: status.progress.cached_count || 0
+                            movies_prefetched: status.progress.movies_prefetched || stats.movies_prefetched || 0,
+                            series_prefetched: status.progress.series_prefetched || stats.series_prefetched || 0,
+                            episodes_prefetched: status.progress.episodes_prefetched || stats.episodes_prefetched || 0,
+                            cached_count: status.progress.cached_count || stats.cached_count || 0
                         };
                         addDebugLog(`📊 [COMPLETION STATS] Merged stats with progress: ${JSON.stringify(stats)}`);
                     }
@@ -3200,7 +3204,7 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     setEl('completion-series', stats.series_prefetched || 0);
                     setEl('completion-episodes', stats.episodes_prefetched || 0);
                     setEl('completion-pages', stats.total_pages_fetched || 0);
-                    setEl('completion-cached', stats.items_from_cache || 0);
+                    setEl('completion-cached', stats.cached_count || 0);
                     setEl('completion-cache-requests', stats.service_cache_requests_sent || 0);
 
                     const successRate = stats.cache_requests_made > 0
@@ -3537,12 +3541,6 @@ function updateProgressInfo(progress, preserveActionText = false) {
     const seriesLimit = progress.series_limit || -1;
     const episodesPrefetched = progress.episodes_prefetched || 0;
     const cachedCount = progress.cached_count || 0;
-
-    // DEBUG: Log cached count updates
-    const currentCachedDisplay = document.getElementById('stat-cached').textContent;
-    if (cachedCount > 0 || currentCachedDisplay !== '0') {
-        addDebugLog(`🔢 [UI UPDATE] Already Prefetched: ${currentCachedDisplay} → ${cachedCount}`);
-    }
 
     document.getElementById('stat-movies').textContent = moviesPrefetched;
     document.getElementById('stat-movies-limit').textContent = moviesLimit === -1 ? 'of ∞' : `of ${moviesLimit}`;
@@ -3950,9 +3948,6 @@ function handleSSEEvent(event, data) {
             break;
 
         case 'progress':
-            const cachedInEvent = data.cached_count || 0;
-            const visibilityState = document.visibilityState;
-            addDebugLog(`📨 [SSE] Progress event received: cached_count=${cachedInEvent}, page_visible=${visibilityState === 'visible'}`);
             updateProgressInfo(data);
             break;
 
@@ -4138,7 +4133,7 @@ stats.episodes_prefetched: ${stats.episodes_prefetched}`);
     const seriesCount = stats.series_prefetched || 0;
     const episodesCount = stats.episodes_prefetched || 0;
     const pagesCount = stats.total_pages_fetched || 0;
-    const cachedCount = stats.items_from_cache || 0;
+    const cachedCount = stats.cached_count || 0;
     const successfulCount = stats.cache_requests_successful || 0;
     const totalRequests = stats.cache_requests_made || 0;
     const successRate = totalRequests > 0 ? ((successfulCount / totalRequests) * 100).toFixed(1) : 0;

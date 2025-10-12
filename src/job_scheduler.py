@@ -371,7 +371,7 @@ class JobScheduler:
                 stats = self.job_summary.get('statistics', {})
                 logger.info(f"Movies prefetched: {stats.get('movies_prefetched', 0)}")
                 logger.info(f"Series prefetched: {stats.get('series_prefetched', 0)}")
-                logger.info(f"Items from cache: {stats.get('items_from_cache', 0)}")
+                logger.info(f"Items from cache: {stats.get('cached_count', 0)}")
                 logger.info(f"Success rate: {(stats.get('cache_requests_successful', 0) / max(stats.get('cache_requests_made', 1), 1) * 100):.1f}%")
 
             logger.info("=" * 60)

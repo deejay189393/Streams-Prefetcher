@@ -790,7 +790,7 @@ class StreamsPrefetcher:
             'statistics': {
                 'total_catalogs_in_manifest': 0, 'filtered_catalogs': 0, 'total_pages_fetched': 0,
                 'movies_prefetched': 0, 'series_prefetched': 0, 'episodes_found': 0, 'episodes_prefetched': 0,
-                'cache_requests_made': 0, 'cache_requests_successful': 0, 'items_from_cache': 0, 'errors': 0,
+                'cache_requests_made': 0, 'cache_requests_successful': 0, 'cached_count': 0, 'errors': 0,
                 'service_cache_requests_sent': 0
             }
         }
@@ -1293,7 +1293,7 @@ class StreamsPrefetcher:
             }
             self.results['processed_catalogs'].append(catalog_result)
             
-            self.results['statistics']['items_from_cache'] += cached_count
+            self.results['statistics']['cached_count'] += cached_count
             self.progress_tracker.finish_catalog_processing(success_count, failed_count, cached_count, catalog_name=cat_name)
             
             # Check execution time limit after each catalog
@@ -1410,7 +1410,7 @@ class StreamsPrefetcher:
             f"  Series prefetched:           {stats['series_prefetched']} (Limit: {self.series_global_limit if self.series_global_limit != -1 else '∞'})",
             f"  Total pages fetched:         {stats['total_pages_fetched']}",
             f"  Episodes discovered:         {stats['episodes_found']}",
-            f"  Items skipped from cache:    {stats['items_from_cache']}",
+            f"  Items skipped from cache:    {stats['cached_count']}",
             f"  Prefetch attempts:           {stats['cache_requests_made']}",
             f"  Successful prefetches:       {stats['cache_requests_successful']}",
             f"  Service cache requests sent: {stats['service_cache_requests_sent']}",
