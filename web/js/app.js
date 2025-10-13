@@ -349,6 +349,12 @@ function updateStatsCards(prefix, stats) {
     setEl(`${prefix}-pages`, stats.pages || 0);
     setEl(`${prefix}-catalogs`, stats.catalogs || 0);
     setEl(`${prefix}-cache-requests`, stats.cache_requests || 0);
+
+    // Update cache requests success sublabel if available
+    const cacheRequestsSent = stats.cache_requests || 0;
+    const cacheRequestsSuccessful = stats.cache_requests_successful || 0;
+    const successRate = cacheRequestsSent > 0 ? Math.round((cacheRequestsSuccessful / cacheRequestsSent) * 100) : 0;
+    setEl(`${prefix}-cache-requests-success`, `✓ ${cacheRequestsSuccessful} successful (${successRate}%)`);
 }
 
 /**
@@ -365,6 +371,13 @@ function populateCatalogTable(tbody, catalogs) {
         const total = (cat.success_count || 0) + (cat.failed_count || 0) + (cat.cached_count || 0);
         const typeCapitalized = cat.type ? cat.type.charAt(0).toUpperCase() + cat.type.slice(1) : '-';
 
+        // Format cache requests with success count
+        const cacheRequestsSent = cat.cache_requests_sent || 0;
+        const cacheRequestsSuccessful = cat.cache_requests_successful || 0;
+        const cacheRequestsDisplay = cacheRequestsSent > 0
+            ? `${cacheRequestsSuccessful} / ${cacheRequestsSent}`
+            : '0';
+
         row.innerHTML = `
             <td>${cat.name || '-'}</td>
             <td><span class="catalog-type-badge">${typeCapitalized}</span></td>
@@ -372,7 +385,7 @@ function populateCatalogTable(tbody, catalogs) {
             <td>${cat.success_count || 0}</td>
             <td>${cat.failed_count || 0}</td>
             <td>${cat.cached_count || 0}</td>
-            <td>${cat.cache_requests_sent || 0}</td>
+            <td>${cacheRequestsDisplay}</td>
             <td>${total}</td>
         `;
     });
@@ -3243,7 +3256,8 @@ function updateJobStatusUI(status, caller = 'unknown') {
                             series_prefetched: status.progress.series_prefetched || stats.series_prefetched || 0,
                             episodes_prefetched: status.progress.episodes_prefetched || stats.episodes_prefetched || 0,
                             cached_count: status.progress.cached_count || stats.cached_count || 0,
-                            service_cache_requests_sent: status.progress.service_cache_requests_sent || stats.service_cache_requests_sent || 0
+                            service_cache_requests_sent: status.progress.service_cache_requests_sent || stats.service_cache_requests_sent || 0,
+                            service_cache_requests_successful: status.progress.service_cache_requests_successful || stats.service_cache_requests_successful || 0
                         };
                         addDebugLog(`📊 [COMPLETION STATS] Merged stats with progress: ${JSON.stringify(stats)}`);
                     }
@@ -3275,7 +3289,8 @@ function updateJobStatusUI(status, caller = 'unknown') {
                         cached: stats.cached_count,
                         pages: stats.total_pages_fetched,
                         catalogs: stats.filtered_catalogs,
-                        cache_requests: stats.service_cache_requests_sent
+                        cache_requests: stats.service_cache_requests_sent,
+                        cache_requests_successful: stats.service_cache_requests_successful
                     });
 
                     const successRate = stats.cache_requests_made > 0
@@ -3568,6 +3583,7 @@ function updateProgressInfo(progress, preserveActionText = false) {
         document.getElementById('stat-episodes').textContent = '0';
         document.getElementById('stat-cached').textContent = '0';
         document.getElementById('stat-cache-requests').textContent = '0';
+        document.getElementById('stat-cache-requests-success').textContent = '✓ 0 successful (0%)';
         document.getElementById('stat-cache-requests-limit').textContent = 'of 0';
 
         document.getElementById('overall-progress-fill').style.width = '0%';
@@ -3608,8 +3624,14 @@ function updateProgressInfo(progress, preserveActionText = false) {
 
     // Update cache requests stat if available
     const cacheRequestsSent = progress.service_cache_requests_sent || 0;
+    const cacheRequestsSuccessful = progress.service_cache_requests_successful || 0;
     const cacheRequestsLimit = progress.service_cache_requests_limit || 0;
     document.getElementById('stat-cache-requests').textContent = cacheRequestsSent;
+
+    // Calculate success rate
+    const successRate = cacheRequestsSent > 0 ? Math.round((cacheRequestsSuccessful / cacheRequestsSent) * 100) : 0;
+    document.getElementById('stat-cache-requests-success').textContent = `✓ ${cacheRequestsSuccessful} successful (${successRate}%)`;
+
     document.getElementById('stat-cache-requests-limit').textContent = `of ${cacheRequestsLimit}`;
 
     // Update RPDB poster if IMDb ID is available

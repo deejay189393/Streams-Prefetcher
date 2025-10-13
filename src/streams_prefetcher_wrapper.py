@@ -176,6 +176,7 @@ class StreamsPrefetcherWrapper:
                     'current_catalog_items': kwargs.get('prefetched_in_this_catalog', 0),
                     'current_catalog_limit': kwargs.get('per_catalog_limit', -1),
                     'service_cache_requests_sent': self.prefetcher.cache_requests_sent_count,
+                    'service_cache_requests_successful': self.prefetcher.cache_requests_successful_count,
                     'service_cache_requests_limit': self.prefetcher.max_cache_requests_global,
                 }
 

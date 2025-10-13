@@ -1115,6 +1115,7 @@ class StreamsPrefetcher:
             initial_movies_count = self.prefetched_movies_count
             initial_series_count = self.prefetched_series_count
             initial_cache_requests = self.cache_requests_sent_count  # Track cache requests at start
+            initial_cache_requests_successful = self.cache_requests_successful_count  # Track successful cache requests at start
 
             page = 0
             success_count, failed_count, cached_count, prefetched_in_this_catalog = 0, 0, 0, 0
@@ -1319,6 +1320,7 @@ class StreamsPrefetcher:
 
             # Calculate cache requests made during this catalog
             catalog_cache_requests = self.cache_requests_sent_count - initial_cache_requests
+            catalog_cache_requests_successful = self.cache_requests_successful_count - initial_cache_requests_successful
 
             # Store catalog timing information
             catalog_result = {
@@ -1328,6 +1330,7 @@ class StreamsPrefetcher:
                 'failed_count': failed_count,
                 'cached_count': cached_count,
                 'cache_requests_sent': catalog_cache_requests,
+                'cache_requests_successful': catalog_cache_requests_successful,
                 'duration': catalog_duration,
                 'start_time': catalog_start_time,
                 'end_time': catalog_end_time
@@ -1370,8 +1373,8 @@ class StreamsPrefetcher:
             self._log("\n" + "=" * 60)
             self._log("PER-CATALOG TIMING STATISTICS")
             self._log("=" * 60)
-            self._log(f"{'Catalog':<30} | {'Type':<8} | {'Duration':<10} | {'Success':<7} | {'Failed':<7} | {'Cached':<7} | {'Cache Reqs':<11}")
-            self._log("-" * 103)
+            self._log(f"{'Catalog':<30} | {'Type':<8} | {'Duration':<10} | {'Success':<7} | {'Failed':<7} | {'Cached':<7} | {'Cache Reqs':<15}")
+            self._log("-" * 107)
             for cat in self.results['processed_catalogs']:
                 name = cat.get('name', 'Unknown')[:30]
                 cat_type = cat.get('type', 'mixed')[:8]
@@ -1379,8 +1382,10 @@ class StreamsPrefetcher:
                 success = cat.get('success_count', 0)
                 failed = cat.get('failed_count', 0)
                 cached = cat.get('cached_count', 0)
-                cache_reqs = cat.get('cache_requests_sent', 0)
-                self._log(f"{name:<30} | {cat_type:<8} | {duration:<10} | {success:<7} | {failed:<7} | {cached:<7} | {cache_reqs:<11}")
+                cache_reqs_sent = cat.get('cache_requests_sent', 0)
+                cache_reqs_success = cat.get('cache_requests_successful', 0)
+                cache_reqs_display = f"{cache_reqs_success}/{cache_reqs_sent}" if cache_reqs_sent > 0 else "0"
+                self._log(f"{name:<30} | {cat_type:<8} | {duration:<10} | {success:<7} | {failed:<7} | {cached:<7} | {cache_reqs_display:<15}")
         
         return self.results
     
@@ -1456,6 +1461,7 @@ class StreamsPrefetcher:
             f"  Prefetch attempts:           {stats['cache_requests_made']}",
             f"  Successful prefetches:       {stats['cache_requests_successful']}",
             f"  Service cache requests sent: {stats['service_cache_requests_sent']}",
+            f"  Service cache requests success: {stats['service_cache_requests_successful']}",
             f"  Errors encountered:          {stats['errors']}"
         ]
         
@@ -1481,9 +1487,9 @@ class StreamsPrefetcher:
             # Calculate column widths
             max_name_len = max(len(cat.get('name', 'Unknown')) for cat in sorted_catalogs)
             name_width = min(max_name_len, 25)  # Cap at 25 characters
-            
-            table_header = f"  {'Catalog':<{name_width}} | {'Type':<6} | {'Duration':<8} | {'Success':<7} | {'Failed':<6} | {'Cached':<6} | {'Cache Reqs':<11}"
-            table_divider = f"  {'-' * name_width}-+-{'-' * 6}-+-{'-' * 8}-+-{'-' * 7}-+-{'-' * 6}-+-{'-' * 6}-+-{'-' * 11}"
+
+            table_header = f"  {'Catalog':<{name_width}} | {'Type':<6} | {'Duration':<8} | {'Success':<7} | {'Failed':<6} | {'Cached':<6} | {'Cache Reqs':<15}"
+            table_divider = f"  {'-' * name_width}-+-{'-' * 6}-+-{'-' * 8}-+-{'-' * 7}-+-{'-' * 6}-+-{'-' * 6}-+-{'-' * 15}"
 
             print(table_header)
             print(table_divider)
@@ -1498,9 +1504,11 @@ class StreamsPrefetcher:
                 success = cat.get('success_count', 0)
                 failed = cat.get('failed_count', 0)
                 cached = cat.get('cached_count', 0)
-                cache_reqs = cat.get('cache_requests_sent', 0)
+                cache_reqs_sent = cat.get('cache_requests_sent', 0)
+                cache_reqs_success = cat.get('cache_requests_successful', 0)
+                cache_reqs_display = f"{cache_reqs_success}/{cache_reqs_sent}" if cache_reqs_sent > 0 else "0"
 
-                row = f"  {display_name:<{name_width}} | {cat_type:<6} | {duration:<8} | {success:<7} | {failed:<6} | {cached:<6} | {cache_reqs:<11}"
+                row = f"  {display_name:<{name_width}} | {cat_type:<6} | {duration:<8} | {success:<7} | {failed:<6} | {cached:<6} | {cache_reqs_display:<15}"
                 print(row)
                 self._log(row)
         
