@@ -1121,6 +1121,7 @@ class StreamsPrefetcher:
                     movies_global_limit=self.movies_global_limit,
                     prefetched_series_count=self.prefetched_series_count,
                     series_global_limit=self.series_global_limit,
+                    prefetched_cached_count=self.prefetched_cached_count,
                     prefetched_in_this_catalog=prefetched_in_this_catalog,
                     per_catalog_limit=per_catalog_limit,
                     start_time=self.processing_start,
@@ -1133,27 +1134,25 @@ class StreamsPrefetcher:
                 metas = cat_data.get('metas', []) if cat_data else []
                 if not metas: break
 
-                # Log page fetch details
-                print(f"\n📄 Fetched page {page} for catalog '{cat_name}': {len(metas)} items found")
-                sys.stdout.flush()
-
                 if self.randomize_items: random.shuffle(metas)
 
-                # Count how many items on this page are already cached vs need prefetching
-                page_cached_count = 0
-                page_needs_prefetch = 0
-                for item in metas:
-                    item_type = item.get('type')
-                    imdb_id = self.extract_imdb_id(item)
-                    if imdb_id and self.is_cache_valid(imdb_id):
-                        page_cached_count += 1
-                    else:
-                        page_needs_prefetch += 1
+                # Count how many items on this page are already cached vs need prefetching (for verbose logging)
+                if self.enable_logging:
+                    page_cached_count = 0
+                    page_needs_prefetch = 0
+                    for item in metas:
+                        item_type = item.get('type')
+                        imdb_id = self.extract_imdb_id(item)
+                        if imdb_id and self.is_cache_valid(imdb_id):
+                            page_cached_count += 1
+                        else:
+                            page_needs_prefetch += 1
 
-                print(f"   ⚡ Already prefetched (will skip): {page_cached_count}")
-                print(f"   🔄 Need to prefetch: {page_needs_prefetch}")
-                print(f"   📊 Catalog progress: {prefetched_in_this_catalog}/{per_catalog_limit if per_catalog_limit != -1 else '∞'} items prefetched so far")
-                sys.stdout.flush()
+                    print(f"\n📄 Fetched page {page} for catalog '{cat_name}': {len(metas)} items found")
+                    print(f"   ⚡ Already prefetched (will skip): {page_cached_count}")
+                    print(f"   🔄 Need to prefetch: {page_needs_prefetch}")
+                    print(f"   📊 Catalog progress: {prefetched_in_this_catalog}/{per_catalog_limit if per_catalog_limit != -1 else '∞'} items prefetched so far")
+                    sys.stdout.flush()
 
                 self._is_processing_items = True  # Enable auto-refresh
                 item_statuses_on_page = []
