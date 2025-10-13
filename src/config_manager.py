@@ -37,7 +37,7 @@ class ConfigManager:
             'cached_stream_regex': '⚡',
             'max_cache_requests_per_item': 1,
             'max_cache_requests_global': 50,
-            'max_required_cached_streams': 0
+            'cached_streams_count_threshold': 0
         }
     }
 

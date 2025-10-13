@@ -1402,7 +1402,7 @@ function populateConfigurationForm(config) {
     document.getElementById('cached-stream-regex').value = cacheUncachedConfig.cached_stream_regex || '⚡';
     document.getElementById('max-cache-requests-per-item').value = cacheUncachedConfig.max_cache_requests_per_item || 1;
     document.getElementById('max-cache-requests-global').value = cacheUncachedConfig.max_cache_requests_global || 50;
-    document.getElementById('max-required-cached-streams').value = cacheUncachedConfig.max_required_cached_streams || 0;
+    document.getElementById('cached-streams-count-threshold').value = cacheUncachedConfig.cached_streams_count_threshold || 0;
     toggleCacheUncachedStreams(); // Apply enabled/disabled state to fields
 }
 
@@ -1943,7 +1943,7 @@ async function saveConfigurationSilent() {
                 cached_stream_regex: document.getElementById('cached-stream-regex').value.trim(),
                 max_cache_requests_per_item: parseInt(document.getElementById('max-cache-requests-per-item').value),
                 max_cache_requests_global: parseInt(document.getElementById('max-cache-requests-global').value),
-                max_required_cached_streams: parseInt(document.getElementById('max-required-cached-streams').value)
+                cached_streams_count_threshold: parseInt(document.getElementById('cached-streams-count-threshold').value)
             }
         };
 
@@ -2022,7 +2022,7 @@ async function saveConfiguration() {
                 cached_stream_regex: document.getElementById('cached-stream-regex').value.trim(),
                 max_cache_requests_per_item: parseInt(document.getElementById('max-cache-requests-per-item').value),
                 max_cache_requests_global: parseInt(document.getElementById('max-cache-requests-global').value),
-                max_required_cached_streams: parseInt(document.getElementById('max-required-cached-streams').value)
+                cached_streams_count_threshold: parseInt(document.getElementById('cached-streams-count-threshold').value)
             }
         };
 
