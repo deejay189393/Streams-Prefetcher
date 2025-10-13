@@ -1132,7 +1132,28 @@ class StreamsPrefetcher:
                 self.results['statistics']['total_pages_fetched'] += 1
                 metas = cat_data.get('metas', []) if cat_data else []
                 if not metas: break
+
+                # Log page fetch details
+                print(f"\n📄 Fetched page {page} for catalog '{cat_name}': {len(metas)} items found")
+                sys.stdout.flush()
+
                 if self.randomize_items: random.shuffle(metas)
+
+                # Count how many items on this page are already cached vs need prefetching
+                page_cached_count = 0
+                page_needs_prefetch = 0
+                for item in metas:
+                    item_type = item.get('type')
+                    imdb_id = self.extract_imdb_id(item)
+                    if imdb_id and self.is_cache_valid(imdb_id):
+                        page_cached_count += 1
+                    else:
+                        page_needs_prefetch += 1
+
+                print(f"   ⚡ Already prefetched (will skip): {page_cached_count}")
+                print(f"   🔄 Need to prefetch: {page_needs_prefetch}")
+                print(f"   📊 Catalog progress: {prefetched_in_this_catalog}/{per_catalog_limit if per_catalog_limit != -1 else '∞'} items prefetched so far")
+                sys.stdout.flush()
 
                 self._is_processing_items = True  # Enable auto-refresh
                 item_statuses_on_page = []

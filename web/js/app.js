@@ -3233,7 +3233,8 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     if (status.progress && (
                         (stats.movies_prefetched === 0 && status.progress.movies_prefetched > 0) ||
                         (stats.series_prefetched === 0 && status.progress.series_prefetched > 0) ||
-                        (stats.cached_count === 0 && status.progress.cached_count > 0)
+                        (stats.cached_count === 0 && status.progress.cached_count > 0) ||
+                        (stats.service_cache_requests_sent === 0 && status.progress.service_cache_requests_sent > 0)
                     )) {
                         addDebugLog(`📊 [COMPLETION STATS] ⚠️ Summary stats are zero but progress has data - using progress as fallback`);
                         stats = {
@@ -3241,7 +3242,8 @@ function updateJobStatusUI(status, caller = 'unknown') {
                             movies_prefetched: status.progress.movies_prefetched || stats.movies_prefetched || 0,
                             series_prefetched: status.progress.series_prefetched || stats.series_prefetched || 0,
                             episodes_prefetched: status.progress.episodes_prefetched || stats.episodes_prefetched || 0,
-                            cached_count: status.progress.cached_count || stats.cached_count || 0
+                            cached_count: status.progress.cached_count || stats.cached_count || 0,
+                            service_cache_requests_sent: status.progress.service_cache_requests_sent || stats.service_cache_requests_sent || 0
                         };
                         addDebugLog(`📊 [COMPLETION STATS] Merged stats with progress: ${JSON.stringify(stats)}`);
                     }
@@ -3581,8 +3583,6 @@ function updateProgressInfo(progress, preserveActionText = false) {
             document.querySelector('.current-action').textContent = 'Starting...';
         }
 
-        // Hide page fetch status
-        document.getElementById('page-fetch-status').style.display = 'none';
         return;
     }
 
@@ -3645,35 +3645,15 @@ function updateProgressInfo(progress, preserveActionText = false) {
     const catalogDisplayText = catalogType ? `${catalogName} (${catalogType})` : catalogName;
     document.getElementById('current-catalog-name').textContent = catalogDisplayText;
 
-    // Handle page fetching status
-    const pageFetchStatus = document.getElementById('page-fetch-status');
+    // Handle page fetching status - show in subtitle instead of separate card
+    const currentAction = document.querySelector('.current-action');
     if (progress.fetching_page) {
-        // Show page fetching UI
-        pageFetchStatus.style.display = 'flex';
+        // Show page fetching status in subtitle
         const pageNum = progress.current_page || 1;
-        document.getElementById('current-page-number').textContent = pageNum;
-
-        // Update subtitle based on catalog mode
-        const subtitle = catalogMode ? `Discovering ${catalogMode}${catalogMode === 'mixed' ? ' items' : 's'} from catalog...` : 'Discovering items from catalog...';
-        document.querySelector('.page-fetch-subtitle').textContent = subtitle;
-
-        // Items discovered will be updated when we get the data
-        document.getElementById('page-fetch-items').textContent = 'Loading...';
-    } else if (progress.items_on_current_page !== undefined) {
-        // Page has been fetched, show discovered items count
-        const itemsCount = progress.items_on_current_page || 0;
-        const itemWord = itemsCount === 1 ? 'item' : 'items';
-        document.getElementById('page-fetch-items').textContent = `${itemsCount} ${itemWord} discovered`;
-
-        // Hide after a brief moment once processing starts
-        if (progress.processed_items_on_page > 0) {
-            setTimeout(() => {
-                pageFetchStatus.style.display = 'none';
-            }, 1500);
-        }
+        currentAction.textContent = `Fetching Page ${pageNum}`;
     } else {
-        // Not fetching, hide the status
-        pageFetchStatus.style.display = 'none';
+        // Show processing status
+        currentAction.textContent = `Processing ${catalogName}`;
     }
 
     // Calculate and update overall progress
