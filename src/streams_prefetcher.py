@@ -595,6 +595,7 @@ class StreamsPrefetcher:
         self.max_cache_requests_global = max_cache_requests_global
         self.cached_streams_count_threshold = cached_streams_count_threshold
         self.cache_requests_sent_count = 0  # Track global count
+        self.cache_requests_successful_count = 0  # Track successful cache requests
 
         self.prefetched_movies_count = 0
         self.prefetched_series_count = 0
@@ -791,7 +792,7 @@ class StreamsPrefetcher:
                 'total_catalogs_in_manifest': 0, 'filtered_catalogs': 0, 'total_pages_fetched': 0,
                 'movies_prefetched': 0, 'series_prefetched': 0, 'episodes_found': 0, 'episodes_prefetched': 0,
                 'cache_requests_made': 0, 'cache_requests_successful': 0, 'cached_count': 0, 'errors': 0,
-                'service_cache_requests_sent': 0
+                'service_cache_requests_sent': 0, 'service_cache_requests_successful': 0
             }
         }
 
@@ -968,26 +969,46 @@ class StreamsPrefetcher:
 
                         # Check if we need to trigger more caching
                         if cached_count <= self.cached_streams_count_threshold:
-                            # Calculate how many HEAD requests we can send
-                            requests_to_send = min(
-                                len(uncached_streams),
-                                self.max_cache_requests_per_item,
-                                self.max_cache_requests_global - self.cache_requests_sent_count
+                            # Calculate dynamic attempt limit: max(goal * 3, 5)
+                            max_attempts_allowed = min(
+                                len(uncached_streams),  # Can't try more than available
+                                max(self.max_cache_requests_per_item * 3, 5),  # Dynamic: at least 5, or 3x success goal
+                                self.max_cache_requests_global - self.cache_requests_sent_count  # Global limit
                             )
 
-                            # Send HEAD requests to uncached streams
-                            if requests_to_send > 0 and title and content_type == 'movie':
-                                # Log which movie is triggering cache requests
+                            successful_requests = 0
+                            attempts = 0
+
+                            # Log if attempting cache requests
+                            if max_attempts_allowed > 0 and title and content_type == 'movie':
                                 sys.stdout.write(f"\n🔄 Caching: {title}\n")
                                 sys.stdout.flush()
-                            for i in range(requests_to_send):
+
+                            # Try URLs until we get enough successes or run out of attempts
+                            while (successful_requests < self.max_cache_requests_per_item and
+                                   attempts < max_attempts_allowed and
+                                   self.cache_requests_sent_count < self.max_cache_requests_global):
+
                                 try:
-                                    head_response = self.session.head(uncached_streams[i], timeout=self.network_request_timeout)
+                                    head_response = self.session.head(
+                                        uncached_streams[attempts],
+                                        timeout=self.network_request_timeout
+                                    )
+
+                                    # Check if request was successful (2xx status code)
+                                    if 200 <= head_response.status_code < 300:
+                                        successful_requests += 1
+                                        self.cache_requests_successful_count += 1
+
                                     head_response.close()
                                     self.cache_requests_sent_count += 1
+                                    attempts += 1
                                     time.sleep(self.delay)
+
                                 except requests.exceptions.RequestException:
-                                    pass  # Silently fail individual HEAD requests
+                                    # Failed attempt - count it and try next URL
+                                    self.cache_requests_sent_count += 1
+                                    attempts += 1
 
                 except (json.JSONDecodeError, KeyError):
                     pass  # Silently fail JSON parsing errors
@@ -1329,6 +1350,7 @@ class StreamsPrefetcher:
         self.results['statistics']['series_prefetched'] = self.prefetched_series_count
         self.results['statistics']['episodes_prefetched'] = self.prefetched_episodes_count
         self.results['statistics']['service_cache_requests_sent'] = self.cache_requests_sent_count
+        self.results['statistics']['service_cache_requests_successful'] = self.cache_requests_successful_count
         
         # Store timing information in results
         self.results['timing'] = {
