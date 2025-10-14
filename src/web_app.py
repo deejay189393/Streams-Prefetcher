@@ -326,7 +326,7 @@ def load_catalogs():
                             cat_type = 'mixed'
 
                         catalogs.append({
-                            'id': f"{item['url']}|{catalog.get('id', '')}",
+                            'id': f"{item['url']}|{catalog.get('id', '')}|{cat_type}",
                             'name': catalog.get('name', 'Unknown'),
                             'type': cat_type,
                             'addon_name': addon_name,

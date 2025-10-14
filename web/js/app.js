@@ -2467,26 +2467,23 @@ async function loadCatalogs(silent = false) {
             addDebugLog(`[CATALOG MERGE] Fresh catalogs from addons: ${data.catalogs.length}`);
 
             // Merge with existing saved selections
-            // IMPORTANT: Use composite key (id + type) because addons can return same ID for movies and series!
             const savedSelections = {};
             loadedCatalogs.forEach(cat => {
-                const key = `${cat.id}|${cat.type}`;
-                savedSelections[key] = {
+                savedSelections[cat.id] = {
                     enabled: cat.enabled,
                     order: cat.order
                 };
             });
-            addDebugLog(`[CATALOG MERGE] Built savedSelections map with ${Object.keys(savedSelections).length} entries (using id|type composite key)`);
+            addDebugLog(`[CATALOG MERGE] Built savedSelections map with ${Object.keys(savedSelections).length} entries`);
 
             // Apply saved selections to newly loaded catalogs
             const mergedCatalogs = [];
             const newCatalogs = [];
 
             data.catalogs.forEach(catalog => {
-                const key = `${catalog.id}|${catalog.type}`;
-                if (savedSelections[key]) {
-                    catalog.enabled = savedSelections[key].enabled;
-                    catalog.order = savedSelections[key].order;
+                if (savedSelections[catalog.id]) {
+                    catalog.enabled = savedSelections[catalog.id].enabled;
+                    catalog.order = savedSelections[catalog.id].order;
                     mergedCatalogs.push(catalog);
                 } else {
                     // New catalog - add to end
