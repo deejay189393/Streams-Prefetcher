@@ -5,6 +5,17 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.3] - 2025-10-14
+
+### Added
+- Skip Streams Containing (RegEx) configuration option to filter out non-stream items before classifying as cached/uncached
+  - Useful for filtering informative cards (e.g., from Ratings addon) that aren't actual streams
+  - Skipped streams don't count as cached or uncached, preventing unnecessary cache requests
+  - Defaults to blank (no skipping) for backward compatibility
+  - Added UI input field with descriptive tooltip
+
+Closes #31
+
 ## [0.12.2] - 2025-10-14
 
 ### Fixed
