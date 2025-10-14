@@ -38,6 +38,7 @@ class ConfigManager:
         'cache_uncached_streams': {
             'enabled': False,
             'cached_stream_regex': '⚡',
+            'skip_streams_regex': '',
             'max_cache_requests_per_item': 1,
             'max_cache_requests_global': 50,
             'cached_streams_count_threshold': 0

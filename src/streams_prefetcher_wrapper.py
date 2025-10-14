@@ -85,6 +85,7 @@ class StreamsPrefetcherWrapper:
             'enable_logging': config.get('enable_logging', False),
             'cache_uncached_streams_enabled': cache_uncached_streams.get('enabled', False),
             'cached_stream_regex': cache_uncached_streams.get('cached_stream_regex', '⚡'),
+            'skip_streams_regex': cache_uncached_streams.get('skip_streams_regex', ''),
             'max_cache_requests_per_item': cache_uncached_streams.get('max_cache_requests_per_item', 1),
             'max_cache_requests_global': cache_uncached_streams.get('max_cache_requests_global', 50),
             'cached_streams_count_threshold': cache_uncached_streams.get('cached_streams_count_threshold', 0)

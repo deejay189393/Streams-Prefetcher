@@ -1413,6 +1413,7 @@ function populateConfigurationForm(config) {
     const cacheUncachedConfig = config.cache_uncached_streams || {};
     document.getElementById('cache-uncached-streams-enabled').checked = cacheUncachedConfig.enabled || false;
     document.getElementById('cached-stream-regex').value = cacheUncachedConfig.cached_stream_regex || '⚡';
+    document.getElementById('skip-streams-regex').value = cacheUncachedConfig.skip_streams_regex || '';
     document.getElementById('max-cache-requests-per-item').value = cacheUncachedConfig.max_cache_requests_per_item || 1;
     document.getElementById('max-cache-requests-global').value = cacheUncachedConfig.max_cache_requests_global || 50;
     document.getElementById('cached-streams-count-threshold').value = cacheUncachedConfig.cached_streams_count_threshold || 0;
@@ -1954,6 +1955,7 @@ async function saveConfigurationSilent() {
             cache_uncached_streams: {
                 enabled: document.getElementById('cache-uncached-streams-enabled').checked,
                 cached_stream_regex: document.getElementById('cached-stream-regex').value.trim(),
+                skip_streams_regex: document.getElementById('skip-streams-regex').value.trim(),
                 max_cache_requests_per_item: parseInt(document.getElementById('max-cache-requests-per-item').value),
                 max_cache_requests_global: parseInt(document.getElementById('max-cache-requests-global').value),
                 cached_streams_count_threshold: parseInt(document.getElementById('cached-streams-count-threshold').value)
@@ -2033,6 +2035,7 @@ async function saveConfiguration() {
             cache_uncached_streams: {
                 enabled: document.getElementById('cache-uncached-streams-enabled').checked,
                 cached_stream_regex: document.getElementById('cached-stream-regex').value.trim(),
+                skip_streams_regex: document.getElementById('skip-streams-regex').value.trim(),
                 max_cache_requests_per_item: parseInt(document.getElementById('max-cache-requests-per-item').value),
                 max_cache_requests_global: parseInt(document.getElementById('max-cache-requests-global').value),
                 cached_streams_count_threshold: parseInt(document.getElementById('cached-streams-count-threshold').value)

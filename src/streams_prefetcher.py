@@ -570,7 +570,7 @@ def format_time_string(seconds: float) -> str:
         return " ".join(parts)
 
 class StreamsPrefetcher:
-    def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, network_request_timeout: int = 30, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False, cache_uncached_streams_enabled: bool = False, cached_stream_regex: str = '⚡', max_cache_requests_per_item: int = 1, max_cache_requests_global: int = 50, cached_streams_count_threshold: int = 0, scheduler=None):
+    def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, network_request_timeout: int = 30, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False, cache_uncached_streams_enabled: bool = False, cached_stream_regex: str = '⚡', skip_streams_regex: str = '', max_cache_requests_per_item: int = 1, max_cache_requests_global: int = 50, cached_streams_count_threshold: int = 0, scheduler=None):
         self.addon_urls = addon_urls
         self.scheduler = scheduler
         self.movies_global_limit = movies_global_limit
@@ -591,6 +591,7 @@ class StreamsPrefetcher:
         # Cache uncached streams feature
         self.cache_uncached_streams_enabled = cache_uncached_streams_enabled
         self.cached_stream_regex = cached_stream_regex
+        self.skip_streams_regex = skip_streams_regex
         self.max_cache_requests_per_item = max_cache_requests_per_item
         self.max_cache_requests_global = max_cache_requests_global
         self.cached_streams_count_threshold = cached_streams_count_threshold
@@ -950,6 +951,11 @@ class StreamsPrefetcher:
                     streams = stream_data.get('streams', [])
 
                     if streams:
+                        # Prepare skip pattern (if configured)
+                        skip_pattern = None
+                        if self.skip_streams_regex and self.skip_streams_regex.strip():
+                            skip_pattern = re.compile(self.skip_streams_regex)
+
                         # Count cached streams using regex
                         cached_pattern = re.compile(self.cached_stream_regex)
                         cached_count = 0
@@ -959,6 +965,10 @@ class StreamsPrefetcher:
                             name = stream.get('name', '')
                             description = stream.get('description', '')
                             combined_text = f"{name} {description}"
+
+                            # Skip streams matching the skip pattern
+                            if skip_pattern and skip_pattern.search(combined_text):
+                                continue
 
                             if cached_pattern.search(combined_text):
                                 cached_count += 1
