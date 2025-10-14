@@ -5,6 +5,17 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.1] - 2025-10-14
+
+### Fixed
+- Catalog selections not persisting after page refresh
+  - Fixed merge logic using composite key (id|type) instead of just id to properly handle catalogs with duplicate IDs
+  - Prevents catalog overwrites when addons return same ID for movies and series (e.g., "New" movies and "New" series)
+  - Fixed auto-save triggering on silent page loads, which was overwriting saved selections
+  - Added extensive debug logging for catalog save/load operations in both frontend and backend
+
+Closes #27
+
 ## [0.12.0] - 2025-10-13
 
 ### Added
