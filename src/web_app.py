@@ -24,7 +24,7 @@ from logger import setup_logging, get_logger
 
 # Initialize logging
 setup_logging()
-logger = get_logger('web_app')
+logger = get_logger('streams_prefetcher.web_app')
 
 app = Flask(__name__, static_folder='../web', static_url_path='')
 CORS(app)
@@ -367,16 +367,44 @@ def get_catalog_selection():
 def save_catalog_selection():
     """Save catalog selection and order"""
     try:
+        logger.info("[CATALOG SAVE] ========== SAVE REQUEST RECEIVED ==========")
+
         data = request.get_json()
+        logger.info(f"[CATALOG SAVE] Request data keys: {list(data.keys()) if data else 'None'}")
+
         if not data or 'catalogs' not in data:
+            logger.warning("[CATALOG SAVE] ✗ No catalog data provided in request")
             return jsonify({'success': False, 'error': 'No catalog data provided'}), 400
 
-        # Save full catalog data (not just selection)
-        config_manager.set('saved_catalogs', data['catalogs'])
+        catalogs = data['catalogs']
+        logger.info(f"[CATALOG SAVE] Total catalogs received: {len(catalogs)}")
+        logger.info(f"[CATALOG SAVE] Enabled catalogs: {len([c for c in catalogs if c.get('enabled', False)])}")
+        logger.info(f"[CATALOG SAVE] Disabled catalogs: {len([c for c in catalogs if not c.get('enabled', False)])}")
 
-        return jsonify({'success': True})
+        # Log first 3 catalogs for debugging
+        for idx, cat in enumerate(catalogs[:3]):
+            logger.info(f"[CATALOG SAVE] Catalog {idx + 1}: name='{cat.get('name', 'Unknown')}', enabled={cat.get('enabled', False)}, order={cat.get('order', -1)}")
+
+        if len(catalogs) > 3:
+            logger.info(f"[CATALOG SAVE] ... and {len(catalogs) - 3} more catalogs")
+
+        # Save full catalog data (not just selection)
+        logger.info("[CATALOG SAVE] Calling config_manager.set('saved_catalogs', ...)")
+        success = config_manager.set('saved_catalogs', catalogs)
+        logger.info(f"[CATALOG SAVE] config_manager.set returned: {success}")
+
+        if success:
+            # Verify the save by reading back
+            saved_catalogs = config_manager.get('saved_catalogs', [])
+            logger.info(f"[CATALOG SAVE] Verification read: {len(saved_catalogs)} catalogs found in config")
+            logger.info("[CATALOG SAVE] ✓ Save successful!")
+            return jsonify({'success': True})
+        else:
+            logger.error("[CATALOG SAVE] ✗ config_manager.set returned False")
+            return jsonify({'success': False, 'error': 'Failed to save catalog selection'}), 500
 
     except Exception as e:
+        logger.error(f"[CATALOG SAVE] ✗ Exception occurred: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

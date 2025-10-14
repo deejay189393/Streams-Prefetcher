@@ -2410,10 +2410,15 @@ async function resumeJob() {
 
 async function loadSavedCatalogSelection() {
     try {
+        addDebugLog('[CATALOG LOAD SAVED] Fetching saved catalog selection from backend...');
         const response = await fetch('/api/catalogs/selection');
         const data = await response.json();
 
         if (data.success && data.catalogs && data.catalogs.length > 0) {
+            addDebugLog(`[CATALOG LOAD SAVED] Received ${data.catalogs.length} catalogs from backend`);
+            const enabledCount = data.catalogs.filter(c => c.enabled).length;
+            addDebugLog(`[CATALOG LOAD SAVED] Enabled catalogs: ${enabledCount}`);
+
             loadedCatalogs = data.catalogs;
             renderCatalogList(data.catalogs);
             document.getElementById('catalog-list-container').style.display = 'block';
@@ -2422,8 +2427,13 @@ async function loadSavedCatalogSelection() {
             catalogsLoaded = true;
             updateLoadCatalogsButtonText();
             updateStartNowButtonState();
+
+            addDebugLog(`[CATALOG LOAD SAVED] ✓ Loaded and rendered ${enabledCount} enabled catalogs`);
+        } else {
+            addDebugLog('[CATALOG LOAD SAVED] No saved catalogs found or empty response');
         }
     } catch (error) {
+        addDebugLog(`[CATALOG LOAD SAVED] ✗ Error: ${error.message}`);
         console.error('Error loading saved catalog selection:', error);
     }
 }
@@ -2452,29 +2462,41 @@ async function loadCatalogs(silent = false) {
         const data = await response.json();
 
         if (data.success) {
+            addDebugLog(`[CATALOG MERGE] Starting merge. loadedCatalogs has ${loadedCatalogs.length} catalogs`);
+            addDebugLog(`[CATALOG MERGE] loadedCatalogs enabled count: ${loadedCatalogs.filter(c => c.enabled).length}`);
+            addDebugLog(`[CATALOG MERGE] Fresh catalogs from addons: ${data.catalogs.length}`);
+
             // Merge with existing saved selections
+            // IMPORTANT: Use composite key (id + type) because addons can return same ID for movies and series!
             const savedSelections = {};
             loadedCatalogs.forEach(cat => {
-                savedSelections[cat.id] = {
+                const key = `${cat.id}|${cat.type}`;
+                savedSelections[key] = {
                     enabled: cat.enabled,
                     order: cat.order
                 };
             });
+            addDebugLog(`[CATALOG MERGE] Built savedSelections map with ${Object.keys(savedSelections).length} entries (using id|type composite key)`);
 
             // Apply saved selections to newly loaded catalogs
             const mergedCatalogs = [];
             const newCatalogs = [];
 
             data.catalogs.forEach(catalog => {
-                if (savedSelections[catalog.id]) {
-                    catalog.enabled = savedSelections[catalog.id].enabled;
-                    catalog.order = savedSelections[catalog.id].order;
+                const key = `${catalog.id}|${catalog.type}`;
+                if (savedSelections[key]) {
+                    catalog.enabled = savedSelections[key].enabled;
+                    catalog.order = savedSelections[key].order;
                     mergedCatalogs.push(catalog);
                 } else {
                     // New catalog - add to end
+                    addDebugLog(`[CATALOG MERGE] New catalog found: "${catalog.name}" type=${catalog.type} (not in saved selections)`);
                     newCatalogs.push(catalog);
                 }
             });
+
+            addDebugLog(`[CATALOG MERGE] Merged ${mergedCatalogs.length} existing catalogs, ${newCatalogs.length} new catalogs`);
+            addDebugLog(`[CATALOG MERGE] Merged enabled count BEFORE adding new: ${mergedCatalogs.filter(c => c.enabled).length}`);
 
             // Sort merged catalogs by order
             mergedCatalogs.sort((a, b) => a.order - b.order);
@@ -2486,6 +2508,8 @@ async function loadCatalogs(silent = false) {
                 mergedCatalogs.push(catalog);
             });
 
+            addDebugLog(`[CATALOG MERGE] Final merged count: ${mergedCatalogs.length}, enabled: ${mergedCatalogs.filter(c => c.enabled).length}`);
+
             loadedCatalogs = mergedCatalogs;
             renderCatalogList(loadedCatalogs);
             document.getElementById('catalog-list-container').style.display = 'block';
@@ -2496,7 +2520,14 @@ async function loadCatalogs(silent = false) {
             updateStartNowButtonState();
 
             // Auto-save catalog selection after loading/reloading
-            autoSaveCatalogSelection();
+            // BUT ONLY if not loading silently (to prevent overwriting user's saved selections on page load)
+            addDebugLog(`[CATALOG LOAD] Catalogs loaded/reloaded. Total: ${loadedCatalogs.length}, Enabled: ${loadedCatalogs.filter(c => c.enabled).length}`);
+            if (!silent) {
+                addDebugLog('[CATALOG LOAD] Triggering auto-save (manual load)');
+                autoSaveCatalogSelection();
+            } else {
+                addDebugLog('[CATALOG LOAD] Skipping auto-save (silent load on page refresh)');
+            }
 
             if (!silent) {
                 showNotification(`Loaded ${data.total_catalogs} catalogs from ${data.total_addons} addons`, 'success');
@@ -2561,13 +2592,17 @@ function renderCatalogList(catalogs) {
 function toggleCatalog(catalogId, enabled) {
     const catalog = loadedCatalogs.find(c => c.id === catalogId);
     if (catalog) {
+        addDebugLog(`[CATALOG TOGGLE] Catalog "${catalog.name}" toggled to ${enabled ? 'ENABLED' : 'DISABLED'}`);
         catalog.enabled = enabled;
         updateStartNowButtonState();
         autoSaveCatalogSelection();
+    } else {
+        addDebugLog(`[CATALOG TOGGLE] WARNING: Catalog ID ${catalogId} not found`);
     }
 }
 
 function selectAllCatalogs() {
+    addDebugLog(`[CATALOG SELECT ALL] Enabling all ${loadedCatalogs.length} catalogs`);
     loadedCatalogs.forEach(catalog => {
         catalog.enabled = true;
     });
@@ -2577,6 +2612,7 @@ function selectAllCatalogs() {
 }
 
 function deselectAllCatalogs() {
+    addDebugLog(`[CATALOG DESELECT ALL] Disabling all ${loadedCatalogs.length} catalogs`);
     loadedCatalogs.forEach(catalog => {
         catalog.enabled = false;
     });
@@ -2599,6 +2635,7 @@ function setupCatalogDragDrop(element) {
     element.addEventListener('dragend', (e) => {
         element.classList.remove('dragging');
         // Trigger auto-save after drag-drop reordering
+        addDebugLog('[CATALOG DRAG-DROP] Catalog reordering completed via drag-and-drop');
         autoSaveCatalogSelection();
     });
 
@@ -2760,28 +2797,44 @@ async function resetCatalogSelections() {
 
 // Debounced auto-save function
 function autoSaveCatalogSelection() {
+    addDebugLog('[CATALOG SAVE] autoSaveCatalogSelection triggered');
+
     // Clear any existing timeout
     if (catalogSaveTimeout) {
+        addDebugLog('[CATALOG SAVE] Clearing existing save timeout');
         clearTimeout(catalogSaveTimeout);
     }
 
     // Set new timeout for 2 seconds
+    addDebugLog('[CATALOG SAVE] Setting 2-second debounce timer');
     catalogSaveTimeout = setTimeout(() => {
+        addDebugLog('[CATALOG SAVE] Debounce timer expired, executing save');
         saveCatalogSelectionSilent();
     }, 2000);
 }
 
 async function saveCatalogSelectionSilent() {
     try {
+        addDebugLog('[CATALOG SAVE] saveCatalogSelectionSilent started');
+
         // Update order based on DOM
         const items = document.querySelectorAll('.catalog-item');
+        addDebugLog(`[CATALOG SAVE] Found ${items.length} catalog items in DOM`);
+
         items.forEach((item, index) => {
             const catalogId = item.dataset.catalogId;
             const catalog = loadedCatalogs.find(c => c.id === catalogId);
             if (catalog) {
                 catalog.order = index;
+                addDebugLog(`[CATALOG SAVE] Updated catalog "${catalog.name}" order to ${index}`);
+            } else {
+                addDebugLog(`[CATALOG SAVE] WARNING: Catalog with ID ${catalogId} not found in loadedCatalogs`);
             }
         });
+
+        addDebugLog(`[CATALOG SAVE] Total catalogs to save: ${loadedCatalogs.length}`);
+        addDebugLog(`[CATALOG SAVE] Enabled catalogs: ${loadedCatalogs.filter(c => c.enabled).length}`);
+        addDebugLog(`[CATALOG SAVE] Sending POST request to /api/catalogs/selection`);
 
         const response = await fetch('/api/catalogs/selection', {
             method: 'POST',
@@ -2789,18 +2842,24 @@ async function saveCatalogSelectionSilent() {
             body: JSON.stringify({ catalogs: loadedCatalogs })
         });
 
+        addDebugLog(`[CATALOG SAVE] Response status: ${response.status} ${response.statusText}`);
+
         const data = await response.json();
+        addDebugLog(`[CATALOG SAVE] Response data: ${JSON.stringify(data)}`);
 
         if (data.success) {
+            addDebugLog('[CATALOG SAVE] ✓ Save successful!');
             updateStartNowButtonState();
             showSaveNotification();
 
             // Mark catalog-selection as configured for smart collapse behavior
             localStorage.setItem('catalog-selection-configured', 'true');
         } else {
+            addDebugLog(`[CATALOG SAVE] ✗ Save failed: ${data.error}`);
             console.error('Failed to auto-save catalog selection:', data.error);
         }
     } catch (error) {
+        addDebugLog(`[CATALOG SAVE] ✗ Exception occurred: ${error.message}`);
         console.error('Error auto-saving catalog selection:', error);
     }
 }

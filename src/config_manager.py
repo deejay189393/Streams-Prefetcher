@@ -7,6 +7,9 @@ import json
 import os
 from typing import Dict, Any, List, Tuple
 from pathlib import Path
+from logger import get_logger
+
+logger = get_logger('streams_prefetcher.config_manager')
 
 class ConfigManager:
     """Manages configuration persistence"""
@@ -64,22 +67,40 @@ class ConfigManager:
     def save(self, config: Dict[str, Any] = None) -> bool:
         """Save configuration to disk"""
         try:
+            logger.info(f"[CONFIG SAVE] save() called, config_path={self.config_path}")
+
             # Ensure directory exists
             self.config_path.parent.mkdir(parents=True, exist_ok=True)
+            logger.info(f"[CONFIG SAVE] Config directory ensured: {self.config_path.parent}")
 
             # Use provided config or instance config
             config_to_save = config if config is not None else self.config
+            logger.info(f"[CONFIG SAVE] Config keys to save: {list(config_to_save.keys())}")
+
+            # Log saved_catalogs if present
+            if 'saved_catalogs' in config_to_save:
+                saved_cat_count = len(config_to_save['saved_catalogs'])
+                logger.info(f"[CONFIG SAVE] saved_catalogs count: {saved_cat_count}")
+                if saved_cat_count > 0:
+                    enabled_count = len([c for c in config_to_save['saved_catalogs'] if c.get('enabled', False)])
+                    logger.info(f"[CONFIG SAVE] Enabled catalogs in saved_catalogs: {enabled_count}")
 
             # Write to disk with pretty formatting
+            logger.info(f"[CONFIG SAVE] Writing to {self.config_path}...")
             with open(self.config_path, 'w') as f:
                 json.dump(config_to_save, f, indent=2)
+
+            file_size = os.path.getsize(self.config_path)
+            logger.info(f"[CONFIG SAVE] ✓ File written successfully, size: {file_size} bytes")
 
             # Update instance config
             if config is not None:
                 self.config = config
+                logger.info("[CONFIG SAVE] Instance config updated")
 
             return True
         except Exception as e:
+            logger.error(f"[CONFIG SAVE] ✗ Error saving config: {e}", exc_info=True)
             print(f"Error saving config: {e}")
             return False
 
@@ -89,8 +110,19 @@ class ConfigManager:
 
     def set(self, key: str, value: Any) -> bool:
         """Set a configuration value and save"""
+        logger.info(f"[CONFIG SET] set() called for key='{key}'")
+
+        if key == 'saved_catalogs':
+            count = len(value) if isinstance(value, list) else 0
+            logger.info(f"[CONFIG SET] Setting saved_catalogs with {count} catalogs")
+
         self.config[key] = value
-        return self.save()
+        logger.info(f"[CONFIG SET] Key '{key}' updated in memory, calling save()...")
+
+        result = self.save()
+        logger.info(f"[CONFIG SET] save() returned: {result}")
+
+        return result
 
     def update(self, updates: Dict[str, Any]) -> bool:
         """Update multiple configuration values and save"""
