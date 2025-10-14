@@ -5,6 +5,17 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.2] - 2025-10-14
+
+### Fixed
+- Fixed catalog selection persistence bug for catalogs sharing the same manifest ID
+  - Catalogs with same manifest ID but different types (e.g., "New" movie vs "New" series) were overwriting each other
+  - Backend now includes catalog type in ID generation to ensure uniqueness: `{addon_url}|{manifest_id}|{type}`
+  - Removed unnecessary composite key workaround from frontend since IDs are now unique from backend
+  - All catalogs now have guaranteed unique IDs preventing selection state conflicts
+
+**Note:** Users will need to reload their catalogs in the UI as old saved selections use the previous ID format.
+
 ## [0.12.1] - 2025-10-14
 
 ### Fixed
