@@ -5,6 +5,41 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2025-10-13
+
+### Added
+- **Service Cache Request Functionality**: Send HTTP requests to uncached stream URLs to warm up debrid service caches
+  - Configurable global limit for total cache requests per prefetch session
+  - Per-item limit for cache requests per movie/series/episode
+  - Cached streams detection threshold to determine when to trigger cache requests
+  - Feature toggle to enable/disable entire functionality
+- **Smart Retry Logic**: Dynamically calculates attempt limit using `max(goal * 3, 5)` formula for failed cache requests
+- **Comprehensive Cache Request Tracking**: Track both sent and successful cache requests throughout the system
+  - Real-time success rate percentages displayed in progress screen
+  - Detailed success/failure statistics in completion screen
+  - Per-catalog cache request tracking with individual success counts
+  - Terminal output shows cache success rates
+  - Log files include comprehensive cache request statistics
+- **Cache Statistics Display**: New UI elements showing cache request metrics
+  - Progress screen: "Stream Caching Requested" card with success count and percentage
+  - Completion screen: Cache request statistics with success rates
+  - Catalog tables: "success / sent" format for cache requests per catalog
+  - Log file tables: Per-catalog cache request success tracking
+
+### Changed
+- Renamed "Minimum Required Cached Streams" to "Cached Streams Count Threshold" for clarity
+- Cache request statistics now display in "success / sent" format in catalog tables
+- Progress and completion screens show cache success rates as percentages
+- Auto-refresh throttle reduced from 500ms to 100ms for more responsive UI updates
+
+### Fixed
+- Missing prefetched_cached_count in fetching mode UI redraw
+- Cache request tracking and UI stability improvements during progress updates
+- Unified data model for completion screen cached count display
+- Completion statistics extraction now correctly merges progress data
+
+Closes #2
+
 ## [0.11.1] - 2025-10-10
 
 ### Added

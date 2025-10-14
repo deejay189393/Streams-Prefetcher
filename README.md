@@ -293,6 +293,27 @@ Set global and per-catalog limits:
 
 Format: Enter a number and select the unit (milliseconds, seconds, minutes, hours, days, weeks). All time-based parameters support unlimited values (-1)
 
+#### Service Cache Requests
+Request uncached streams to be cached by sending HTTP requests to their URLs (disabled by default):
+- **Enable Cache Requests**: Toggle to enable/disable the entire feature (default: OFF)
+- **Global Cache Request Limit**: Maximum total cache requests per prefetch session (-1 for unlimited, default: 50)
+- **Per-Item Cache Request Limit**: Maximum cache requests per movie/series/episode (-1 for unlimited, default: 1)
+- **Cached Streams Count Threshold**: Maximum number of already-cached streams allowed before triggering cache requests (default: 0)
+  - Setting to 0 means cache requests only trigger when NO cached streams exist (recommended)
+  - Higher values allow cache requests even when some cached streams are available
+
+**How it works**:
+1. System detects cached vs uncached streams using regex pattern matching
+2. If cached stream count is below threshold, system requests uncached streams to be cached
+3. Sends HTTP requests to uncached stream URLs, signaling the service to cache them
+4. Tracks success/failure rates and displays comprehensive statistics
+
+**Statistics tracked**:
+- Total cache requests sent
+- Successful vs failed cache requests (HTTP 2xx = success)
+- Success rate percentages shown in real-time
+- Per-catalog cache request breakdowns in completion screen
+
 #### Advanced Options
 - **HTTP Proxy**: Route requests through a proxy (optional)
 - **Randomize Catalog Processing**: Process catalogs in random order
