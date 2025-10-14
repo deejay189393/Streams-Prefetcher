@@ -105,7 +105,9 @@
                             <div class="form-group">
                                 <label for="movies-global-limit">
                                     Movies Global Limit
-                                    <span class="info-icon" data-tooltip="Total maximum number of movie items to prefetch across all catalogs. Check 'Unlimited' for no limit. Default: Unlimited"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Total maximum number of movie items to prefetch across all catalogs. Check 'Unlimited' for no limit.
+
+Default: <strong>Unlimited</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -120,7 +122,9 @@
                             <div class="form-group">
                                 <label for="series-global-limit">
                                     Series Global Limit
-                                    <span class="info-icon" data-tooltip="Total maximum number of series items to prefetch across all catalogs. Check 'Unlimited' for no limit. Default: Unlimited"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Total maximum number of series items to prefetch across all catalogs. Check 'Unlimited' for no limit.
+
+Default: <strong>Unlimited</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -137,7 +141,9 @@
                             <div class="form-group">
                                 <label for="movies-per-catalog">
                                     Movies per Catalog
-                                    <span class="info-icon" data-tooltip="Maximum number of movie items to prefetch from each movie catalog. Check 'Unlimited' for no limit. Default: 50"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Maximum number of movie items to prefetch from each movie catalog. Check 'Unlimited' for no limit.
+
+Default: <strong>50</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -152,7 +158,9 @@
                             <div class="form-group">
                                 <label for="series-per-catalog">
                                     Series per Catalog
-                                    <span class="info-icon" data-tooltip="Maximum number of series items to prefetch from each series catalog. Check 'Unlimited' for no limit. Default: 5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Maximum number of series items to prefetch from each series catalog. Check 'Unlimited' for no limit.
+
+Default: <strong>5</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -168,7 +176,9 @@
                         <div class="form-group">
                             <label for="items-per-mixed-catalog">
                                 Items per Mixed Catalog
-                                <span class="info-icon" data-tooltip="Maximum number of items to prefetch from catalogs that contain both movies and series. Check 'Unlimited' for no limit. Default: 30"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <span class="info-icon" data-tooltip="Maximum number of items to prefetch from catalogs that contain both movies and series. Check 'Unlimited' for no limit.
+
+Default: <strong>30</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -183,7 +193,9 @@
                         <div class="form-group">
                             <label for="max-execution-time">
                                 Max Execution Time
-                                <span class="info-icon" data-tooltip="Maximum time allowed for a single prefetch job to run. Check 'Unlimited' for no time limit. Default: 90 minutes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <span class="info-icon" data-tooltip="Maximum time allowed for a single prefetch job to run. Check 'Unlimited' for no time limit.
+
+Default: <strong>90 minutes</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -205,14 +217,16 @@
                     </div>
                 </div>
 
-                <!-- Request Subsection -->
+                <!-- Network Requests Subsection -->
                 <div class="config-subsection">
-                    <h3 class="subsection-title">🌐 Request</h3>
+                    <h3 class="subsection-title">🌐 Network Requests</h3>
                     <div class="subsection-content">
                         <div class="form-group">
                             <label for="delay">
                                 Delay Between Requests
-                                <span class="info-icon" data-tooltip="Time delay between consecutive stream requests to avoid overloading addons. Default: 2 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <span class="info-icon" data-tooltip="Time delay between consecutive stream requests to avoid overloading addons.
+
+Default: <strong>2 seconds</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -233,6 +247,29 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="network-request-timeout">
+                                Network Request Timeout
+                                <span class="info-icon" data-tooltip="Maximum time to wait for a response from network requests performed by this tool before timing out. Check 'Unlimited' for no timeout.
+
+Default: <strong>30 seconds</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
+                            </label>
+                            <div class="time-input">
+                                <input type="number" id="network-request-timeout-value" value="30" min="0" step="0.1">
+                                <select id="network-request-timeout-unit">
+                                    <option value="1" selected>Seconds</option>
+                                    <option value="60">Minutes</option>
+                                </select>
+                            </div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="network-request-timeout-unlimited" onchange="toggleUnlimitedTime('network-request-timeout')">
+                                Unlimited
+                            </label>
+                        </div>
+
+                        <div class="form-group">
                             <label for="proxy">
                                 HTTP Proxy (Optional)
                                 <span class="info-icon" data-tooltip="Optional HTTP proxy server for all addon requests. Leave empty if not needed. Format: http://proxy.example.com:8080"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -245,6 +282,79 @@
                     </div>
                 </div>
 
+                <!-- Service Cache Requests Subsection -->
+                <div class="config-subsection">
+                    <h3 class="subsection-title" style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="display: flex; align-items: center;">
+                            🔄 Service Cache Requests
+                            <span class="info-icon" data-tooltip="Performs caching requests for uncached streams to the services that are preconfigured in your Stream addons."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="M12 16v-4M12 8h.01"></path>
+                                    </svg></span>
+                        </span>
+                        <label class="toggle-switch" onclick="event.stopPropagation()">
+                            <input type="checkbox" id="cache-uncached-streams-enabled" onchange="toggleCacheUncachedStreams()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </h3>
+                    <div class="subsection-content" id="cache-uncached-streams-content">
+                        <div class="form-group">
+                            <label for="cached-stream-regex">
+                                Cached Streams Detection Pattern (RegEx)
+                                <span class="info-icon" data-tooltip="Regular expression pattern to detect cached streams in stream names and descriptions.
+
+Default: <strong>⚡</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="M12 16v-4M12 8h.01"></path>
+                                        </svg></span>
+                            </label>
+                            <input type="text" id="cached-stream-regex" value="⚡" placeholder="⚡">
+                            <div id="cached-stream-regex-error" style="color: var(--danger); font-size: 13px; margin-top: 5px; display: none;"></div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="max-cache-requests-per-item">
+                                    Max Caching Requests per Item
+                                    <span class="info-icon" data-tooltip="Maximum number of uncached stream URLs to request per movie/episode. Higher values trigger more caches but take longer.
+
+Default: <strong>1</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
+                                </label>
+                                <input type="number" id="max-cache-requests-per-item" value="1" min="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="max-cache-requests-global">
+                                    Global Caching Requests Limit
+                                    <span class="info-icon" data-tooltip="Maximum total number of cache requests to send across the entire prefetch session. Prevents excessive requests to your debrid service.
+
+Default: <strong>50</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4M12 8h.01"></path>
+                                            </svg></span>
+                                </label>
+                                <input type="number" id="max-cache-requests-global" value="50" min="0">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cached-streams-count-threshold">
+                                Cached Streams Count Threshold
+                                <span class="info-icon" data-tooltip="Only trigger caching requests for uncached streams if fewer than this many cached streams are detected. Set to 0 to only trigger caching requests when there were no cached streams found.
+
+Default: <strong>0</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="M12 16v-4M12 8h.01"></path>
+                                        </svg></span>
+                            </label>
+                            <input type="number" id="cached-streams-count-threshold" value="0" min="0" style="max-width: 200px;">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Randomization Subsection -->
                 <div class="config-subsection">
                     <h3 class="subsection-title">🔮 Randomization</h3>
@@ -253,7 +363,9 @@
                             <div class="form-group">
                                 <label>
                                     Randomize Catalog Processing
-                                    <span class="info-icon" data-tooltip="Process catalogs in random order instead of sequential order. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Process catalogs in random order instead of sequential order.
+
+Default: <strong>Disabled</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -267,7 +379,9 @@
                             <div class="form-group">
                                 <label>
                                     Randomize Item Prefetching
-                                    <span class="info-icon" data-tooltip="Prefetch streams of items fetched from a catalog's page in random order instead of sequential order. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <span class="info-icon" data-tooltip="Prefetch streams of items fetched from a catalog's page in random order instead of sequential order.
+
+Default: <strong>Disabled</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -288,7 +402,9 @@
                         <div class="form-group">
                             <label for="cache-validity">
                                 Skip Prefetching if already done within
-                                <span class="info-icon" data-tooltip="Skip prefetching streams for items if they were already prefetched within this time period. Check 'Unlimited' to never re-prefetch items (once done, always skipped). Set to 0 to always prefetch (never skip). Default: 1 week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <span class="info-icon" data-tooltip="Skip prefetching streams for items if they were already prefetched within this time period. Check 'Unlimited' to never re-prefetch items (once done, always skipped). Set to 0 to always prefetch (never skip).
+
+Default: <strong>1 week</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -312,7 +428,9 @@
                         <div class="form-group">
                             <label>
                                 Enable creation of prefetch log files
-                                <span class="info-icon" data-tooltip="Enable creation of detailed log files in data/logs directory for each prefetch run. Useful for debugging and monitoring. Default: Disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <span class="info-icon" data-tooltip="Enable creation of detailed log files in data/logs directory for each prefetch run. Useful for debugging and monitoring.
+
+Default: <strong>Disabled</strong>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <path d="M12 16v-4M12 8h.01"></path>
                                             </svg></span>
@@ -633,20 +751,14 @@
                             <div class="stat-value" id="stat-cached">0</div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Page Fetching Status (shows during page loading) -->
-                <div class="page-fetch-status" id="page-fetch-status" style="display: none;">
-                    <div class="page-fetch-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="rotating">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-                        </svg>
-                    </div>
-                    <div class="page-fetch-details">
-                        <div class="page-fetch-title">Fetching Page <span id="current-page-number">1</span></div>
-                        <div class="page-fetch-subtitle">Discovering items from catalog...</div>
-                        <div class="page-fetch-items" id="page-fetch-items">0 items discovered</div>
+                    <div class="stat-card" id="stat-card-cache-requests" style="display: none;">
+                        <div class="stat-icon">🔄</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Stream Caching Requested</div>
+                            <div class="stat-value" id="stat-cache-requests">0</div>
+                            <div class="stat-sublabel" id="stat-cache-requests-success" style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">✓ 0 successful</div>
+                            <div class="stat-limit" id="stat-cache-requests-limit">of 0</div>
+                        </div>
                     </div>
                 </div>
 
@@ -775,6 +887,12 @@
                             <div class="summary-stat-value" id="completion-cached">0</div>
                             <div class="summary-stat-label">Already Prefetched</div>
                         </div>
+                        <div class="summary-stat" id="completion-stat-cache-requests" style="display: none;">
+                            <div class="summary-stat-icon">🔄</div>
+                            <div class="summary-stat-value" id="completion-cache-requests">0</div>
+                            <div class="summary-stat-sublabel" id="completion-cache-requests-success" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">✓ 0 successful (0%)</div>
+                            <div class="summary-stat-label">Stream Caching Requested</div>
+                        </div>
                         <div class="summary-stat">
                             <div class="summary-stat-icon">📁</div>
                             <div class="summary-stat-value" id="completion-catalogs">0</div>
@@ -825,12 +943,13 @@
                                     <th>Success</th>
                                     <th>Failed</th>
                                     <th>Cached</th>
+                                    <th>Cache Reqs</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
                             <tbody id="catalog-details-tbody">
                                 <tr>
-                                    <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                                    <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">
                                         No data available
                                     </td>
                                 </tr>

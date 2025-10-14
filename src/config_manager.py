@@ -19,6 +19,7 @@ class ConfigManager:
         'series_per_catalog': 3,
         'items_per_mixed_catalog': 20,
         'delay': 2,  # In seconds
+        'network_request_timeout': 30,  # In seconds
         'proxy': '',
         'randomize_catalog_processing': False,
         'randomize_item_prefetching': False,
@@ -30,6 +31,13 @@ class ConfigManager:
             'enabled': False,
             'cron_expression': '0 2,5,8 * * *',  # Daily at 2 AM, 5 AM, 8 AM
             'timezone': 'UTC'
+        },
+        'cache_uncached_streams': {
+            'enabled': False,
+            'cached_stream_regex': '⚡',
+            'max_cache_requests_per_item': 1,
+            'max_cache_requests_global': 50,
+            'cached_streams_count_threshold': 0
         }
     }
 

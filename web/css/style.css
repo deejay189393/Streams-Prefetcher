@@ -215,7 +215,7 @@ label {
     box-shadow: 0 8px 24px rgba(0,0,0,0.8),
                 0 0 20px rgba(30, 64, 175, 0.4);
     display: none;
-    white-space: normal;
+    white-space: pre-line;
     font-weight: normal;
     backdrop-filter: blur(10px);
     opacity: 0;
@@ -1828,14 +1828,14 @@ footer {
 
 /* Countdown Timer */
 .countdown-timer {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
     color: #fff;
     margin-top: 4px;
     display: inline-block;
-    padding: 4px;
-    border-radius: 6px;
-    background: rgba(59, 130, 246, 0.1);
+    padding: 4px 16px;
+    border-radius: 12px;
+    background: transparent;
 }
 
 .countdown-pulsing {

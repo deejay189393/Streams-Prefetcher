@@ -327,6 +327,86 @@ function formatExecutionTime(seconds) {
 }
 
 // ============================================================================
+// Shared Stats Update Functions (DRY Refactor - Phase 3)
+// ============================================================================
+
+/**
+ * Update statistics cards with unified logic
+ * Eliminates ~100 lines of duplicate code across running/completion screens
+ * @param {string} prefix - Element ID prefix ('stat' for running, 'completion' for completed)
+ * @param {Object} stats - Statistics object
+ */
+function updateStatsCards(prefix, stats) {
+    const setEl = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setEl(`${prefix}-movies`, stats.movies || 0);
+    setEl(`${prefix}-series`, stats.series || 0);
+    setEl(`${prefix}-episodes`, stats.episodes || 0);
+    setEl(`${prefix}-cached`, stats.cached || 0);
+    setEl(`${prefix}-pages`, stats.pages || 0);
+    setEl(`${prefix}-catalogs`, stats.catalogs || 0);
+    setEl(`${prefix}-cache-requests`, stats.cache_requests || 0);
+
+    // Update cache requests success sublabel if available
+    const cacheRequestsSent = stats.cache_requests || 0;
+    const cacheRequestsSuccessful = stats.cache_requests_successful || 0;
+    const successRate = cacheRequestsSent > 0 ? Math.round((cacheRequestsSuccessful / cacheRequestsSent) * 100) : 0;
+    setEl(`${prefix}-cache-requests-success`, `✓ ${cacheRequestsSuccessful} successful (${successRate}%)`);
+}
+
+/**
+ * Populate catalog details table
+ * @param {HTMLElement} tbody - Table body element
+ * @param {Array} catalogs - Array of catalog objects
+ */
+function populateCatalogTable(tbody, catalogs) {
+    if (!tbody || !catalogs || catalogs.length === 0) return;
+
+    tbody.innerHTML = '';
+    catalogs.forEach(cat => {
+        const row = tbody.insertRow();
+        const total = (cat.success_count || 0) + (cat.failed_count || 0) + (cat.cached_count || 0);
+        const typeCapitalized = cat.type ? cat.type.charAt(0).toUpperCase() + cat.type.slice(1) : '-';
+
+        // Format cache requests with success count
+        const cacheRequestsSent = cat.cache_requests_sent || 0;
+        const cacheRequestsSuccessful = cat.cache_requests_successful || 0;
+        const cacheRequestsDisplay = cacheRequestsSent > 0
+            ? `${cacheRequestsSuccessful} / ${cacheRequestsSent}`
+            : '0';
+
+        row.innerHTML = `
+            <td>${cat.name || '-'}</td>
+            <td><span class="catalog-type-badge">${typeCapitalized}</span></td>
+            <td>${formatDuration(cat.duration)}</td>
+            <td>${cat.success_count || 0}</td>
+            <td>${cat.failed_count || 0}</td>
+            <td>${cat.cached_count || 0}</td>
+            <td>${cacheRequestsDisplay}</td>
+            <td>${total}</td>
+        `;
+    });
+}
+
+/**
+ * Calculate processing rates from stats and timing
+ * @param {Object} stats - Statistics object
+ * @param {Object} timing - Timing object with processing_duration
+ * @returns {Object} Rates object with movie_rate, series_rate, overall_rate
+ */
+function calculateProcessingRates(stats, timing) {
+    const procMins = (timing.processing_duration || 1) / 60;
+    return {
+        movie_rate: (stats.movies_prefetched / procMins).toFixed(1),
+        series_rate: (stats.episodes_prefetched / procMins).toFixed(1),
+        overall_rate: ((stats.movies_prefetched + stats.series_prefetched) / procMins).toFixed(1)
+    };
+}
+
+// ============================================================================
 // Collapsible Section Helpers
 // ============================================================================
 
@@ -377,6 +457,66 @@ function toggleScheduling() {
     // Immediately save scheduling state
     saveSchedulesSilent();
 }
+
+function toggleCacheUncachedStreams() {
+    const checkbox = document.getElementById('cache-uncached-streams-enabled');
+    const content = document.getElementById('cache-uncached-streams-content');
+
+    // Get all input fields within the content
+    const inputs = content.querySelectorAll('input');
+
+    if (checkbox.checked) {
+        // Enable all fields
+        inputs.forEach(input => input.disabled = false);
+        content.style.opacity = '1';
+    } else {
+        // Disable all fields
+        inputs.forEach(input => input.disabled = true);
+        content.style.opacity = '0.5';
+    }
+}
+
+// Regex validation with debounce
+let regexValidationTimeout = null;
+function validateCachedStreamRegex() {
+    const input = document.getElementById('cached-stream-regex');
+    const errorDiv = document.getElementById('cached-stream-regex-error');
+    const value = input.value.trim();
+
+    if (!value) {
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+        input.style.borderColor = '';
+        return;
+    }
+
+    try {
+        // Test if it's a valid regex
+        new RegExp(value);
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+        input.style.borderColor = '';
+    } catch (e) {
+        errorDiv.textContent = 'Invalid regular expression: ' + e.message;
+        errorDiv.style.display = 'block';
+        input.style.borderColor = 'var(--danger)';
+    }
+}
+
+// Add event listener for regex validation on input (with debounce)
+document.addEventListener('DOMContentLoaded', function() {
+    const regexInput = document.getElementById('cached-stream-regex');
+    if (regexInput) {
+        regexInput.addEventListener('input', function() {
+            // Clear previous timeout
+            if (regexValidationTimeout) {
+                clearTimeout(regexValidationTimeout);
+            }
+            // Set new timeout for 2 seconds
+            regexValidationTimeout = setTimeout(validateCachedStreamRegex, 2000);
+        });
+    }
+});
 
 function showAddScheduleModal() {
     editingScheduleIndex = null;
@@ -763,7 +903,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Now load config (which will auto-load catalogs if needed)
     addDebugLog('Loading configuration...');
-    loadConfiguration();
+    await loadConfiguration();
     addDebugLog('Loading schedules...');
     loadSchedules();
     addDebugLog('Checking timezone mismatch...');
@@ -775,6 +915,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     logStatusScreens();
     addDebugLog('Connecting event source...');
     connectEventSource();
+
+    // Track page visibility for debugging SSE throttling
+    document.addEventListener('visibilitychange', () => {
+        const state = document.visibilityState;
+        addDebugLog(`👁️ [PAGE VISIBILITY] Page is now: ${state}`);
+    });
 
     // Enable drag and drop for addon URLs
     initializeAddonUrlDragDrop();
@@ -1170,6 +1316,26 @@ function populateConfigurationForm(config) {
     }
     toggleNoDelay();
 
+    // Network Request Timeout - handle unlimited (-1) and convert to appropriate unit
+    const timeoutSeconds = config.network_request_timeout !== undefined ? config.network_request_timeout : 30;
+    if (timeoutSeconds === -1) {
+        // Unlimited - show 30 seconds in UI but checkbox will be checked
+        document.getElementById('network-request-timeout-value').value = 30;
+        document.getElementById('network-request-timeout-unit').value = '1';
+        document.getElementById('network-request-timeout-unlimited').checked = true;
+    } else if (timeoutSeconds % 60 === 0) {
+        // Divisible by minutes
+        document.getElementById('network-request-timeout-value').value = timeoutSeconds / 60;
+        document.getElementById('network-request-timeout-unit').value = '60';
+        document.getElementById('network-request-timeout-unlimited').checked = false;
+    } else {
+        // Whole seconds
+        document.getElementById('network-request-timeout-value').value = timeoutSeconds;
+        document.getElementById('network-request-timeout-unit').value = '1';
+        document.getElementById('network-request-timeout-unlimited').checked = false;
+    }
+    toggleUnlimitedTime('network-request-timeout');
+
     // Cache validity - handle unlimited (-1) and convert to appropriate unit
     const cacheValiditySeconds = config.cache_validity !== undefined ? config.cache_validity : 604800; // Default: 1 week
     if (cacheValiditySeconds === -1) {
@@ -1242,6 +1408,15 @@ function populateConfigurationForm(config) {
     document.querySelector(`input[name="randomize-catalog"][value="${config.randomize_catalog_processing}"]`).checked = true;
     document.querySelector(`input[name="randomize-item"][value="${config.randomize_item_prefetching}"]`).checked = true;
     document.querySelector(`input[name="enable-logging"][value="${config.enable_logging}"]`).checked = true;
+
+    // Populate cache_uncached_streams config
+    const cacheUncachedConfig = config.cache_uncached_streams || {};
+    document.getElementById('cache-uncached-streams-enabled').checked = cacheUncachedConfig.enabled || false;
+    document.getElementById('cached-stream-regex').value = cacheUncachedConfig.cached_stream_regex || '⚡';
+    document.getElementById('max-cache-requests-per-item').value = cacheUncachedConfig.max_cache_requests_per_item || 1;
+    document.getElementById('max-cache-requests-global').value = cacheUncachedConfig.max_cache_requests_global || 50;
+    document.getElementById('cached-streams-count-threshold').value = cacheUncachedConfig.cached_streams_count_threshold || 0;
+    toggleCacheUncachedStreams(); // Apply enabled/disabled state to fields
 }
 
 function setLimitValue(fieldId, value) {
@@ -1769,12 +1944,20 @@ async function saveConfigurationSilent() {
             series_per_catalog: getLimitValue('series-per-catalog'),
             items_per_mixed_catalog: getLimitValue('items-per-mixed-catalog'),
             delay: document.getElementById('delay-no-delay').checked ? 0 : parseFloat(document.getElementById('delay-value').value) * parseFloat(document.getElementById('delay-unit').value),
+            network_request_timeout: document.getElementById('network-request-timeout-unlimited').checked ? -1 : parseFloat(document.getElementById('network-request-timeout-value').value) * parseFloat(document.getElementById('network-request-timeout-unit').value),
             cache_validity: document.getElementById('cache-validity-unlimited').checked ? -1 : parseFloat(document.getElementById('cache-validity-value').value) * parseFloat(document.getElementById('cache-validity-unit').value),
             max_execution_time: document.getElementById('max-execution-time-unlimited').checked ? -1 : parseFloat(document.getElementById('max-execution-time-value').value) * parseFloat(document.getElementById('max-execution-time-unit').value),
             proxy: document.getElementById('proxy').value.trim(),
             randomize_catalog_processing: document.querySelector('input[name="randomize-catalog"]:checked').value === 'true',
             randomize_item_prefetching: document.querySelector('input[name="randomize-item"]:checked').value === 'true',
-            enable_logging: document.querySelector('input[name="enable-logging"]:checked').value === 'true'
+            enable_logging: document.querySelector('input[name="enable-logging"]:checked').value === 'true',
+            cache_uncached_streams: {
+                enabled: document.getElementById('cache-uncached-streams-enabled').checked,
+                cached_stream_regex: document.getElementById('cached-stream-regex').value.trim(),
+                max_cache_requests_per_item: parseInt(document.getElementById('max-cache-requests-per-item').value),
+                max_cache_requests_global: parseInt(document.getElementById('max-cache-requests-global').value),
+                cached_streams_count_threshold: parseInt(document.getElementById('cached-streams-count-threshold').value)
+            }
         };
 
         const response = await fetch('/api/config', {
@@ -1840,12 +2023,20 @@ async function saveConfiguration() {
             series_per_catalog: getLimitValue('series-per-catalog'),
             items_per_mixed_catalog: getLimitValue('items-per-mixed-catalog'),
             delay: document.getElementById('delay-no-delay').checked ? 0 : parseFloat(document.getElementById('delay-value').value) * parseFloat(document.getElementById('delay-unit').value),
+            network_request_timeout: document.getElementById('network-request-timeout-unlimited').checked ? -1 : parseFloat(document.getElementById('network-request-timeout-value').value) * parseFloat(document.getElementById('network-request-timeout-unit').value),
             cache_validity: document.getElementById('cache-validity-unlimited').checked ? -1 : parseFloat(document.getElementById('cache-validity-value').value) * parseFloat(document.getElementById('cache-validity-unit').value),
             max_execution_time: document.getElementById('max-execution-time-unlimited').checked ? -1 : parseFloat(document.getElementById('max-execution-time-value').value) * parseFloat(document.getElementById('max-execution-time-unit').value),
             proxy: document.getElementById('proxy').value.trim(),
             randomize_catalog_processing: document.querySelector('input[name="randomize-catalog"]:checked').value === 'true',
             randomize_item_prefetching: document.querySelector('input[name="randomize-item"]:checked').value === 'true',
-            enable_logging: document.querySelector('input[name="enable-logging"]:checked').value === 'true'
+            enable_logging: document.querySelector('input[name="enable-logging"]:checked').value === 'true',
+            cache_uncached_streams: {
+                enabled: document.getElementById('cache-uncached-streams-enabled').checked,
+                cached_stream_regex: document.getElementById('cached-stream-regex').value.trim(),
+                max_cache_requests_per_item: parseInt(document.getElementById('max-cache-requests-per-item').value),
+                max_cache_requests_global: parseInt(document.getElementById('max-cache-requests-global').value),
+                cached_streams_count_threshold: parseInt(document.getElementById('cached-streams-count-threshold').value)
+            }
         };
 
         // Validate configuration
@@ -2831,6 +3022,13 @@ function updateJobStatusUI(status, caller = 'unknown') {
             // Reset terminate button to original state (force reset for new job)
             resetTerminateButton(true);
 
+            // Show/hide cache requests card based on feature enablement
+            const cacheUncachedEnabled = currentConfig?.cache_uncached_streams?.enabled || false;
+            const cacheRequestsCard = document.getElementById('stat-card-cache-requests');
+            if (cacheRequestsCard) {
+                cacheRequestsCard.style.display = cacheUncachedEnabled ? 'flex' : 'none';
+            }
+
             // Start execution time progress bar (only on first run, not on page refresh during running job)
             if (status.start_time && currentConfig && currentConfig.max_execution_time !== undefined) {
                 startExecutionTimeInterval(status.start_time, currentConfig.max_execution_time);
@@ -3006,6 +3204,13 @@ function updateJobStatusUI(status, caller = 'unknown') {
             // Stop execution time progress bar when job completes
             stopExecutionTimeInterval();
 
+            // Show/hide cache requests card in completion screen based on feature enablement
+            const cacheUncachedEnabledCompletion = currentConfig?.cache_uncached_streams?.enabled || false;
+            const completionCacheRequestsCard = document.getElementById('completion-stat-cache-requests');
+            if (completionCacheRequestsCard) {
+                completionCacheRequestsCard.style.display = cacheUncachedEnabledCompletion ? 'block' : 'none';
+            }
+
             if (status.summary) {
                 try {
                     addDebugLog(`📊 [COMPLETION STATS] ═══════════════════════════════════════`);
@@ -3038,14 +3243,21 @@ function updateJobStatusUI(status, caller = 'unknown') {
 
                     // WORKAROUND: Use progress data as fallback if summary stats are missing/zero
                     let stats = status.summary.statistics || {};
-                    if (status.progress && (stats.movies_prefetched === 0 && status.progress.movies_prefetched > 0)) {
+                    if (status.progress && (
+                        (stats.movies_prefetched === 0 && status.progress.movies_prefetched > 0) ||
+                        (stats.series_prefetched === 0 && status.progress.series_prefetched > 0) ||
+                        (stats.cached_count === 0 && status.progress.cached_count > 0) ||
+                        (stats.service_cache_requests_sent === 0 && status.progress.service_cache_requests_sent > 0)
+                    )) {
                         addDebugLog(`📊 [COMPLETION STATS] ⚠️ Summary stats are zero but progress has data - using progress as fallback`);
                         stats = {
                             ...stats,
-                            movies_prefetched: status.progress.movies_prefetched || 0,
-                            series_prefetched: status.progress.series_prefetched || 0,
-                            episodes_prefetched: status.progress.episodes_prefetched || 0,
-                            items_from_cache: status.progress.cached_count || 0
+                            movies_prefetched: status.progress.movies_prefetched || stats.movies_prefetched || 0,
+                            series_prefetched: status.progress.series_prefetched || stats.series_prefetched || 0,
+                            episodes_prefetched: status.progress.episodes_prefetched || stats.episodes_prefetched || 0,
+                            cached_count: status.progress.cached_count || stats.cached_count || 0,
+                            service_cache_requests_sent: status.progress.service_cache_requests_sent || stats.service_cache_requests_sent || 0,
+                            service_cache_requests_successful: status.progress.service_cache_requests_successful || stats.service_cache_requests_successful || 0
                         };
                         addDebugLog(`📊 [COMPLETION STATS] Merged stats with progress: ${JSON.stringify(stats)}`);
                     }
@@ -3068,14 +3280,18 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     setEl('completion-total-duration', formatDuration(timing.total_duration));
                     setEl('completion-processing-time', formatDuration(timing.processing_duration));
 
-                    // Statistics
+                    // Statistics - Use shared function
                     addDebugLog(`📊 [COMPLETION STATS] ─── Populating STATISTICS fields ───`);
-                    setEl('completion-catalogs', stats.filtered_catalogs || 0);
-                    setEl('completion-movies', stats.movies_prefetched || 0);
-                    setEl('completion-series', stats.series_prefetched || 0);
-                    setEl('completion-episodes', stats.episodes_prefetched || 0);
-                    setEl('completion-pages', stats.total_pages_fetched || 0);
-                    setEl('completion-cached', stats.items_from_cache || 0);
+                    updateStatsCards('completion', {
+                        movies: stats.movies_prefetched,
+                        series: stats.series_prefetched,
+                        episodes: stats.episodes_prefetched,
+                        cached: stats.cached_count,
+                        pages: stats.total_pages_fetched,
+                        catalogs: stats.filtered_catalogs,
+                        cache_requests: stats.service_cache_requests_sent,
+                        cache_requests_successful: stats.service_cache_requests_successful
+                    });
 
                     const successRate = stats.cache_requests_made > 0
                         ? `${Math.round((stats.cache_requests_successful / stats.cache_requests_made) * 100)}%`
@@ -3083,18 +3299,14 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     addDebugLog(`📊 [COMPLETION STATS] Success rate calculation: ${stats.cache_requests_successful}/${stats.cache_requests_made} = ${successRate}`);
                     setEl('completion-success-rate', successRate);
 
-                    // Rates
+                    // Rates - Use shared function
                     addDebugLog(`📊 [COMPLETION STATS] ─── Populating PROCESSING RATES ───`);
-                    const procMins = (timing.processing_duration || 1) / 60;
-                    addDebugLog(`📊 [COMPLETION STATS] Processing minutes: ${procMins.toFixed(2)}`);
+                    const rates = calculateProcessingRates(stats, timing);
+                    addDebugLog(`📊 [COMPLETION STATS] Processing minutes: ${((timing.processing_duration || 1) / 60).toFixed(2)}`);
 
-                    const movieRate = (stats.movies_prefetched / procMins).toFixed(1);
-                    const seriesRate = (stats.episodes_prefetched / procMins).toFixed(1);
-                    const overallRate = ((stats.movies_prefetched + stats.series_prefetched) / procMins).toFixed(1);
-
-                    setEl('completion-movie-rate', movieRate);
-                    setEl('completion-series-rate', seriesRate);
-                    setEl('completion-overall-rate', overallRate);
+                    setEl('completion-movie-rate', rates.movie_rate);
+                    setEl('completion-series-rate', rates.series_rate);
+                    setEl('completion-overall-rate', rates.overall_rate);
 
                     // Catalog Details Table
                     addDebugLog(`📊 [COMPLETION STATS] ─── Populating CATALOG DETAILS TABLE ───`);
@@ -3118,24 +3330,14 @@ function updateJobStatusUI(status, caller = 'unknown') {
                     addDebugLog(`📊 [COMPLETION STATS] Number of processed catalogs: ${catalogs.length}`);
                     addDebugLog(`📊 [COMPLETION STATS] Catalogs array: ${JSON.stringify(catalogs, null, 2)}`);
 
+                    // Use shared function to populate table
                     const tbody = document.getElementById('catalog-details-tbody');
                     if (tbody && catalogs.length > 0) {
-                        addDebugLog(`📊 [COMPLETION STATS] Table body found, clearing and populating...`);
-                        tbody.innerHTML = '';
+                        addDebugLog(`📊 [COMPLETION STATS] Table body found, using shared function to populate...`);
+                        populateCatalogTable(tbody, catalogs);
                         catalogs.forEach((cat, idx) => {
-                            const row = tbody.insertRow();
                             const total = (cat.success_count || 0) + (cat.failed_count || 0) + (cat.cached_count || 0);
-                            const typeCapitalized = cat.type ? cat.type.charAt(0).toUpperCase() + cat.type.slice(1) : '-';
                             addDebugLog(`📊 [COMPLETION STATS] Row ${idx}: ${cat.name} (${cat.type}) - ${total} items`);
-                            row.innerHTML = `
-                                <td>${cat.name || '-'}</td>
-                                <td><span class="catalog-type-badge">${typeCapitalized}</span></td>
-                                <td>${formatDuration(cat.duration)}</td>
-                                <td>${cat.success_count || 0}</td>
-                                <td>${cat.failed_count || 0}</td>
-                                <td>${cat.cached_count || 0}</td>
-                                <td>${total}</td>
-                            `;
                         });
                         addDebugLog(`📊 [COMPLETION STATS] ✅ Table populated with ${catalogs.length} rows`);
                     } else {
@@ -3380,6 +3582,9 @@ function updateProgressInfo(progress, preserveActionText = false) {
         document.getElementById('stat-series-limit').textContent = 'of ∞';
         document.getElementById('stat-episodes').textContent = '0';
         document.getElementById('stat-cached').textContent = '0';
+        document.getElementById('stat-cache-requests').textContent = '0';
+        document.getElementById('stat-cache-requests-success').textContent = '✓ 0 successful (0%)';
+        document.getElementById('stat-cache-requests-limit').textContent = 'of 0';
 
         document.getElementById('overall-progress-fill').style.width = '0%';
         document.getElementById('overall-progress-percent').textContent = '0%';
@@ -3394,8 +3599,6 @@ function updateProgressInfo(progress, preserveActionText = false) {
             document.querySelector('.current-action').textContent = 'Starting...';
         }
 
-        // Hide page fetch status
-        document.getElementById('page-fetch-status').style.display = 'none';
         return;
     }
 
@@ -3418,6 +3621,18 @@ function updateProgressInfo(progress, preserveActionText = false) {
     document.getElementById('stat-episodes').textContent = episodesPrefetched;
 
     document.getElementById('stat-cached').textContent = cachedCount;
+
+    // Update cache requests stat if available
+    const cacheRequestsSent = progress.service_cache_requests_sent || 0;
+    const cacheRequestsSuccessful = progress.service_cache_requests_successful || 0;
+    const cacheRequestsLimit = progress.service_cache_requests_limit || 0;
+    document.getElementById('stat-cache-requests').textContent = cacheRequestsSent;
+
+    // Calculate success rate
+    const successRate = cacheRequestsSent > 0 ? Math.round((cacheRequestsSuccessful / cacheRequestsSent) * 100) : 0;
+    document.getElementById('stat-cache-requests-success').textContent = `✓ ${cacheRequestsSuccessful} successful (${successRate}%)`;
+
+    document.getElementById('stat-cache-requests-limit').textContent = `of ${cacheRequestsLimit}`;
 
     // Update RPDB poster if IMDb ID is available
     const currentTitle = progress.current_title || '';
@@ -3452,35 +3667,15 @@ function updateProgressInfo(progress, preserveActionText = false) {
     const catalogDisplayText = catalogType ? `${catalogName} (${catalogType})` : catalogName;
     document.getElementById('current-catalog-name').textContent = catalogDisplayText;
 
-    // Handle page fetching status
-    const pageFetchStatus = document.getElementById('page-fetch-status');
+    // Handle page fetching status - show in subtitle instead of separate card
+    const currentAction = document.querySelector('.current-action');
     if (progress.fetching_page) {
-        // Show page fetching UI
-        pageFetchStatus.style.display = 'flex';
+        // Show page fetching status in subtitle
         const pageNum = progress.current_page || 1;
-        document.getElementById('current-page-number').textContent = pageNum;
-
-        // Update subtitle based on catalog mode
-        const subtitle = catalogMode ? `Discovering ${catalogMode}${catalogMode === 'mixed' ? ' items' : 's'} from catalog...` : 'Discovering items from catalog...';
-        document.querySelector('.page-fetch-subtitle').textContent = subtitle;
-
-        // Items discovered will be updated when we get the data
-        document.getElementById('page-fetch-items').textContent = 'Loading...';
-    } else if (progress.items_on_current_page !== undefined) {
-        // Page has been fetched, show discovered items count
-        const itemsCount = progress.items_on_current_page || 0;
-        const itemWord = itemsCount === 1 ? 'item' : 'items';
-        document.getElementById('page-fetch-items').textContent = `${itemsCount} ${itemWord} discovered`;
-
-        // Hide after a brief moment once processing starts
-        if (progress.processed_items_on_page > 0) {
-            setTimeout(() => {
-                pageFetchStatus.style.display = 'none';
-            }, 1500);
-        }
+        currentAction.textContent = `Fetching Page ${pageNum}`;
     } else {
-        // Not fetching, hide the status
-        pageFetchStatus.style.display = 'none';
+        // Show processing status
+        currentAction.textContent = `Processing ${catalogName}`;
     }
 
     // Calculate and update overall progress
@@ -3809,7 +4004,6 @@ function handleSSEEvent(event, data) {
             break;
 
         case 'progress':
-            addDebugLog(`📨 [SSE] Progress event`);
             updateProgressInfo(data);
             break;
 
@@ -3989,90 +4183,39 @@ stats.episodes_prefetched: ${stats.episodes_prefetched}`);
     document.getElementById('completion-total-duration').textContent = formatDuration(timing.total_duration);
     document.getElementById('completion-processing-time').textContent = formatDuration(timing.processing_duration);
 
-    // Populate Statistics
+    // Populate Statistics - Use shared function
     const catalogsProcessed = stats.filtered_catalogs || catalogs.length || 0;
-    const moviesCount = stats.movies_prefetched || 0;
-    const seriesCount = stats.series_prefetched || 0;
-    const episodesCount = stats.episodes_prefetched || 0;
-    const pagesCount = stats.total_pages_fetched || 0;
-    const cachedCount = stats.items_from_cache || 0;
+    updateStatsCards('completion', {
+        movies: stats.movies_prefetched,
+        series: stats.series_prefetched,
+        episodes: stats.episodes_prefetched,
+        cached: stats.cached_count,
+        pages: stats.total_pages_fetched,
+        catalogs: catalogsProcessed,
+        cache_requests: stats.service_cache_requests_sent
+    });
+
+    // Success rate
     const successfulCount = stats.cache_requests_successful || 0;
     const totalRequests = stats.cache_requests_made || 0;
     const successRate = totalRequests > 0 ? ((successfulCount / totalRequests) * 100).toFixed(1) : 0;
-
-    document.getElementById('completion-catalogs').textContent = catalogsProcessed;
-    document.getElementById('completion-movies').textContent = moviesCount;
-    document.getElementById('completion-series').textContent = seriesCount;
-    document.getElementById('completion-episodes').textContent = episodesCount;
-    document.getElementById('completion-pages').textContent = pagesCount;
-    document.getElementById('completion-cached').textContent = cachedCount;
     document.getElementById('completion-success-rate').textContent = `${successRate}%`;
 
-    // Populate Processing Rates
-    const processingDuration = timing.processing_duration || 0;
-    if (processingDuration > 0) {
-        const durationMinutes = processingDuration / 60;
-        const movieRate = (moviesCount / durationMinutes).toFixed(1);
-        const episodesRate = (episodesCount / durationMinutes).toFixed(1);
-        const totalItems = moviesCount + episodesCount;
-        const overallRate = (totalItems / durationMinutes).toFixed(1);
-
-        document.getElementById('completion-movie-rate').textContent = movieRate;
-        document.getElementById('completion-series-rate').textContent = episodesRate;
-        document.getElementById('completion-overall-rate').textContent = overallRate;
+    // Populate Processing Rates - Use shared function
+    if (timing.processing_duration > 0) {
+        const rates = calculateProcessingRates(stats, timing);
+        document.getElementById('completion-movie-rate').textContent = rates.movie_rate;
+        document.getElementById('completion-series-rate').textContent = rates.series_rate;
+        document.getElementById('completion-overall-rate').textContent = rates.overall_rate;
     } else {
         document.getElementById('completion-movie-rate').textContent = '-';
         document.getElementById('completion-series-rate').textContent = '-';
         document.getElementById('completion-overall-rate').textContent = '-';
     }
 
-    // Populate Catalog Details Table
-    populateCatalogTable(catalogs);
-}
-
-function populateCatalogTable(catalogs) {
+    // Populate Catalog Details Table - Use shared function
     const tbody = document.getElementById('catalog-details-tbody');
-    if (!tbody) return;
-
-    // Clear existing rows
-    tbody.innerHTML = '';
-
-    if (catalogs.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">
-                    No catalog data available
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    // Sort catalogs by duration (longest first)
-    const sortedCatalogs = [...catalogs].sort((a, b) => (b.duration || 0) - (a.duration || 0));
-
-    // Create table rows
-    sortedCatalogs.forEach(catalog => {
-        const name = catalog.name || 'Unknown';
-        const type = (catalog.type || 'mixed').charAt(0).toUpperCase() + (catalog.type || 'mixed').slice(1);
-        const duration = catalog.duration ? `${catalog.duration.toFixed(1)}s` : '-';
-        const success = catalog.success_count || 0;
-        const failed = catalog.failed_count || 0;
-        const cached = catalog.cached_count || 0;
-        const total = success + failed + cached;
-
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td class="catalog-name" title="${name}">${name}</td>
-            <td>${type}</td>
-            <td>${duration}</td>
-            <td class="success-count">${success}</td>
-            <td class="failed-count">${failed}</td>
-            <td class="cached-count">${cached}</td>
-            <td>${total}</td>
-        `;
-        tbody.appendChild(row);
-    });
+    populateCatalogTable(tbody, catalogs);
 }
 
 // ============================================================================

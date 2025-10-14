@@ -64,6 +64,9 @@ class StreamsPrefetcherWrapper:
                 catalog_id = cat['id'].split('|', 1)[1]
                 catalog_filter.append(catalog_id)
 
+        # Get cache_uncached_streams config
+        cache_uncached_streams = config.get('cache_uncached_streams', {})
+
         return {
             'addon_urls': addon_urls,
             'catalog_filter': catalog_filter if catalog_filter else None,
@@ -73,12 +76,18 @@ class StreamsPrefetcherWrapper:
             'series_per_catalog': config.get('series_per_catalog', 5),
             'items_per_mixed_catalog': config.get('items_per_mixed_catalog', 30),
             'delay': config.get('delay', 0),
+            'network_request_timeout': config.get('network_request_timeout', 30),
             'proxy_url': config.get('proxy', None) or None,
             'randomize_catalogs': config.get('randomize_catalog_processing', False),
             'randomize_items': config.get('randomize_item_prefetching', False),
             'cache_validity_seconds': config.get('cache_validity', 259200),
             'max_execution_time': config.get('max_execution_time', -1),
-            'enable_logging': config.get('enable_logging', False)
+            'enable_logging': config.get('enable_logging', False),
+            'cache_uncached_streams_enabled': cache_uncached_streams.get('enabled', False),
+            'cached_stream_regex': cache_uncached_streams.get('cached_stream_regex', '⚡'),
+            'max_cache_requests_per_item': cache_uncached_streams.get('max_cache_requests_per_item', 1),
+            'max_cache_requests_global': cache_uncached_streams.get('max_cache_requests_global', 50),
+            'cached_streams_count_threshold': cache_uncached_streams.get('cached_streams_count_threshold', 0)
         }
 
     def run(self) -> Dict[str, Any]:
@@ -140,6 +149,11 @@ class StreamsPrefetcherWrapper:
             # Extract progress data and call callback
             if self.progress_callback:
                 mode = kwargs.get('mode', 'idle')
+                cached_count = kwargs.get('prefetched_cached_count', 0)
+
+                # Log callback trigger
+                if self.prefetcher.log_file:
+                    self.prefetcher._log(f"[PROGRESS_CALLBACK_DEBUG] Triggering callback: mode={mode}, cached_count={cached_count}")
 
                 # Build comprehensive progress data
                 progress_data = {
@@ -152,7 +166,7 @@ class StreamsPrefetcherWrapper:
                     'series_prefetched': kwargs.get('prefetched_series_count', 0),
                     'series_limit': kwargs.get('series_global_limit', -1),
                     'episodes_prefetched': self.prefetcher.prefetched_episodes_count,
-                    'cached_count': kwargs.get('prefetched_cached_count', 0),
+                    'cached_count': cached_count,
                     'catalog_movies_count': kwargs.get('catalog_movies_count', 0),
                     'catalog_series_count': kwargs.get('catalog_series_count', 0),
                     'mode': mode,
@@ -161,6 +175,9 @@ class StreamsPrefetcherWrapper:
                     'current_item_type': kwargs.get('current_item_type', ''),
                     'current_catalog_items': kwargs.get('prefetched_in_this_catalog', 0),
                     'current_catalog_limit': kwargs.get('per_catalog_limit', -1),
+                    'service_cache_requests_sent': self.prefetcher.cache_requests_sent_count,
+                    'service_cache_requests_successful': self.prefetcher.cache_requests_successful_count,
+                    'service_cache_requests_limit': self.prefetcher.max_cache_requests_global,
                 }
 
                 # Add page fetching information

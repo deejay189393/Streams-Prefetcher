@@ -16,6 +16,7 @@ import math
 import random
 import sqlite3
 import os
+import re
 from datetime import datetime, timezone
 from urllib.parse import urljoin, quote
 from typing import List, Dict, Any, Optional, Tuple
@@ -569,7 +570,7 @@ def format_time_string(seconds: float) -> str:
         return " ".join(parts)
 
 class StreamsPrefetcher:
-    def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False, scheduler=None):
+    def __init__(self, addon_urls: List[Tuple[str, str]], movies_global_limit: int, series_global_limit: int, movies_per_catalog: int, series_per_catalog: int, items_per_mixed_catalog: int, delay: float, network_request_timeout: int = 30, proxy_url: Optional[str] = None, randomize_catalogs: bool = False, randomize_items: bool = False, cache_validity_seconds: int = 259200, max_execution_time: int = -1, enable_logging: bool = False, cache_uncached_streams_enabled: bool = False, cached_stream_regex: str = '⚡', max_cache_requests_per_item: int = 1, max_cache_requests_global: int = 50, cached_streams_count_threshold: int = 0, scheduler=None):
         self.addon_urls = addon_urls
         self.scheduler = scheduler
         self.movies_global_limit = movies_global_limit
@@ -578,6 +579,7 @@ class StreamsPrefetcher:
         self.series_per_catalog = series_per_catalog
         self.items_per_mixed_catalog = items_per_mixed_catalog
         self.delay = delay
+        self.network_request_timeout = network_request_timeout if network_request_timeout != -1 else None
         self.proxy_url = proxy_url
         self.randomize_catalogs = randomize_catalogs
         self.randomize_items = randomize_items
@@ -586,10 +588,25 @@ class StreamsPrefetcher:
         self.enable_logging = enable_logging
         self.logging_dir = "data/logs" if enable_logging else None
 
+        # Cache uncached streams feature
+        self.cache_uncached_streams_enabled = cache_uncached_streams_enabled
+        self.cached_stream_regex = cached_stream_regex
+        self.max_cache_requests_per_item = max_cache_requests_per_item
+        self.max_cache_requests_global = max_cache_requests_global
+        self.cached_streams_count_threshold = cached_streams_count_threshold
+        self.cache_requests_sent_count = 0  # Track global count
+        self.cache_requests_successful_count = 0  # Track successful cache requests
+
         self.prefetched_movies_count = 0
         self.prefetched_series_count = 0
         self.prefetched_episodes_count = 0
         self.prefetched_cached_count = 0
+
+        # Dashboard auto-refresh throttling
+        self._last_dashboard_redraw = 0.0
+        self._min_redraw_interval = 0.1  # 100ms = max 10 redraws/second
+        self._is_processing_items = False
+        self._current_dashboard_args = None
 
         # Initialize timing
         self.start_time = None
@@ -686,6 +703,33 @@ class StreamsPrefetcher:
         """Check if max execution time has been reached"""
         return self.max_execution_time != -1 and (time.time() - self.start_time) >= self.max_execution_time
 
+    def _should_auto_redraw(self) -> bool:
+        """Check if enough time has passed for throttled auto-redraw"""
+        if not self._is_processing_items:
+            self._log(f"[AUTO_REDRAW_DEBUG] Skipped: not processing items")
+            return False
+        if self._current_dashboard_args is None:
+            self._log(f"[AUTO_REDRAW_DEBUG] Skipped: no dashboard args")
+            return False
+        current_time = time.time()
+        time_since_last = current_time - self._last_dashboard_redraw
+        if time_since_last >= self._min_redraw_interval:
+            self._last_dashboard_redraw = current_time
+            self._log(f"[AUTO_REDRAW_DEBUG] Allowed: {time_since_last:.3f}s since last redraw (cached_count={self.prefetched_cached_count})")
+            return True
+        self._log(f"[AUTO_REDRAW_DEBUG] Throttled: only {time_since_last:.3f}s since last redraw (need {self._min_redraw_interval:.1f}s)")
+        return False
+
+    def _auto_redraw_dashboard(self):
+        """Conditionally redraw dashboard with throttling"""
+        self._log(f"[AUTO_REDRAW_DEBUG] Called with cached_count={self.prefetched_cached_count}")
+        if self._should_auto_redraw():
+            self._current_dashboard_args['prefetched_cached_count'] = self.prefetched_cached_count
+            self._log(f"[AUTO_REDRAW_DEBUG] Executing redraw with cached_count={self.prefetched_cached_count}")
+            self.progress_tracker.redraw_dashboard(**self._current_dashboard_args)
+        else:
+            self._log(f"[AUTO_REDRAW_DEBUG] Skipped redraw")
+
     def __del__(self):
         if self.db_conn:
             self.db_conn.close()
@@ -747,13 +791,14 @@ class StreamsPrefetcher:
             'statistics': {
                 'total_catalogs_in_manifest': 0, 'filtered_catalogs': 0, 'total_pages_fetched': 0,
                 'movies_prefetched': 0, 'series_prefetched': 0, 'episodes_found': 0, 'episodes_prefetched': 0,
-                'cache_requests_made': 0, 'cache_requests_successful': 0, 'items_from_cache': 0, 'errors': 0
+                'cache_requests_made': 0, 'cache_requests_successful': 0, 'cached_count': 0, 'errors': 0,
+                'service_cache_requests_sent': 0, 'service_cache_requests_successful': 0
             }
         }
 
     def make_request(self, url: str) -> Optional[Dict[Any, Any]]:
         try:
-            response = self.session.get(url, timeout=30)
+            response = self.session.get(url, timeout=self.network_request_timeout)
             response.raise_for_status()
             data = response.json()
             time.sleep(self.delay)
@@ -885,18 +930,89 @@ class StreamsPrefetcher:
         return [{'id': f"{series_imdb_id}:{v['season']}:{v['episode']}", 'season': v['season'], 'episode': v['episode']}
                 for v in videos if 'season' in v and 'episode' in v]
 
-    def prefetch_streams(self, content_id: str, content_type: str) -> bool:
-        return any(self._prefetch_single_stream(content_id, content_type, url) for url in self.stream_urls)
+    def prefetch_streams(self, content_id: str, content_type: str, title: str = "") -> bool:
+        return any(self._prefetch_single_stream(content_id, content_type, url, title) for url in self.stream_urls)
 
-    def _prefetch_single_stream(self, content_id: str, content_type: str, stream_addon_url: str) -> bool:
+    def _prefetch_single_stream(self, content_id: str, content_type: str, stream_addon_url: str, title: str = "") -> bool:
         stream_url = f"{stream_addon_url}/stream/{content_type}/{content_id}.json"
         self.results['statistics']['cache_requests_made'] += 1
         response = None
         try:
-            response = self.session.get(stream_url, timeout=30)
+            response = self.session.get(stream_url, timeout=self.network_request_timeout)
             response.raise_for_status()
             time.sleep(self.delay)
             self.results['statistics']['cache_requests_successful'] += 1
+
+            # Cache uncached streams feature
+            if self.cache_uncached_streams_enabled:
+                try:
+                    stream_data = response.json()
+                    streams = stream_data.get('streams', [])
+
+                    if streams:
+                        # Count cached streams using regex
+                        cached_pattern = re.compile(self.cached_stream_regex)
+                        cached_count = 0
+                        uncached_streams = []
+
+                        for stream in streams:
+                            name = stream.get('name', '')
+                            description = stream.get('description', '')
+                            combined_text = f"{name} {description}"
+
+                            if cached_pattern.search(combined_text):
+                                cached_count += 1
+                            else:
+                                url = stream.get('url', '')
+                                if url:
+                                    uncached_streams.append(url)
+
+                        # Check if we need to trigger more caching
+                        if cached_count <= self.cached_streams_count_threshold:
+                            # Calculate dynamic attempt limit: max(goal * 3, 5)
+                            max_attempts_allowed = min(
+                                len(uncached_streams),  # Can't try more than available
+                                max(self.max_cache_requests_per_item * 3, 5),  # Dynamic: at least 5, or 3x success goal
+                                self.max_cache_requests_global - self.cache_requests_sent_count  # Global limit
+                            )
+
+                            successful_requests = 0
+                            attempts = 0
+
+                            # Log if attempting cache requests
+                            if max_attempts_allowed > 0 and title and content_type == 'movie':
+                                sys.stdout.write(f"\n🔄 Caching: {title}\n")
+                                sys.stdout.flush()
+
+                            # Try URLs until we get enough successes or run out of attempts
+                            while (successful_requests < self.max_cache_requests_per_item and
+                                   attempts < max_attempts_allowed and
+                                   self.cache_requests_sent_count < self.max_cache_requests_global):
+
+                                try:
+                                    head_response = self.session.head(
+                                        uncached_streams[attempts],
+                                        timeout=self.network_request_timeout
+                                    )
+
+                                    # Check if request was successful (2xx status code)
+                                    if 200 <= head_response.status_code < 300:
+                                        successful_requests += 1
+                                        self.cache_requests_successful_count += 1
+
+                                    head_response.close()
+                                    self.cache_requests_sent_count += 1
+                                    attempts += 1
+                                    time.sleep(self.delay)
+
+                                except requests.exceptions.RequestException:
+                                    # Failed attempt - count it and try next URL
+                                    self.cache_requests_sent_count += 1
+                                    attempts += 1
+
+                except (json.JSONDecodeError, KeyError):
+                    pass  # Silently fail JSON parsing errors
+
             return True
         except requests.exceptions.RequestException:
             self.results['statistics']['errors'] += 1
@@ -998,7 +1114,9 @@ class StreamsPrefetcher:
             # Store initial counts at the start of processing this catalog
             initial_movies_count = self.prefetched_movies_count
             initial_series_count = self.prefetched_series_count
-            
+            initial_cache_requests = self.cache_requests_sent_count  # Track cache requests at start
+            initial_cache_requests_successful = self.cache_requests_successful_count  # Track successful cache requests at start
+
             page = 0
             success_count, failed_count, cached_count, prefetched_in_this_catalog = 0, 0, 0, 0
             
@@ -1025,6 +1143,7 @@ class StreamsPrefetcher:
                     movies_global_limit=self.movies_global_limit,
                     prefetched_series_count=self.prefetched_series_count,
                     series_global_limit=self.series_global_limit,
+                    prefetched_cached_count=self.prefetched_cached_count,
                     prefetched_in_this_catalog=prefetched_in_this_catalog,
                     per_catalog_limit=per_catalog_limit,
                     start_time=self.processing_start,
@@ -1036,8 +1155,28 @@ class StreamsPrefetcher:
                 self.results['statistics']['total_pages_fetched'] += 1
                 metas = cat_data.get('metas', []) if cat_data else []
                 if not metas: break
+
                 if self.randomize_items: random.shuffle(metas)
-                
+
+                # Count how many items on this page are already cached vs need prefetching (for verbose logging)
+                if self.enable_logging:
+                    page_cached_count = 0
+                    page_needs_prefetch = 0
+                    for item in metas:
+                        item_type = item.get('type')
+                        imdb_id = self.extract_imdb_id(item)
+                        if imdb_id and self.is_cache_valid(imdb_id):
+                            page_cached_count += 1
+                        else:
+                            page_needs_prefetch += 1
+
+                    print(f"\n📄 Fetched page {page} for catalog '{cat_name}': {len(metas)} items found")
+                    print(f"   ⚡ Already prefetched (will skip): {page_cached_count}")
+                    print(f"   🔄 Need to prefetch: {page_needs_prefetch}")
+                    print(f"   📊 Catalog progress: {prefetched_in_this_catalog}/{per_catalog_limit if per_catalog_limit != -1 else '∞'} items prefetched so far")
+                    sys.stdout.flush()
+
+                self._is_processing_items = True  # Enable auto-refresh
                 item_statuses_on_page = []
                 for item in metas:
                     # Check if paused BEFORE starting new item (wait if paused)
@@ -1082,7 +1221,13 @@ class StreamsPrefetcher:
                             **dashboard_args
                         )
                         if not imdb_id: failed_count += 1; item_statuses_on_page.append('failed'); continue
-                        if self.is_cache_valid(imdb_id): cached_count += 1; self.prefetched_cached_count += 1; item_statuses_on_page.append('cached'); continue
+                        if self.is_cache_valid(imdb_id):
+                            cached_count += 1
+                            self.prefetched_cached_count += 1
+                            item_statuses_on_page.append('cached')
+                            self._current_dashboard_args = dashboard_args
+                            self._auto_redraw_dashboard()
+                            continue
 
                         # Check if pause was requested BEFORE prefetching (after showing UI)
                         if self.scheduler and self.scheduler.pause_requested:
@@ -1096,7 +1241,7 @@ class StreamsPrefetcher:
                         if self._check_time_limit():
                             break
 
-                        if self.prefetch_streams(imdb_id, 'movie'):
+                        if self.prefetch_streams(imdb_id, 'movie', title):
                             self.update_cache(imdb_id, title)
                             success_count += 1; prefetched_in_this_catalog += 1; self.prefetched_movies_count += 1
                             item_statuses_on_page.append('successful')
@@ -1124,7 +1269,13 @@ class StreamsPrefetcher:
                         if not episodes: failed_count += 1; item_statuses_on_page.append('failed'); continue
                         self.results['statistics']['episodes_found'] += len(episodes)
                         cached_episodes = sum(1 for ep in episodes if self.is_cache_valid(ep['id']))
-                        if (cached_episodes / len(episodes)) >= 0.75: cached_count += 1; self.prefetched_cached_count += 1; item_statuses_on_page.append('cached'); continue
+                        if (cached_episodes / len(episodes)) >= 0.75:
+                            cached_count += 1
+                            self.prefetched_cached_count += 1
+                            item_statuses_on_page.append('cached')
+                            self._current_dashboard_args = dashboard_args
+                            self._auto_redraw_dashboard()
+                            continue
                         series_had_success = False
                         for ep in episodes:
                             # Check if paused BEFORE starting new episode (wait if paused)
@@ -1154,7 +1305,7 @@ class StreamsPrefetcher:
                             if self._check_time_limit():
                                 break
 
-                            if self.prefetch_streams(ep['id'], 'series'):
+                            if self.prefetch_streams(ep['id'], 'series', ep_title):
                                self.update_cache(ep['id'], ep_title); series_had_success = True; self.prefetched_episodes_count += 1
 
                         if series_had_success:
@@ -1162,23 +1313,31 @@ class StreamsPrefetcher:
                             item_statuses_on_page.append('successful')
                         else: failed_count += 1; item_statuses_on_page.append('failed')
 
+                self._is_processing_items = False  # Disable auto-refresh
+
             catalog_end_time = time.time()
             catalog_duration = catalog_end_time - catalog_start_time
-            
+
+            # Calculate cache requests made during this catalog
+            catalog_cache_requests = self.cache_requests_sent_count - initial_cache_requests
+            catalog_cache_requests_successful = self.cache_requests_successful_count - initial_cache_requests_successful
+
             # Store catalog timing information
             catalog_result = {
                 'name': cat_name,
                 'type': cat_mode,
                 'success_count': success_count,
-                'failed_count': failed_count, 
+                'failed_count': failed_count,
                 'cached_count': cached_count,
+                'cache_requests_sent': catalog_cache_requests,
+                'cache_requests_successful': catalog_cache_requests_successful,
                 'duration': catalog_duration,
                 'start_time': catalog_start_time,
                 'end_time': catalog_end_time
             }
             self.results['processed_catalogs'].append(catalog_result)
             
-            self.results['statistics']['items_from_cache'] += cached_count
+            self.results['statistics']['cached_count'] += cached_count
             self.progress_tracker.finish_catalog_processing(success_count, failed_count, cached_count, catalog_name=cat_name)
             
             # Check execution time limit after each catalog
@@ -1193,6 +1352,8 @@ class StreamsPrefetcher:
         self.results['statistics']['movies_prefetched'] = self.prefetched_movies_count
         self.results['statistics']['series_prefetched'] = self.prefetched_series_count
         self.results['statistics']['episodes_prefetched'] = self.prefetched_episodes_count
+        self.results['statistics']['service_cache_requests_sent'] = self.cache_requests_sent_count
+        self.results['statistics']['service_cache_requests_successful'] = self.cache_requests_successful_count
         
         # Store timing information in results
         self.results['timing'] = {
@@ -1212,8 +1373,8 @@ class StreamsPrefetcher:
             self._log("\n" + "=" * 60)
             self._log("PER-CATALOG TIMING STATISTICS")
             self._log("=" * 60)
-            self._log(f"{'Catalog':<30} | {'Type':<8} | {'Duration':<10} | {'Success':<7} | {'Failed':<7} | {'Cached':<7}")
-            self._log("-" * 90)
+            self._log(f"{'Catalog':<30} | {'Type':<8} | {'Duration':<10} | {'Success':<7} | {'Failed':<7} | {'Cached':<7} | {'Cache Reqs':<15}")
+            self._log("-" * 107)
             for cat in self.results['processed_catalogs']:
                 name = cat.get('name', 'Unknown')[:30]
                 cat_type = cat.get('type', 'mixed')[:8]
@@ -1221,7 +1382,10 @@ class StreamsPrefetcher:
                 success = cat.get('success_count', 0)
                 failed = cat.get('failed_count', 0)
                 cached = cat.get('cached_count', 0)
-                self._log(f"{name:<30} | {cat_type:<8} | {duration:<10} | {success:<7} | {failed:<7} | {cached:<7}")
+                cache_reqs_sent = cat.get('cache_requests_sent', 0)
+                cache_reqs_success = cat.get('cache_requests_successful', 0)
+                cache_reqs_display = f"{cache_reqs_success}/{cache_reqs_sent}" if cache_reqs_sent > 0 else "0"
+                self._log(f"{name:<30} | {cat_type:<8} | {duration:<10} | {success:<7} | {failed:<7} | {cached:<7} | {cache_reqs_display:<15}")
         
         return self.results
     
@@ -1293,9 +1457,11 @@ class StreamsPrefetcher:
             f"  Series prefetched:           {stats['series_prefetched']} (Limit: {self.series_global_limit if self.series_global_limit != -1 else '∞'})",
             f"  Total pages fetched:         {stats['total_pages_fetched']}",
             f"  Episodes discovered:         {stats['episodes_found']}",
-            f"  Items skipped from cache:    {stats['items_from_cache']}",
+            f"  Items skipped from cache:    {stats['cached_count']}",
             f"  Prefetch attempts:           {stats['cache_requests_made']}",
             f"  Successful prefetches:       {stats['cache_requests_successful']}",
+            f"  Service cache requests sent: {stats['service_cache_requests_sent']}",
+            f"  Service cache requests success: {stats['service_cache_requests_successful']}",
             f"  Errors encountered:          {stats['errors']}"
         ]
         
@@ -1321,15 +1487,15 @@ class StreamsPrefetcher:
             # Calculate column widths
             max_name_len = max(len(cat.get('name', 'Unknown')) for cat in sorted_catalogs)
             name_width = min(max_name_len, 25)  # Cap at 25 characters
-            
-            table_header = f"  {'Catalog':<{name_width}} | {'Type':<6} | {'Duration':<8} | {'Success':<7} | {'Failed':<6} | {'Cached':<6}"
-            table_divider = f"  {'-' * name_width}-+-{'-' * 6}-+-{'-' * 8}-+-{'-' * 7}-+-{'-' * 6}-+-{'-' * 6}"
-            
+
+            table_header = f"  {'Catalog':<{name_width}} | {'Type':<6} | {'Duration':<8} | {'Success':<7} | {'Failed':<6} | {'Cached':<6} | {'Cache Reqs':<15}"
+            table_divider = f"  {'-' * name_width}-+-{'-' * 6}-+-{'-' * 8}-+-{'-' * 7}-+-{'-' * 6}-+-{'-' * 6}-+-{'-' * 15}"
+
             print(table_header)
             print(table_divider)
             self._log(table_header)
             self._log(table_divider)
-            
+
             for cat in sorted_catalogs:
                 name = cat.get('name', 'Unknown')
                 display_name = name[:name_width-3] + "..." if len(name) > name_width else name
@@ -1338,8 +1504,11 @@ class StreamsPrefetcher:
                 success = cat.get('success_count', 0)
                 failed = cat.get('failed_count', 0)
                 cached = cat.get('cached_count', 0)
-                
-                row = f"  {display_name:<{name_width}} | {cat_type:<6} | {duration:<8} | {success:<7} | {failed:<6} | {cached:<6}"
+                cache_reqs_sent = cat.get('cache_requests_sent', 0)
+                cache_reqs_success = cat.get('cache_requests_successful', 0)
+                cache_reqs_display = f"{cache_reqs_success}/{cache_reqs_sent}" if cache_reqs_sent > 0 else "0"
+
+                row = f"  {display_name:<{name_width}} | {cat_type:<6} | {duration:<8} | {success:<7} | {failed:<6} | {cached:<6} | {cache_reqs_display:<15}"
                 print(row)
                 self._log(row)
         
