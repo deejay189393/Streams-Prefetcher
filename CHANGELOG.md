@@ -56,7 +56,7 @@ Closes #27
 ## [0.12.0] - 2025-10-13
 
 ### Added
-- **Service Cache Request Functionality**: Send HTTP requests to uncached stream URLs to warm up debrid service caches
+- **Stream Source Cache Request Functionality**: Send HTTP requests for automatically caching of uncached streams to the stream source systems when there are no pre-cached streams available
   - Configurable global limit for total cache requests per prefetch session
   - Per-item limit for cache requests per movie/series/episode
   - Cached streams detection threshold to determine when to trigger cache requests

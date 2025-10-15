@@ -293,7 +293,7 @@ Set global and per-catalog limits:
 
 Format: Enter a number and select the unit (milliseconds, seconds, minutes, hours, days, weeks). All time-based parameters support unlimited values (-1)
 
-#### Service Cache Requests
+#### Stream Source Cache Requests
 Request uncached streams to be cached by sending HTTP requests to their URLs (disabled by default):
 - **Enable Cache Requests**: Toggle to enable/disable the entire feature (default: OFF)
 - **Global Cache Request Limit**: Maximum total cache requests per prefetch session (-1 for unlimited, default: 50)
