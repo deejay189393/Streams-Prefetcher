@@ -5,6 +5,21 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.4] - 2025-10-15
+
+### Changed
+- Centralized catalog ID management with dedicated utility modules
+  - Created `src/catalog_id_utils.py` with 5 utility functions for Python backend
+  - Created `web/js/catalog_id_utils.js` with matching functions for JavaScript frontend
+  - All catalog ID creation and parsing now uses utility functions instead of inline string operations
+  - Catalog ID format explicitly documented: `addon_url|catalog_id|catalog_type`
+
+### Fixed
+- Prevents future catalog selection parsing bugs by standardizing ID handling across backend and frontend
+  - Single source of truth for ID format in each language
+  - Self-documenting code with comprehensive docstrings and JSDoc comments
+  - Easy to modify format in future (update one place, not scattered across files)
+
 ## [0.12.3] - 2025-10-14
 
 ### Added
