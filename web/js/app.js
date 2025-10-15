@@ -922,6 +922,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         addDebugLog(`👁️ [PAGE VISIBILITY] Page is now: ${state}`);
     });
 
+    // Explicitly close SSE connection on page unload to prevent connection accumulation
+    window.addEventListener('beforeunload', () => {
+        addDebugLog('🚪 [PAGE UNLOAD] beforeunload triggered, closing SSE connection');
+        if (eventSource) {
+            eventSource.close();
+            addDebugLog('🚪 [PAGE UNLOAD] SSE connection closed');
+        }
+    });
+
     // Enable drag and drop for addon URLs
     initializeAddonUrlDragDrop();
 

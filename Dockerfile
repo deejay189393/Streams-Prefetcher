@@ -59,5 +59,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Run the application using gunicorn for production
 # Using 1 worker to maintain consistent job state across all requests
-# 4 threads per worker is sufficient for this self-hosted tool
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--worker-class", "gthread", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "src.web_app:app"]
+# 8 threads per worker to handle SSE connections and concurrent page loads during rapid refreshes
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "8", "--worker-class", "gthread", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "src.web_app:app"]

@@ -45,11 +45,22 @@ event_queues = []
 
 def broadcast_event(event_type: str, data: Dict[str, Any]):
     """Broadcast event to all SSE clients"""
+    # Track queues that fail to receive events (likely dead connections)
+    dead_queues = []
+
     for q in event_queues:
         try:
             q.put({'event': event_type, 'data': data}, block=False)
         except queue.Full:
-            pass
+            # Queue is full, likely a stale connection - mark for removal
+            logger.warning(f"SSE queue full, marking for removal (likely stale connection)")
+            dead_queues.append(q)
+
+    # Remove dead queues immediately to prevent accumulation
+    for dead_q in dead_queues:
+        if dead_q in event_queues:
+            event_queues.remove(dead_q)
+            logger.info(f"Removed stale SSE queue. Active queues: {len(event_queues)}")
 
 
 # Register callback with job scheduler
@@ -728,6 +739,7 @@ def stream_events():
         # Create a queue for this client
         q = queue.Queue(maxsize=100)
         event_queues.append(q)
+        logger.info(f"New SSE connection established. Active connections: {len(event_queues)}")
 
         try:
             # Send initial connection message
@@ -740,7 +752,7 @@ def stream_events():
             # Stream events
             while True:
                 try:
-                    event = q.get(timeout=30)  # 30 second timeout
+                    event = q.get(timeout=10)  # 10 second timeout (reduced from 30s for faster cleanup)
                     yield f"data: {json.dumps(event)}\n\n"
                 except queue.Empty:
                     # Send keepalive
@@ -750,6 +762,7 @@ def stream_events():
             # Client disconnected
             if q in event_queues:
                 event_queues.remove(q)
+                logger.info(f"SSE connection closed (client disconnect). Active connections: {len(event_queues)}")
 
     return Response(event_stream(), mimetype='text/event-stream')
 
