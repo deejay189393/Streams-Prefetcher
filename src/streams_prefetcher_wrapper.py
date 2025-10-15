@@ -8,6 +8,7 @@ import io
 from typing import Callable, Optional, Dict, Any, List, Tuple
 from streams_prefetcher_filtered import FilteredStreamsPrefetcher
 from config_manager import ConfigManager
+from catalog_id_utils import get_catalog_id_part
 
 
 class StreamsPrefetcherWrapper:
@@ -59,9 +60,9 @@ class StreamsPrefetcherWrapper:
         # Build catalog filter (catalog IDs to include)
         catalog_filter = []
         for cat in enabled_catalogs:
-            # Extract catalog ID from the full ID (format: "addon_url|catalog_id")
-            if '|' in cat['id']:
-                catalog_id = cat['id'].split('|', 1)[1]
+            # Extract catalog ID from the full ID (format: "addon_url|catalog_id|catalog_type")
+            catalog_id = get_catalog_id_part(cat['id'])
+            if catalog_id:
                 catalog_filter.append(catalog_id)
 
         # Get cache_uncached_streams config

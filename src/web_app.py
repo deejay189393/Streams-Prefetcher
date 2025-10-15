@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config_manager import ConfigManager
 from job_scheduler import JobScheduler, JobStatus
 from logger import setup_logging, get_logger
+from catalog_id_utils import create_catalog_id
 
 # Initialize logging
 setup_logging()
@@ -326,7 +327,7 @@ def load_catalogs():
                             cat_type = 'mixed'
 
                         catalogs.append({
-                            'id': f"{item['url']}|{catalog.get('id', '')}|{cat_type}",
+                            'id': create_catalog_id(item['url'], catalog.get('id', ''), cat_type),
                             'name': catalog.get('name', 'Unknown'),
                             'type': cat_type,
                             'addon_name': addon_name,

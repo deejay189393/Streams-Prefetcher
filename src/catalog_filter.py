@@ -4,6 +4,7 @@ Filters catalogs based on user selection from saved_catalogs config.
 """
 
 from typing import List, Dict, Any, Optional
+from catalog_id_utils import get_catalog_id_part
 
 
 class CatalogFilter:
@@ -27,10 +28,10 @@ class CatalogFilter:
         self.enabled_catalog_ids = set()
         for cat in saved_catalogs:
             if cat.get('enabled', False):
-                # Extract catalog_id from full id (format: "addon_url|catalog_id")
+                # Extract catalog_id from full id (format: "addon_url|catalog_id|catalog_type")
                 full_id = cat.get('id', '')
-                if '|' in full_id:
-                    catalog_id = full_id.split('|', 1)[1]
+                catalog_id = get_catalog_id_part(full_id)
+                if catalog_id:
                     self.enabled_catalog_ids.add(catalog_id)
 
     def is_catalog_enabled(self, catalog_id: str) -> bool:
