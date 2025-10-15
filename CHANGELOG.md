@@ -5,6 +5,24 @@ All notable changes to Streams Prefetcher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.5] - 2025-10-15
+
+### Fixed
+- Web UI failing to load after rapid page refreshes (3+ times in quick succession)
+  - Root cause: SSE connection accumulation exhausting Gunicorn thread pool
+  - Added beforeunload handler to explicitly close SSE connections on page unload
+  - Reduced SSE queue timeout from 30s to 10s for faster stale connection cleanup
+  - Proactive cleanup of dead queues when broadcast fails
+  - Increased Gunicorn thread pool from 4 to 8 threads for better concurrency
+  - Successfully tested with 8+ rapid refreshes
+
+### Changed
+- Updated terminology from "Service" to "Stream Source" throughout UI
+  - More accurately reflects that feature works with generic stream sources, not just debrid services
+  - Updated section headings, tooltips, and documentation
+
+Closes #30
+
 ## [0.12.4] - 2025-10-15
 
 ### Changed
