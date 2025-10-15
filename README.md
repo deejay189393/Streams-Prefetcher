@@ -3,9 +3,37 @@
 [![Latest Release](https://img.shields.io/github/v/release/deejay189393/Streams-Prefetcher?style=for-the-badge)](https://github.com/deejay189393/Streams-Prefetcher/releases/latest)
 [![Docker Pulls](https://img.shields.io/badge/docker-ghcr.io-blue?style=for-the-badge&logo=docker)](https://github.com/deejay189393/Streams-Prefetcher/pkgs/container/streams-prefetcher)
 
-A modern web-based tool that warms up **self-hosted Stremio addon caches** by prefetching streams. Makes addon cache prefetching accessible to all users through an intuitive browser interface with real-time monitoring and scheduling capabilities.
+**Pre-cache Stremio addon streams so every movie and show opens instantly - no more waiting for streams to load or for uncached streams to become available.**
 
-> **⚠️ IMPORTANT:** This tool is designed for **self-hosted addons only**. Running this against public addons will unnecessarily increase server load without any benefit, as public addons typically don't cache per-user.
+## Why Use This?
+
+### The Problem
+When you browse Stremio and select a movie or series, there are often **two delays**:
+1. **Addon delay**: Your addon searches for streams, processes them, and caches the results
+2. **Stream source delay**: If streams are uncached on your streaming service, you have to wait for them to be converted/cached before playback
+
+This happens every time you open something new or when caches expire. The combined wait can range from a few seconds to over a minute.
+
+### The Solution
+Streams Prefetcher **automatically pre-fetches streams** from your Stremio addons in the background, warming up caches **before** you even open Stremio. It works with both self-hosted and public addons.
+
+**Two-layer caching:**
+1. **Addon Cache**: Prefetches catalog data and stream information from your addons
+2. **Stream Source Cache**: Automatically triggers your streaming service to cache uncached streams by sending requests to stream URLs
+
+Think of it as preparing everything in advance - like preheating an oven before cooking.
+
+### The Benefits
+- **⚡ Instant Playback**: Click on any movie or series and streams appear immediately with no delays
+- **🎯 Stream Source Coverage**: Ensure all your catalog items have streams **already cached** on your streaming service - no more waiting for "uncached" streams to convert
+- **🔄 Automatic Stream Caching**: When streams are uncached (not playable yet), the tool automatically triggers your stream source to cache them
+- **⏰ Set It and Forget It**: Schedule automatic prefetching (e.g., daily at 2 AM) to keep all caches warm 24/7
+- **📊 Smart Control**: Choose which catalogs to prefetch, how many items, and fine-tune everything through an easy web interface
+- **🌐 Works with Any Addon**: Compatible with both self-hosted addons and public addons
+
+**Perfect for users who want their Stremio experience to feel instant and seamless, just like a native streaming service.**
+
+> **💡 TIP:** While this tool works with public addons, frequent use against public addons increases their server load. Be considerate - use reasonable limits and schedules if prefetching from public addons. Self-hosted addons have no such concerns.
 
 ## Features
 
